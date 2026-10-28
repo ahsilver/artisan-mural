@@ -16,6 +16,8 @@ import { resolvedMaterials, swatchStyle } from "@/lib/catalog";
 
 const UNITS: Record<string, number> = { ft: 30.48, in: 2.54, cm: 1 };
 const r1 = (n: number) => Math.round(n * 10) / 10;
+/** Vector files scale to any wall: the largest wall we take (about 160 ft). */
+const VECTOR_MAX_CM = 4876.8;
 
 export type RepeatType = "full" | "sideways" | "mural";
 export const repeatTypeOf = (kind: string, repeat: string): RepeatType => (kind === "mural" ? "mural" : repeat === "horizontal" ? "sideways" : "full");
@@ -351,7 +353,7 @@ function ColorRow({ design, color, index, onChanged, getId, rules, onLocal, onFi
     else throw new Error("no preview");
     const dims = orig.dims;
     const autoSw = color?.swatch ? undefined : (await dominantColor(previewBlob)) ?? undefined;
-    await api(`designer/uploads/${id}/colorways`, { body: { colorwayId: color?.id, name, swatch: autoSw, sourceName: orig.filename, previewKey, originalKey: orig.key, filename: orig.filename, mime: orig.mime, size: orig.size, width: dims?.width, height: dims?.height } });
+    await api(`designer/uploads/${id}/colorways`, { body: { colorwayId: color?.id, name, swatch: autoSw, sourceName: orig.filename, previewKey, originalKey: orig.key, filename: orig.filename, mime: orig.mime, size: orig.size, width: dims?.width, height: dims?.height, dpi: dims?.vector ? null : dims?.dpi } });
     if (!design.colors.length || color?.position === 0) {
       // auto-detect: do the edges join like a repeat?
       try {
@@ -368,9 +370,13 @@ function ColorRow({ design, color, index, onChanged, getId, rules, onLocal, onFi
         // a starting size from the file (sharp print size); the designer can change it
         let size: any = {};
         if (!design.widthCm && dims?.width && dims?.height) {
-          const dpi = t === "mural" ? (rules?.minDpi || 150) : (rules?.targetDpi || 150);
+          // the size the file was built for: the DPI saved in the file wins; vector files are any size
+          const fileDpi = dims.vector ? 72 : dims.dpi && dims.dpi >= 50 && dims.dpi <= 1200 ? dims.dpi : 0;
+          const dpi = fileDpi || (t === "mural" ? (rules?.minDpi || 150) : (rules?.targetDpi || 150));
           const wcm = Math.round((dims.width / dpi) * 25.4) / 10, hcm = Math.round((dims.height / dpi) * 25.4) / 10;
-          size = t === "mural" ? { widthCm: wcm, heightCm: hcm, maxWidthCm: wcm, maxHeightCm: hcm } : { widthCm: wcm, heightCm: hcm };
+          const big = dims.vector ? { maxWidthCm: VECTOR_MAX_CM, maxHeightCm: Math.round(VECTOR_MAX_CM * dims.height / dims.width) } : { maxWidthCm: wcm, maxHeightCm: hcm };
+          size = t === "mural" ? { widthCm: wcm, heightCm: hcm, ...big } : { widthCm: wcm, heightCm: hcm };
+          m.fileDpi = dims.vector ? null : (fileDpi || null); m.vector = !!dims.vector;
           if (t === "mural") { m.originalWidthCm = wcm; m.originalHeightCm = hcm; }
           m.unit = m.unit ?? (t === "mural" ? "ft" : "in");
         }
@@ -385,7 +391,7 @@ function ColorRow({ design, color, index, onChanged, getId, rules, onLocal, onFi
       const dims = await readDims(f);
       setWarn("");
       // print-quality check: a 52-inch print panel at 150 DPI needs 7,800 px across
-      if (dims?.width && dims?.height) {
+      if (dims?.width && dims?.height && !dims.vector) {
         const long = Math.max(dims.width, dims.height);
         if (long < 1500) { setErr(`This file is only ${dims.width} × ${dims.height} px, too small to print sharply. Please upload the full-resolution original (at least 7,800 px wide for one 52-inch panel at 150 DPI).`); return; }
         const sharpIn = Math.floor(dims.width / 150);
@@ -423,7 +429,7 @@ function ColorRow({ design, color, index, onChanged, getId, rules, onLocal, onFi
   }
   const o = color?.original;
   const picker = <>
-    <input ref={fileRef} type="file" hidden accept="image/*,.tif,.tiff,.psd,.pdf" onChange={(e) => e.target.files?.[0] && fromFile(e.target.files[0])} />
+    <input ref={fileRef} type="file" hidden accept="image/*,.tif,.tiff,.psd,.pdf,.svg,.ai,.eps" onChange={(e) => e.target.files?.[0] && fromFile(e.target.files[0])} />
     {!color ? <button type="button" className="de-drop" data-testid="upload-art" onClick={() => fileRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) void fromFile(f); }}>
         <i className="de-drop-ico" aria-hidden="true"><UploadCloud size={26} /></i><b>{design.colors.length ? "Upload this colorway's print file" : "Upload your print file"}</b><span>JPG, PNG, TIFF, PSD or PDF, full resolution. Drop it here or tap to choose.</span><em className="de-drop-btn" aria-hidden="true">Choose file</em></button>
       : <button type="button" className="bo-btn sm" onClick={() => fileRef.current?.click()}>Replace file</button>}
@@ -474,7 +480,17 @@ function SizeStep({ design, rules, onChanged }: { design: any; rules: any; onCha
   const origWcm = Number(orig.w) * u, origHcm = Number(orig.h) * u;
   const dpiAt = (cm: number) => (pxW && cm ? Math.round(pxW / (cm / 2.54)) : null);
   const setOrigW = (v: string) => setOrig({ w: v, h: ratio && v ? r1(Number(v) * ratio) : orig.h });
-  const hardW = pxW ? (pxW / (rules.minDpi || 150)) * 2.54 : null;
+  const vector = !!meta.vector;
+  const [dpi, setDpi] = useState<string>(String(meta.fileDpi ?? o.dpi ?? ""));
+  const dpiN = Number(dpi) > 0 ? Number(dpi) : 0;
+  // the designer's DPI is the truth for this file; the studio's lowest DPI only caps it when no DPI is confirmed
+  const capDpi = dpiN ? Math.min(rules.minDpi || 150, dpiN) : (rules.minDpi || 150);
+  const hardW = vector ? null : pxW ? (pxW / capDpi) * 2.54 : null;
+  function applyDpi(v: string) {
+    setDpi(v); const n = Number(v); if (!(n > 0) || !pxW || vector) return;
+    const wcm = (pxW / n) * 2.54, hcm = (pxH / n) * 2.54;
+    setOrig({ w: r1(wcm / u), h: r1(hcm / u) }); if (mural) setMax({ w: r1(wcm / u), h: r1(hcm / u) }); setNote("");
+  }
   function applyMax(w: number) {
     let ww = w; let msg = "";
     if (hardW && ww * u > hardW + 0.01) { ww = hardW / u; msg = `Capped at ${r1(ww)} ${unit} wide. Bigger would print under ${rules.minDpi} DPI, the lowest the studio allows.`; }
@@ -484,16 +500,21 @@ function SizeStep({ design, rules, onChanged }: { design: any; rules: any; onCha
   async function save() {
     const wcm = Number(orig.w) * u, hcm = Number(orig.h) * u;
     if (!(wcm > 0 && hcm > 0)) throw new Error("Enter the size.");
-    let mw = Number(max.w) * u || (capW ? Math.min(capW, Math.max(wcm, capW)) : wcm);
-    if (hardW && mw > hardW) mw = hardW;
+    let mw = vector ? VECTOR_MAX_CM : Number(max.w) * u || (capW ? Math.min(capW, Math.max(wcm, capW)) : wcm);
+    if (hardW && mw > hardW + 0.05) mw = hardW;
     const mh = ratio ? mw * ratio : Number(max.h) * u || hcm;
-    await api(`designer/uploads/${design.id}`, { body: mural ? { widthCm: r1(wcm), heightCm: r1(hcm), maxWidthCm: r1(mw), maxHeightCm: r1(mh), meta: { ...meta, unit, originalWidthCm: r1(wcm), originalHeightCm: r1(hcm) } } : { widthCm: r1(wcm), heightCm: r1(hcm), meta: { ...meta, unit } } });
+    await api(`designer/uploads/${design.id}`, { body: mural ? { widthCm: r1(wcm), heightCm: r1(hcm), maxWidthCm: r1(mw), maxHeightCm: r1(mh), meta: { ...meta, unit, fileDpi: dpiN || null, originalWidthCm: r1(wcm), originalHeightCm: r1(hcm) } } : { widthCm: r1(wcm), heightCm: r1(hcm), meta: { ...meta, unit, fileDpi: dpiN || null } } });
     onChanged();
   }
   const sideways = design.repeat === "horizontal";
   return <div className="de-box" data-testid="size-box"><div className="de-h">{mural ? "Mural size" : sideways ? "Repeat width and design height" : "Repeat size"}{design.widthCm ? <span className="de-ok">✓</span> : null}</div>
-    <div className="bo-row" style={{ marginBottom: 8 }}><span className="bo-sub">Your file: {pxW ? `${pxW} × ${pxH} px` : "size unknown"}</span><select className="bo-sel" style={{ width: 90, marginLeft: "auto" }} value={unit} onChange={(e) => setUnit(e.target.value)}><option value="ft">feet</option><option value="in">inches</option><option value="cm">cm</option></select></div>
+    <div className="bo-row" style={{ marginBottom: 8 }}><span className="bo-sub" data-testid="file-px">Your file: {vector ? <b>Vector – any size</b> : pxW ? `${pxW.toLocaleString()} × ${pxH.toLocaleString()} px${o.dpi ? ` · saved at ${o.dpi} DPI` : ""}` : "size unknown"}</span><select className="bo-sel" style={{ width: 90, marginLeft: "auto" }} value={unit} onChange={(e) => setUnit(e.target.value)}><option value="ft">feet</option><option value="in">inches</option><option value="cm">cm</option></select></div>
     <Msg m={s.msg} />
+    {!vector && pxW > 0 && <div className="de-dpi" data-testid="dpi-box">
+      <Field label="Print DPI of this file" hint={o.dpi ? `Read from the file: ${o.dpi} DPI. Change it if you built it for a different DPI.` : "Not saved in the file. Enter the DPI you built it at."}><input className="bo-in" type="number" min={30} max={1200} step="1" value={dpi} onChange={(e) => applyDpi(e.target.value)} data-testid="dpi-input" style={{ maxWidth: 120 }} /></Field>
+      <div className="de-dpi-out" data-testid="max-print">{dpiN ? <>At {dpiN} DPI this file is <b>{r1(pxW / dpiN / (u / 2.54))} × {r1(pxH / dpiN / (u / 2.54))} {unit}</b>{mural ? " — the largest wall customers can order" : " per repeat"}.</> : <>Enter the DPI to see the print size.</>}{dpiN && dpiN < (rules.minDpi || 150) ? <div className="bo-sub">Below {rules.minDpi || 150} DPI: fine from a normal distance, softer up close.</div> : null}</div>
+    </div>}
+    {vector && <div className="de-dpi-out" data-testid="max-print"><b>Vector – any size.</b> Vector files are sharp on any wall at any DPI, so customers can order any size.</div>}
     {mural ? <>
       <div className="bo-grid2"><Field label={`Original wall size: width (${unit})`} hint="The wall you designed it for."><input className="bo-in" type="number" step="0.1" value={orig.w} onChange={(e) => setOrigW(e.target.value)} /></Field><Field label={`Height (${unit})`}><input className="bo-in" type="number" step="0.1" value={orig.h} onChange={(e) => setOrig({ ...orig, h: e.target.value })} /></Field></div>
       {capW && <div className="bo-sub" style={{ marginBottom: 10 }}>At {rules.targetDpi} DPI your file prints sharp up to <b>{r1(capW / u)} × {r1(capH! / u)} {unit}</b>.{origWcm ? ` At the original size it is ${dpiAt(origWcm)} DPI.` : ""}</div>}

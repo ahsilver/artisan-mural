@@ -142,6 +142,33 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
     return j({ key, name, size: buf.byteLength, url: await signed(env, key) });
   }
 
+  // ---------- Fiverr-style: open (or reopen) a private chat with the design's designer ----------
+  if (p === "start-chat" && m === "POST") {
+    const slug = String(body.designSlug ?? "").slice(0, 120);
+    if (!/^[a-z0-9-]{1,120}$/i.test(slug)) return bad("Unknown design.");
+    let designer: any = null; let title = "";
+    if (slug.startsWith("u-")) { const u: any = await DB.prepare(`SELECT owner_id, title FROM artwork_uploads WHERE id = ? AND deleted_at IS NULL`).bind(slug.slice(2)).first(); if (!u) return bad("This design was not found.", 404); designer = await designerOf(env, u.owner_id); title = u.title; }
+    else title = String(body.title ?? "").replace(/[\r\n]+/g, " ").trim().slice(0, 100) || slug;
+    if (!designer) { // studio designs: the studio (the owner) answers as their designer
+      const ow: any = await DB.prepare(`SELECT user_id FROM user_roles WHERE role = 'admin' ORDER BY rowid LIMIT 1`).first();
+      if (!ow) return bad("This design's designer isn't taking requests yet.");
+      designer = { uid: ow.user_id, slug: "studio", name: "Artisan Mural Studio", approved: true };
+    }
+    if (designer.uid === uid) return bad("That's your own design.");
+    const open: any = await DB.prepare(`SELECT id FROM projects WHERE customer_id = ? AND design_slug = ? AND designer_user_id = ? AND kind = 'edit' AND status IN ('requested','quoted','message') ORDER BY created_at DESC LIMIT 1`).bind(uid, slug, designer.uid).first();
+    if (open) return j({ id: open.id, key: `p.${open.id}.${designer.uid}`, reused: true });
+    const me: any = await DB.prepare(`SELECT email FROM auth_users WHERE id = ?`).bind(uid).first();
+    const name = String(body.name ?? "").trim().slice(0, 80) || (me?.email ?? "").split("@")[0];
+    const id = crypto.randomUUID(); const t = `Request about: ${title}`.slice(0, 120);
+    await DB.prepare(`INSERT INTO projects (id, kind, customer_id, customer_name, customer_email, designer_slug, designer_user_id, design_slug, title, brief, attachments, status) VALUES (?, 'edit', ?, ?, ?, ?, ?, ?, ?, '', '[]', 'requested')`)
+      .bind(id, uid, name, me?.email ?? null, designer.slug, designer.uid, slug, t).run();
+    const thumb = typeof body.thumb === "string" && /^(\/|https:\/\/)/.test(body.thumb) ? body.thumb.slice(0, 600) : null;
+    const card = { type: "design", slug, title, thumb, link: `/design/${slug}` };
+    await DB.prepare(`INSERT INTO project_messages (id, project_id, designer_user_id, sender_id, sender_role, body, attachments) VALUES (?, ?, ?, ?, 'customer', ?, '[]')`).bind(crypto.randomUUID(), id, designer.uid, uid, "::card " + JSON.stringify(card)).run();
+    await notify(env, designer.uid, "message", `New chat from ${name}`, t, `/dashboard?view=messages&c=p.${id}.${designer.uid}`);
+    return j({ id, key: `p.${id}.${designer.uid}` });
+  }
+
   // ---------- create a request ----------
   if (p === "create" && m === "POST") {
     const kind = body.kind === "edit" ? "edit" : "custom";
@@ -218,6 +245,20 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
   const act = mm[2] ?? "";
   if (!act && m === "GET") return j(await view(env, who, pr, role));
 
+  if (act === "brief" && m === "POST") {
+    if (role !== "customer") return bad("Only the customer fills this in.", 403);
+    const room = String(body.room ?? "").trim().slice(0, 80), change = String(body.change ?? "").trim().slice(0, 2500), size = String(body.wallSize ?? "").trim().slice(0, 80), notes = String(body.notes ?? "").trim().slice(0, 1500);
+    if (change.length < 5) return bad("Tell the designer what you'd like changed.");
+    const g = guard([room, change, size, notes].join(" ")); if (g) { await logBlocked(env, who, pr.id, change, g); return bad(g, 422); }
+    const atts = (Array.isArray(body.attachments) ? body.attachments : []).filter((a: any) => typeof a?.key === "string" && a.key.startsWith(`project-files/${uid}/`)).slice(0, 6).map((a: any) => ({ key: a.key, name: String(a.name ?? "file").slice(0, 100) }));
+    const brief = `${change}${notes ? `\n\nNotes: ${notes}` : ""}`;
+    await touch(env, pr.id, "brief = ?, room = ?, wall_size = ?, attachments = ?", brief.slice(0, 3000), room || null, size || null, JSON.stringify(atts));
+    const text = ["::form " + JSON.stringify({ room, change, wallSize: size, notes })].join("");
+    await DB.prepare(`INSERT INTO project_messages (id, project_id, designer_user_id, sender_id, sender_role, body, attachments) VALUES (?, ?, ?, ?, 'customer', ?, ?)`).bind(crypto.randomUUID(), pr.id, pr.designer_user_id, uid, text, JSON.stringify(atts)).run();
+    await notify(env, pr.designer_user_id, "request", `New request: ${pr.title}`, change.slice(0, 140), `/dashboard?view=messages&c=p.${pr.id}.${pr.designer_user_id}`);
+    await testEmail(env, await emailOf(env, pr.designer_user_id), `New request on Artisan Mural: ${pr.title}`, `Hello,\n\n${pr.customer_name} sent you a request:\n\n"${change.slice(0, 500)}"\nRoom: ${room || "-"}\nWall: ${size || "-"}\n\nReply in the chat:\n${origin}/dashboard?view=messages&c=p.${pr.id}.${pr.designer_user_id}\n\nArtisan Mural`, "project_request");
+    return j({ ok: true });
+  }
   if (act === "messages" && m === "POST") {
     const text = String(body.body ?? "").trim();
     const atts = (Array.isArray(body.attachments) ? body.attachments : []).filter((a: any) => typeof a?.key === "string" && a.key.startsWith(`project-files/${uid}/`)).slice(0, 6).map((a: any) => ({ key: a.key, name: String(a.name ?? "file").slice(0, 100) }));

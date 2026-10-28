@@ -119,10 +119,21 @@ export async function makePreview(file: Blob, dims?: { width: number; height: nu
     const { tiffPreview, fileReader } = await import("@/lib/tiff");
     return (await tiffPreview(fileReader(file), maxSide)).blob;
   }
-  if (file.type === "application/pdf") {
+  const head = new TextDecoder("latin1").decode(new Uint8Array(await file.slice(0, 2048).arrayBuffer()));
+  if (file.type === "application/pdf" || head.startsWith("%PDF")) { // PDF and PDF-compatible .ai files
     const { makeOriginalPreview } = await import("@/lib/original-preview");
-    return makeOriginalPreview(file);
+    return makeOriginalPreview(file.type === "application/pdf" ? file : new Blob([file], { type: "application/pdf" }));
   }
+  if (file.type === "image/svg+xml" || /<svg[\s>]/i.test(head)) { // vector SVG: draw it at preview size
+    const url = URL.createObjectURL(new Blob([file], { type: "image/svg+xml" }));
+    try {
+      const img = new Image(); img.src = url; await img.decode();
+      const w0 = img.naturalWidth || dims?.width || 1000, h0 = img.naturalHeight || dims?.height || 1000, k = maxSide / Math.max(w0, h0);
+      canvas.width = Math.round(w0 * k); canvas.height = Math.round(h0 * k); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    } finally { URL.revokeObjectURL(url); }
+    return new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("Could not make the preview."))), "image/jpeg", 0.88));
+  }
+  if (head.startsWith("%!PS")) throw new Error("EPS preview needs a picture: upload a JPG of the design next.");
   if (dims && Math.max(dims.width, dims.height) > maxSide) {
     const s = maxSide / Math.max(dims.width, dims.height);
     bmp = await createImageBitmap(file, { resizeWidth: Math.round(dims.width * s), resizeHeight: Math.round(dims.height * s), resizeQuality: "high" });

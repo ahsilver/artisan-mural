@@ -268,3 +268,16 @@
   [data-reveal] { opacity: 1; transform: none; transition: none; }
   .roll-track { animation: none; }
 }
+
+/* design chat: starter card + request form (brand light blue) */
+.am-card{display:flex;gap:12px;align-items:center;max-width:340px;background:#eaf5fc;border:1px solid #8EC6E7;border-radius:14px;padding:8px;color:#082635;text-decoration:none}
+.am-card img,.am-card-ph{width:72px;height:72px;border-radius:10px;object-fit:cover;background:#cfe6f5;flex:none}
+.am-card-t{display:flex;flex-direction:column;gap:2px;min-width:0}.am-card-t b{font-size:15px;line-height:1.25;overflow:hidden;text-overflow:ellipsis}
+.am-card-k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#2f6f93}.am-card-l{font-size:12px;color:#2f6f93}
+.am-formcard{max-width:420px;background:#eaf5fc;border:1px solid #8EC6E7;border-radius:14px;padding:10px 12px;color:#082635;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.am-formcard span{display:inline-block;min-width:78px;font-size:12px;color:#2f6f93}
+.ms-msg.me .am-card,.ms-msg.me .am-formcard{margin-left:auto}
+.am-brief{margin:12px 4px 4px;background:#f4fafe;border:1px solid #8EC6E7;border-radius:14px;padding:14px;color:#082635}
+.am-brief-h{font-weight:600;font-size:15px;margin-bottom:10px}
+.am-brief-send{margin-top:12px;display:inline-flex;align-items:center;gap:6px;background:#8EC6E7;color:#082635;font-weight:600;border-radius:999px;padding:9px 18px;font-size:14px}
+.am-brief-send:disabled{opacity:.6}

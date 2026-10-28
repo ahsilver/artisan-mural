@@ -70,7 +70,7 @@ function Browse() {
   const [tryDesign, setTryDesign] = useState<Design | null>(null);
   const compare = useCompare();
   const myRooms = useMyRooms();
-  useEffect(() => { try { if (window.location.hash === "#try" || localStorage.getItem("am-try-on") === "1") setTryOnState(true); } catch {} }, []);
+
   const setTryOn = (v: boolean) => { setTryOnState(v); try { localStorage.setItem("am-try-on", v ? "1" : "0"); } catch {} if (v) window.scrollTo({ top: Math.min(window.scrollY, 380), behavior: "smooth" }); };
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/browse" });
@@ -170,7 +170,7 @@ function Browse() {
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-y border-border py-3">
         <p className="text-xs text-muted-foreground">{list.length} {list.length === 1 ? "design" : "designs"}{active > 0 && <> · <button type="button" onClick={() => navigate({ search: { q: search.q } })} className="underline underline-offset-4 hover:text-foreground">Clear {active} {active === 1 ? "filter" : "filters"}</button></>}</p>
         <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={() => setTryOn(!tryOn)} aria-pressed={tryOn} data-testid="try-on-toggle" className={cn("inline-flex h-9 items-center gap-1.5 rounded-full border px-4 text-xs transition-colors", tryOn ? "border-foreground bg-foreground text-background" : "border-input bg-background hover:bg-muted/50")}><Camera className="h-3.5 w-3.5" />{myRooms.rooms.length ? "Try on my wall" : "See it in my room"}</button>
+
         <Link to="/compare" data-testid="compare-link" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-input bg-background px-4 text-xs hover:bg-muted/50"><GitCompareArrows className="h-3.5 w-3.5" />Compare{compare.list.length ? ` (${compare.list.length})` : ""}</Link>
         <select aria-label="Sort" value={sort} onChange={(e) => update({ sort: e.target.value === "featured" ? undefined : e.target.value })} className="h-9 rounded-full border border-input bg-background px-4 text-xs">
           <option value="featured">Sort: Featured</option>
@@ -227,7 +227,7 @@ function Browse() {
         </section>
       )}
 
-      {tryOn && <TryOnPanel design={tryDesign} onClose={() => setTryOn(false)} />}
+
       {!tryOn && compare.list.length === 0 && <p className="mb-4 text-xs text-muted-foreground">Tip: tap <b className="font-medium text-foreground">+</b> on any design to compare up to 4 side by side.</p>}
       <div className="grid grid-cols-2 gap-x-4 gap-y-7 pb-24 sm:gap-7 xl:grid-cols-3">
         {list.map((design, i) => (

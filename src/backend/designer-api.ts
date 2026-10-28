@@ -51,7 +51,7 @@ async function dimsFromR2(env: Env, key: string) {
   if (!o) return null;
   return imageDims(new Uint8Array(await o.arrayBuffer()));
 }
-const MIME: Record<string, string> = { tif: "image/tiff", tiff: "image/tiff", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", psd: "image/vnd.adobe.photoshop", pdf: "application/pdf" };
+const MIME: Record<string, string> = { tif: "image/tiff", tiff: "image/tiff", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", psd: "image/vnd.adobe.photoshop", pdf: "application/pdf", svg: "image/svg+xml", ai: "application/pdf", eps: "application/postscript" };
 function mimeOf(name: string, ct: string) { const ext = name.split(".").pop()?.toLowerCase() ?? ""; return MIME[ext] ?? (ct && !ct.includes("octet") ? ct : "application/octet-stream"); }
 function driveId(link: string): string | null {
   const m = link.match(/\/d\/([a-zA-Z0-9_-]{10,})/) || link.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);

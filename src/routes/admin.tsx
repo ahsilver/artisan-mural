@@ -4,6 +4,7 @@ import { AuthPanel } from "@/components/auth-panel";
 import { useSession } from "@/hooks/use-session";
 import { api } from "@/components/bo/common";
 import { Orders } from "@/components/bo/orders";
+import { PrintQueue } from "@/components/bo/ready-print";
 import { ProProgram, EmailSignups } from "@/components/bo/pro";
 import { AdminReviews, AdminProfiles } from "@/components/bo/community";
 import { Overview, Designs, Designers, Payouts, Coupons, Requests, Emails } from "@/components/bo/sections";
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-const NAV: [string, string][] = [["overview", "Overview"], ["orders", "Orders"], ["invoices", "Invoices"], ["estimates", "Estimates"], ["customers", "Customers"], ["pro", "Artisan Pro"], ["messages", "Messages"], ["jobs", "Design requests"], ["designs", "Designs"], ["collections", "Collections"], ["designers", "Designers"], ["profiles", "Designer profiles"], ["reviews", "Reviews"], ["payouts", "Payouts"], ["coupons", "Discount codes"], ["signups", "Email signups"], ["requests", "Old custom requests"]];
+const NAV: [string, string][] = [["overview", "Overview"], ["orders", "Orders"], ["print", "Print"], ["invoices", "Invoices"], ["estimates", "Estimates"], ["customers", "Customers"], ["pro", "Artisan Pro"], ["messages", "Messages"], ["jobs", "Design requests"], ["designs", "Designs"], ["collections", "Collections"], ["designers", "Designers"], ["profiles", "Designer profiles"], ["reviews", "Reviews"], ["payouts", "Payouts"], ["coupons", "Discount codes"], ["signups", "Email signups"], ["requests", "Old custom requests"]];
 const NAV2: [string, string][] = [["homepage", "Homepage"], ["settings", "Settings"], ["emails", "Emails"]];
 
 function OwnerLogin() {
@@ -49,7 +50,7 @@ function AdminPage() {
   if (loading || (session && isAdmin === null)) return <div className="bo"><div className="bo-main bo-sub">Loading…</div></div>;
   if (!session) return <div className="bo" style={{ display: "grid", placeItems: "center" }}><div style={{ width: "min(420px, 94vw)" }}><OwnerLogin /><div className="bo-card"><div className="bo-sub" style={{ marginBottom: 8 }}>Or sign in with email</div><AuthPanel /></div></div></div>;
   if (!isAdmin) return <div className="bo" style={{ display: "grid", placeItems: "center" }}><div className="bo-card" style={{ width: "min(420px, 94vw)" }}><h2>This page is for the owner.</h2><p className="bo-sub">You are signed in as {session.user?.email}.</p><button className="bo-btn" onClick={() => supabase.auth.signOut()}>Sign out</button></div></div>;
-  const body = { overview: <Overview go={setSec} />, orders: <Orders />, messages: <AdminMessages />, jobs: <DesignJobs />, collections: <CollectionsEditor admin />, designs: <Designs />, designers: <Designers />, profiles: <AdminProfiles />, reviews: <AdminReviews />, payouts: <Payouts />, customers: <CustomersCRM />, pro: <ProProgram />, signups: <EmailSignups />, invoices: <Invoices />, estimates: <Estimates />, coupons: <Coupons />, requests: <Requests />, homepage: <Homepage />, settings: <Settings />, emails: <Emails /> }[sec] ?? <Overview go={setSec} />;
+  const body = { overview: <Overview go={setSec} />, orders: <Orders />, print: <PrintQueue />, messages: <AdminMessages />, jobs: <DesignJobs />, collections: <CollectionsEditor admin />, designs: <Designs />, designers: <Designers />, profiles: <AdminProfiles />, reviews: <AdminReviews />, payouts: <Payouts />, customers: <CustomersCRM />, pro: <ProProgram />, signups: <EmailSignups />, invoices: <Invoices />, estimates: <Estimates />, coupons: <Coupons />, requests: <Requests />, homepage: <Homepage />, settings: <Settings />, emails: <Emails /> }[sec] ?? <Overview go={setSec} />;
   return <div className="bo">
     <div className="bo-mtop"><b className="bo-brand" style={{ fontSize: 19, padding: 0 }}>Artisan Mural<span className="bo-dot">.</span></b><select className="bo-sel" value={sec} onChange={(e) => setSec(e.target.value)} aria-label="Section">{[...NAV, ...NAV2].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select><NotificationBell /><a className="bo-btn sm" href="/">Site</a></div>
     <div className="bo-shell">

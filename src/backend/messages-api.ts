@@ -33,7 +33,7 @@ async function designTitle(env: Env, slug: string | null) {
   if (slug.startsWith("u-")) { const u = await one(env, `SELECT title FROM artwork_uploads WHERE id = ?`, slug.slice(2)); return u?.title ?? null; }
   const o = await one(env, `SELECT title FROM design_overrides WHERE slug = ?`, slug); return o?.title ?? slug.replace(/-/g, " ");
 }
-const preview = (body: string, atts: any, mine: boolean) => { const b = (body || "").replace(/\s+/g, " ").trim(); const n = parseJ(atts, []).length; return (mine ? "You: " : "") + (b || (n ? (n > 1 ? `${n} attachments` : "Attachment") : "")); };
+const preview = (body: string, atts: any, mine: boolean) => { const b0 = String(body || ""); const b = (b0.startsWith("::card ") ? "Request about a design" : b0.startsWith("::form ") ? "Sent the request details" : b0).replace(/\s+/g, " ").trim(); const n = parseJ(atts, []).length; return (mine ? "You: " : "") + (b || (n ? (n > 1 ? `${n} attachments` : "Attachment") : "")); };
 
 /** All conversations visible to this viewer, newest first. */
 async function list(env: Env, who: Who) {
@@ -59,7 +59,7 @@ async function list(env: Env, who: Who) {
         const ms = msgs.filter((m) => m.project_id === p.id && m.designer_user_id === did);
         if (who.admin && !ms.length) continue;
         const last = ms[ms.length - 1];
-        dn[did] ??= (await designerName(env, did)) ?? "Designer";
+        dn[did] ??= (await designerName(env, did)) ?? (p.designer_slug === "studio" ? await storeName(env) : "Designer");
         const key = `p.${p.id}.${did}`;
         const name = who.admin ? `${dn[did]} and ${p.customer_name || "customer"}` : asDesigner ? (p.customer_name || "Customer") : dn[did];
         const at = last?.created_at ?? p.updated_at ?? p.created_at;
@@ -88,13 +88,14 @@ async function thread(env: Env, who: Who, key: string) {
     const p = await one(env, `SELECT * FROM projects WHERE id = ?`, pid); if (!p) return null;
     const role = p.customer_id === uid ? "customer" : did === uid ? "designer" : who.admin ? "admin" : null;
     if (!role) return null;
-    const dname = (await designerName(env, did)) ?? "Designer"; const cname = p.customer_name || "Customer";
+    const dname = (await designerName(env, did)) ?? (p.designer_slug === "studio" ? store : "Designer"); const cname = p.customer_name || "Customer";
     const ms = await all(env, `SELECT * FROM project_messages WHERE project_id = ? AND designer_user_id = ? ORDER BY created_at`, pid, did);
     if (role !== "admin") await markRead(env, uid, key);
     if (role !== "admin") await env.DB.prepare(`UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL AND kind = 'message' AND (instr(link, ?) > 0 OR instr(link, ?) > 0)`).bind(nowIso(), uid, `c=${key}`, pid).run();
     const dt = await designTitle(env, p.design_slug);
     const link = p.kind === "message" ? (p.design_slug ? { label: "See the design", href: `/design/${p.design_slug}` } : null) : role === "designer" ? { label: "Open the request", href: `/dashboard?view=requests&project=${pid}` } : role === "admin" ? { label: "Open the request", href: `/admin#jobs:${pid}` } : { label: "Open the request", href: `/projects/${pid}` };
-    return { key, kind: "project", guarded: true, canWrite: role !== "admin" && p.status !== "cancelled" && p.status !== "closed", readOnly: role === "admin",
+    const needsBrief = role === "customer" && !p.brief && p.kind === "edit" && p.status === "requested";
+    return { key, kind: "project", projectId: pid, needsBrief, guarded: true, canWrite: role !== "admin" && p.status !== "cancelled" && p.status !== "closed", readOnly: role === "admin",
       name: role === "admin" ? `${dname} and ${cname}` : role === "designer" ? cname : dname, initials: role === "customer" ? dname : cname,
       sub: `${p.kind === "edit" ? "Change request" : p.kind === "message" ? "Message" : "Custom design"} · ${p.title}${dt && !String(p.title).includes(dt) ? ` · ${dt}` : ""}`, link, order: p.order_id ? { id: p.order_id, label: `Order #${short(p.order_id)}` } : null,
       messages: await Promise.all(ms.map(async (m) => ({ id: m.id, mine: role === "admin" ? m.sender_role === "designer" : m.sender_id === uid, who: m.sender_role === "designer" ? dname : cname, role: m.sender_role, body: m.body, at: m.created_at, files: await files(env, m.attachments) }))) };

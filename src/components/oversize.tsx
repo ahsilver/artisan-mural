@@ -66,7 +66,7 @@ export function OversizeNote({ max, designer, onAsk }: { max: string | null; des
 /** The always-there way to ask for changes: slim outlined button, pencil icon. */
 export function AskDesignerButton({ onClick, className = "" }: { onClick: () => void; className?: string }) {
   return <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 ${className}`}>
-    <button type="button" data-testid="ask-designer" onClick={onClick} className={`${btn} border border-[#E5E7EB] bg-background hover:bg-muted/60`}><Pencil className="size-3.5" />Need changes? Ask the designer</button>
-    <span className="text-xs text-muted-foreground">Free to ask, any time</span>
+    <button type="button" data-testid="ask-designer" onClick={onClick} className={`${btn} border border-[#E5E7EB] bg-background hover:bg-muted/60`}><Pencil className="size-3.5" />Customize this design</button>
+    <span className="text-xs text-muted-foreground">Private chat with the designer · free to ask</span>
   </div>;
 }

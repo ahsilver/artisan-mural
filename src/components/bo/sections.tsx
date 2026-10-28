@@ -69,7 +69,7 @@ export function Designs() {
       ups.length === 0 ? <div className="bo-empty">Nothing here.</div> :
         <table className="bo-tbl stack"><thead><tr><th></th><th>Design</th><th>Designer</th><th>Type / size</th><th>Review</th><th>Shop</th><th></th></tr></thead><tbody>
           {ups.map((u: any) => <tr key={u.id}><td>{u.thumb ? <img className="bo-thumb" src={u.thumb} alt="" /> : <div className="bo-thumb" />}</td>
-            <td>{u.title}<div className="bo-sub">{u.sku} · {u.colors.length} color{u.colors.length === 1 ? "" : "s"}{u.sales ? ` · ${u.sales.orders} sold` : ""}</div><RecFinish r={u.recommendedFinish} />
+            <td>{u.title}<div className="bo-sub">{u.sku} · {u.colors.length} color{u.colors.length === 1 ? "" : "s"}{u.sales ? ` · ${u.sales.orders} sold` : ""}</div><OriginalToggle id={u.id} /><RecFinish r={u.recommendedFinish} />
               {u.mockups?.length ? <div data-testid="review-mockups" style={{ display: "flex", gap: 4, marginTop: 6 }}>{u.mockups.slice(0, 3).map((m: string, i: number) => <a key={i} href={m} target="_blank" rel="noreferrer" title="Room mockup (made automatically)"><img src={m} alt="Room mockup" loading="lazy" style={{ width: 64, height: 44, objectFit: "cover", borderRadius: 4, display: "block" }} /></a>)}</div> : <div className="bo-sub">No room mockups yet</div>}</td>
             <td data-l="Designer">{u.ownerName || u.owner}</td>
             <td data-l="Type">{u.kind === "repeating" ? `Repeat (${u.repeat})` : "Mural"}<div className="bo-sub">{u.widthCm ? `${(u.widthCm / 30.48).toFixed(1)} × ${(u.heightCm / 30.48).toFixed(1)} ft` : ""}</div></td>
@@ -124,9 +124,32 @@ function EditDesign({ d, onDone }: { d: any; onDone: () => void }) {
       <div className="bo-sub">{d.notes && <>Printing notes: {d.notes}<br /></>}{d.palette && <>Main colors: {d.palette}<br /></>}{d.tags?.length ? <>Keywords: {d.tags.join(", ")}</> : null}</div>
     </Field>}
     {!d.builtIn && d.colors?.length > 0 && <AdminRoomPictures d={d} />}
+    {!d.builtIn && d.id && <OriginalLinks id={d.id} />}
     {d.printFile && <Field label="Print file"><a className="bo-btn sm" href={d.printFile} target="_blank" rel="noreferrer">Open print file</a></Field>}
     <button className="bo-btn pri" disabled={s.busy} onClick={async () => { if (await s.run(() => api(`admin/designs/${d.slug}/override`, { body: f }))) onDone(); }}>Save</button>
   </div>;
+}
+const fsz = (b: number) => (b >= 1024 ** 3 ? (b / 1024 ** 3).toFixed(1) + " GB" : Math.max(1, Math.round(b / 1024 ** 2)) + " MB");
+/** Owner: the real storage link of every full-resolution original (not the preview pictures). */
+function OriginalToggle({ id }: { id: string }) {
+  const [open, setOpen] = useState(false);
+  return <div style={{ marginTop: 6 }}><button type="button" className="bo-btn sm" data-testid="original-toggle" onClick={() => setOpen(!open)}>{open ? "Hide file link" : "Full-resolution file link"}</button>{open && <OriginalLinks id={id} />}</div>;
+}
+function OriginalLinks({ id }: { id: string }) {
+  const { data, error } = useApi<any>(`admin/designs/u-${id}/originals`, [id]);
+  const [copied, setCopied] = useState("");
+  const copy = async (t: string) => { try { await navigator.clipboard.writeText(t); setCopied(t); setTimeout(() => setCopied(""), 1500); } catch {} };
+  return <Field label="Full-resolution original files (for printing)">
+    {error ? <div className="bo-sub">{error}</div> : !data ? <div className="bo-sub">Loading…</div> : !data.originals.length ? <div className="bo-sub">No original uploaded yet.</div> :
+      data.originals.map((o: any, i: number) => <div key={i} className="rp-box" style={{ margin: "6px 0" }} data-testid="original-link">
+        <div style={{ fontWeight: 600 }}>{o.color}: {o.filename || "no original file"}</div>
+        {o.filename && <div className="bo-sub">{o.width && o.height ? `${o.width.toLocaleString()} × ${o.height.toLocaleString()} px` : ""}{o.dpi ? ` · saved at ${o.dpi} DPI = ${(o.width / o.dpi / 12).toFixed(1)} × ${(o.height / o.dpi / 12).toFixed(1)} ft` : ""}{o.size ? ` · ${fsz(o.size)}` : ""}{o.mime ? ` · ${o.mime.replace("image/", "").replace("application/", "").toUpperCase()}` : ""}</div>}
+        {o.storage && <div className="bo-sub" style={{ marginTop: 4 }}>Stored at: {o.storage}</div>}
+        {o.url && <div className="lk-row"><span className="lk-url" title={o.url}>{o.url}</span><button type="button" className="bo-btn sm" onClick={() => copy(o.url)}>{copied === o.url ? "Copied" : "Copy link"}</button><a className="bo-btn sm pri" href={o.url} target="_blank" rel="noreferrer">Open / download</a></div>}
+        {o.url && <div className="bo-sub">This link works for {o.urlDays} days; open this page again for a fresh one.</div>}
+        {o.drive && <div className="lk-row"><span className="bo-sub">Imported from Google Drive:</span><span className="lk-url" title={o.drive}>{o.drive}</span><button type="button" className="bo-btn sm" onClick={() => copy(o.drive)}>{copied === o.drive ? "Copied" : "Copy"}</button><a className="bo-btn sm" href={o.drive} target="_blank" rel="noreferrer">Open in Drive</a></div>}
+      </div>)}
+  </Field>;
 }
 function AdminRoomPictures({ d }: { d: any }) {
   const s = useSaver();

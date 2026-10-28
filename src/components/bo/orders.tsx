@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CropTool } from "./crop";
+import { ReadyToPrint } from "./ready-print";
 import { NewOrder } from "./new-order";
 import { OrderInvoiceButton, CreateEstimateButton } from "./billing";
 import { MessageCustomer } from "@/components/messenger";
@@ -81,6 +82,7 @@ function OrderPanel({ id, onChanged, onClose }: { id: string; onChanged: () => v
       <div className="bo-row"><button className="bo-btn sm danger" disabled={s.busy || o.status === "cancelled"} onClick={() => confirm("Cancel this order?") && save({ status: "cancelled" }, "Order cancelled")}>Cancel order</button><button className="bo-btn sm danger" disabled={s.busy || o.status === "refunded"} onClick={() => confirm("Mark this order refunded?") && save({ status: "refunded" }, "Marked refunded")}>Mark refunded</button>
         <label className="bo-switch" style={{ marginLeft: "auto" }}><input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />Email customer (test mode)</label></div>
     </div>
+    <div className="bo-card" style={{ marginTop: 14 }} id="print"><h2>Print this order</h2><ReadyToPrint order={o} art={data.art} /></div>
     {data.project && <div className="bo-card" style={{ marginTop: 14 }}><h2>{data.project.kind === "edit" ? "Change request" : "Custom design"}: {data.project.title}</h2>
       <div className="bo-dl"><span>Designer</span><b>{data.project.designer ?? "-"}</b><span>Design fee</span><b>{money(data.project.fee)}</b><span>Printing</span><b>{money(Number(o.estimated_total) - Number(data.project.fee || 0))}</b><span>Due</span><b>{fmtDate(data.project.dueAt)}{data.project.days ? ` (${data.project.days} days)` : ""}</b><span>Designer status</span><b>{data.project.deliveredAt ? `Delivered ${fmtDateTime(data.project.deliveredAt)}` : "Working on it"}</b></div>
       <div className="bo-sub" style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>{data.project.brief}</div>
@@ -97,9 +99,9 @@ function OrderPanel({ id, onChanged, onClose }: { id: string; onChanged: () => v
     {data.art && (cropping ? <CropTool orderId={id} src={data.art.url} original={data.art.original} wallRatio={sel.width && sel.height ? sel.width / sel.height : null} onCancel={() => setCropping(false)} onSaved={async () => { setCropping(false); s.setMsg({ ok: true, text: "Cropped print file saved. Original kept." }); await reload(); }} /> :
       <div className="bo-card"><h2>{o.design_title}{data.art.name && data.art.name !== o.design_title ? ` · ${data.art.name}` : ""}</h2>
         <a href={data.art.url} target="_blank" rel="noreferrer"><img src={data.art.url} alt="" style={{ width: "100%", maxHeight: 320, objectFit: "contain", background: "#f5f5f4", borderRadius: 6, border: "1px solid #e7e5e4" }} /></a>
-        <div className="bo-row" style={{ marginTop: 8 }}><a className="bo-btn" href={data.art.url} target="_blank" rel="noreferrer">Open preview</a>{data.art.original && <a className="bo-btn" href={data.art.original.url + "&download=" + encodeURIComponent(data.art.original.filename)} target="_blank" rel="noreferrer">Download print original ({data.art.original.size >= 1024 ** 3 ? (data.art.original.size / 1024 ** 3).toFixed(1) + " GB" : Math.round(data.art.original.size / 1024 ** 2) + " MB"})</a>}<button className="bo-btn" onClick={() => setCropping(true)}>Crop</button>{sel.width && sel.height ? <span className="bo-sub">Customer wall {sel.width} × {sel.height} {sel.unit}</span> : null}</div>
+        <div className="bo-row" style={{ marginTop: 8 }}><a className="bo-btn" href={data.art.url} target="_blank" rel="noreferrer">Open preview</a>{data.art.original && <a className="bo-btn" href={data.art.original.url + "&download=" + encodeURIComponent(data.art.original.filename)} target="_blank" rel="noreferrer">Download print original ({data.art.original.size >= 1024 ** 3 ? (data.art.original.size / 1024 ** 3).toFixed(1) + " GB" : Math.round(data.art.original.size / 1024 ** 2) + " MB"})</a>}<button className="bo-btn" onClick={() => setCropping(true)} title="Only if you want a different crop than the customer chose">Re-crop by hand</button>{sel.width && sel.height ? <span className="bo-sub">Customer wall {sel.width} × {sel.height} {sel.unit}</span> : null}</div>
       </div>)}
-    <div className="bo-card"><h2>Print-ready files</h2>
+    <div className="bo-card"><h2>All stored files</h2>
       {data.files.length ? data.files.map((f: any) => <div key={f.url} className="bo-row" style={{ justifyContent: "space-between", padding: "4px 0" }}><span>{f.label}</span><a className="bo-btn sm" href={f.url} target="_blank" rel="noreferrer">Download</a></div>) : <div className="bo-sub">No print file attached to this design yet. Built-in sample designs have no print file.</div>}
     </div>
     <div className="bo-card"><h2>Details</h2>

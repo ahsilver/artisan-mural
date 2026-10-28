@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Paperclip, Send, ShieldCheck, X, Loader2, Plus, Search, FileText } from "lucide-react";
-import { papi, attachFile, type Att } from "@/components/projects";
+import { papi, attachFile, BriefForm, type Att } from "@/components/projects";
 import { findContactDetails, CONTACT_NOTE } from "@/lib/contact-guard";
 import "./messenger.css";
 
@@ -22,7 +22,18 @@ export function useUnreadMessages(enabled = true) {
 }
 
 /** Bubbles + slim composer. Used by the inbox and by the chat inside a design request. */
-export function ThreadView({ messages, canWrite = true, guarded, onSend, readOnlyNote, emptyText, showNames }: { messages: Msg[]; canWrite?: boolean; guarded?: boolean; onSend: (text: string, atts: Att[]) => Promise<void>; readOnlyNote?: string; emptyText?: string; showNames?: boolean }) {
+/** Starter card (design name + picture + link) and the sent request form, inside a design chat. */
+function SpecialBody({ body }: { body: string }) {
+  let d: any = null; try { d = JSON.parse(body.slice(7)); } catch { return <div className="ms-bub">{body}</div>; }
+  if (body.startsWith("::card ")) return <a className="am-card" href={d.link} target="_blank" rel="noreferrer" data-testid="starter-card">
+    {d.thumb ? <img src={d.thumb} alt="" loading="lazy" /> : <span className="am-card-ph" />}
+    <span className="am-card-t"><span className="am-card-k">Request about:</span><b>{d.title}</b><span className="am-card-l">See the design ›</span></span></a>;
+  return <div className="am-formcard" data-testid="request-details"><b>Request details</b>
+    {d.room ? <div><span>Room</span>{d.room}</div> : null}{d.wallSize ? <div><span>Wall size</span>{d.wallSize}</div> : null}
+    <div><span>Change</span>{d.change}</div>{d.notes ? <div><span>Notes</span>{d.notes}</div> : null}</div>;
+}
+
+export function ThreadView({ messages, canWrite = true, guarded, onSend, readOnlyNote, emptyText, showNames, after }: { after?: React.ReactNode; messages: Msg[]; canWrite?: boolean; guarded?: boolean; onSend: (text: string, atts: Att[]) => Promise<void>; readOnlyNote?: string; emptyText?: string; showNames?: boolean }) {
   const [text, setText] = useState("");
   const [atts, setAtts] = useState<Att[]>([]);
   const [err, setErr] = useState("");
@@ -51,12 +62,13 @@ export function ThreadView({ messages, canWrite = true, guarded, onSend, readOnl
           {newDay && <div className="ms-day">{dayLabel(m.at)}</div>}
           <div className={`ms-msg${m.mine ? " me" : ""}${m.role === "store" ? " store" : ""}${first && !newDay ? " gap" : ""}`} data-testid="ms-msg">
             {first && (showNames || !m.mine) && <div className="ms-who">{m.who}</div>}
-            {m.body && <div className="ms-bub">{m.body}</div>}
+            {m.body && (m.body.startsWith("::card ") || m.body.startsWith("::form ")) ? <SpecialBody body={m.body} /> : m.body && <div className="ms-bub">{m.body}</div>}
             {!!m.files?.length && <div className="ms-files">{m.files.map((f, k) => f.image && f.url ? <a key={k} href={f.url} target="_blank" rel="noreferrer" title={f.name}><img className="ms-thumb" src={f.url} alt={f.name} loading="lazy" /></a> : <a key={k} className="ms-file" href={f.url ?? undefined} target="_blank" rel="noreferrer"><FileText size={14} /><span>{f.name}</span></a>)}</div>}
             {last && <div className="ms-at">{clock(m.at)}</div>}
           </div>
         </div>;
       })}
+      {after}
     </div>
     {canWrite ? <form className="ms-comp" onSubmit={send}>
       {atts.length > 0 && <div className="ms-pending">{atts.map((a, i) => <span key={a.key} className="ms-file">{a.url && /\.(jpe?g|png|webp|gif)$/i.test(a.name) ? <img src={a.url} alt="" style={{ width: 20, height: 20, borderRadius: 4, objectFit: "cover" }} /> : <Paperclip size={13} />}<span>{a.name}</span><button type="button" aria-label={`Remove ${a.name}`} onClick={() => setAtts(atts.filter((_, k) => k !== i))}><X size={13} /></button></span>)}</div>}
@@ -147,7 +159,7 @@ export function Messenger({ admin, initialKey, urlMode, emptyText }: { admin?: b
           <div className="ms-head-main"><div className="ms-head-name" data-testid="ms-head-name">{t.name}</div><div className="ms-sub">{t.sub}{t.link ? <> · <a className="ms-link" href={t.link.href}>{t.link.label}</a></> : null}</div></div>
           {admin && t.kind === "store" && /test/i.test((t.sub ?? "") + (active?.sub ?? "")) && <button type="button" className="ms-btn" style={{ height: 26, fontSize: 12 }} onClick={async () => { if (!confirm("Delete this test chat?")) return; await papi("inbox/delete", { key }); setKey(null); void loadList(); }}>Delete</button>}
         </div>
-        <ThreadView key={key} messages={t.messages ?? []} canWrite={t.canWrite} guarded={t.guarded} showNames={t.readOnly} onSend={send}
+        <ThreadView key={key} messages={t.messages ?? []} after={t.needsBrief && t.projectId ? <BriefForm projectId={t.projectId} onDone={() => { void loadThread(key!); void loadList(); }} /> : null} canWrite={t.canWrite} guarded={t.guarded} showNames={t.readOnly} onSend={send}
           readOnlyNote={t.readOnly ? "You can read this chat between the designer and the customer. To write to one of them, start a new message." : undefined}
           emptyText={t.kind === "store" && !t.store ? "Write the first message." : "No messages yet. Say hello."} />
         {t.noAccount && <div className="ms-ro" style={{ borderTop: 0 }}>{t.email} has no account yet. They get the email (test mode) and see this chat once they sign up with that email.</div>}

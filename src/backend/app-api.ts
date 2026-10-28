@@ -1,6 +1,7 @@
 // Owner back office + designer dashboard + public settings API.
 import type { Who } from "./policies";
 import { signUrl } from "./storage";
+import { imageDims } from "@/lib/image-dims";
 import { DEFAULT_DESIGNER_FAQ } from "@/lib/designer-faq";
 import { defaultTaxonomy, parseTaxonomy, canonicalCategories, canonicalRooms } from "@/lib/design-taxonomy";
 type Env = any;
@@ -470,6 +471,25 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     const users = await emailUsers(env); const to = users.get(u.owner_id)?.email;
     if (to && action !== "pending") await queueEmail(env, to, `Your design "${u.title}" was ${action}`, `Hello,\n\nYour design "${u.title}" was ${action}.${body.note ? `\nNote from the studio: ${body.note}` : ""}\n\nArtisan Mural`, "design_review");
     return j({ ok: true });
+  }
+  mm = p.match(/^designs\/u-([0-9a-f-]{36})\/originals$/);
+  if (mm && m === "GET") { // owner: where every full-resolution original is stored, with a working link
+    const rows = ((await DB.prepare(`SELECT c.id, c.name, c.position, p.storage_path, p.filename, p.mime_type, p.byte_size, p.pixel_width, p.pixel_height, p.effective_dpi, p.created_at FROM artwork_colorways c LEFT JOIN print_originals p ON p.id = c.current_original_id WHERE c.upload_id = ? ORDER BY c.position`).bind(mm[1]).all()).results ?? []) as any[];
+    const jobs = ((await DB.prepare(`SELECT src, file_key FROM import_jobs WHERE upload_id = ? AND status = 'done'`).bind(mm[1]).all()).results ?? []) as any[];
+    const ttl = 7 * 24 * 3600; const out: any[] = [];
+    for (const r of rows) {
+      const key = r.storage_path ? `print-originals/${r.storage_path}` : null;
+      if (key && !r.effective_dpi && /tiff|png|jpeg|photoshop/.test(r.mime_type || "")) { // backfill the DPI saved in the file (older uploads)
+        try { const ob = await env.FILES.get(key, { range: { offset: 0, length: 4 * 1024 * 1024 } }); const dd = ob ? imageDims(new Uint8Array(await ob.arrayBuffer())) : null;
+          if (dd?.dpi) { r.effective_dpi = dd.dpi; await DB.prepare(`UPDATE print_originals SET effective_dpi = ? WHERE storage_path = ?`).bind(dd.dpi, r.storage_path).run(); } } catch {}
+      }
+      const job = key ? jobs.find((x) => x.file_key === key) : null;
+      out.push({ color: r.name, filename: r.filename, mime: r.mime_type, size: r.byte_size, width: r.pixel_width, height: r.pixel_height, dpi: r.effective_dpi, uploadedAt: r.created_at,
+        storage: key ? `Artisan Mural file storage › ${key}` : null,
+        url: key ? env.PUBLIC_ORIGIN + "/storage/v1" + (await signUrl(env, "print-originals", r.storage_path, ttl)) + "&download=" + encodeURIComponent(r.filename || "original") : null, urlDays: 7,
+        drive: job?.src && /^[\w-]{10,}$/.test(job.src) ? `https://drive.google.com/file/d/${job.src}/view` : null });
+    }
+    return j({ originals: out });
   }
   mm = p.match(/^designs\/([a-z0-9-]{1,80})\/listing$/);
   if (mm && m === "POST") {

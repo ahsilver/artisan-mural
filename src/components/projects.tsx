@@ -109,22 +109,66 @@ export function RequestForm({ kind, designSlug, designTitle, designerName, desig
   </form>;
 }
 
-/** Product page: "Ask the designer for a change" button + dialog. Signed-out customers sign in first. */
-export function RequestChange({ design, designer, open: openProp, onOpenChange, prefill, trigger = true }: { design: { slug: string; title: string }; designer: { slug: string; name: string }; open?: boolean; onOpenChange?: (o: boolean) => void; prefill?: RequestPrefill; trigger?: boolean }) {
+/** Product page: "Customize this design". Fiverr-style: sign in first (if needed), then straight into a private chat
+ *  with this design's designer. The chat opens with a card for the design and a short request form inside it. */
+export function RequestChange({ design, designer, open: openProp, onOpenChange, prefill, trigger = true }: { design: { slug: string; title: string; image?: string }; designer: { slug: string; name: string }; open?: boolean; onOpenChange?: (o: boolean) => void; prefill?: RequestPrefill; trigger?: boolean }) {
   const [local, setLocal] = useState(false);
   const open = openProp ?? local; const setOpen = (o: boolean) => { setLocal(o); onOpenChange?.(o); };
   const { session } = useSession();
   const navigate = useNavigate();
-  const editable = design.slug.startsWith("u-");
+  const [err, setErr] = useState(""); const started = useRef(false);
+  useEffect(() => {
+    if (!open) { started.current = false; setErr(""); return; }
+    if (!session || started.current) return;
+    started.current = true;
+    (async () => {
+      try {
+        const thumb = typeof design.image === "string" ? (design.image.startsWith("/") || design.image.startsWith("https://") ? design.image : new URL(design.image, window.location.origin).href) : undefined;
+        const r = await papi("projects/start-chat", { designSlug: design.slug, title: design.title, thumb });
+        try { if (prefill) sessionStorage.setItem("am-brief-" + r.id, JSON.stringify(prefill)); } catch {}
+        setOpen(false);
+        await navigate({ to: "/messages", search: { c: r.key } as any });
+      } catch (x: any) { started.current = false; setErr(x.message || "Could not open the chat."); }
+    })();
+  }, [open, session?.user?.id]);
   return <>
     {trigger && <AskDesignerButton onClick={() => setOpen(true)} />}
     <Dialog open={open} onOpenChange={setOpen}><DialogContent data-testid="request-change" className="max-h-[92vh] overflow-y-auto sm:max-w-xl">
-      <DialogHeader><DialogTitle className="text-3xl">Change this design</DialogTitle><DialogDescription>A new size, different colors, something added or removed. {designer.name} sends you a price and how long it takes.</DialogDescription></DialogHeader>
-      {!editable ? <div className="space-y-3"><p className="text-sm text-muted-foreground">This design is from our studio collection. Send a custom request and a designer will make your version{prefill?.wallSize ? ` for your ${prefill.wallSize} wall` : ""}.</p><Button asChild><Link to="/custom-request" search={{ design: design.slug } as any} onClick={() => setOpen(false)}>Start a custom request</Link></Button></div>
-        : !session ? <div><p className="mb-3 text-sm text-muted-foreground">Sign in or create a free account so the designer can answer you here and you get notified.</p><AuthPanel /></div>
-        : <RequestForm kind="edit" designSlug={design.slug} designTitle={design.title} designerName={designer.name} initial={prefill} onDone={(id) => { setOpen(false); void navigate({ to: "/projects/$id", params: { id }, search: { sent: 1 } as any }); }} />}
+      <DialogHeader><DialogTitle className="text-3xl">Customize this design</DialogTitle><DialogDescription>A private chat with {designer.name} about “{design.title}”. Tell them what you'd like changed; they reply with a price and timing.</DialogDescription></DialogHeader>
+      {!session ? <div><p className="mb-3 text-sm text-muted-foreground">Sign in or create a free account first. Your chat with the designer opens right after.</p><AuthPanel /></div>
+        : err ? <p className="text-sm text-destructive" role="alert">{err}</p>
+        : <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Opening your chat with {designer.name}…</p>}
     </DialogContent></Dialog>
   </>;
+}
+
+/** The request form shown inside a new design chat (customer side) until it's sent. */
+export function BriefForm({ projectId, onDone }: { projectId: string; onDone: () => void }) {
+  const pre = (() => { try { return JSON.parse(sessionStorage.getItem("am-brief-" + projectId) || "null"); } catch { return null; } })();
+  const [f, setF] = useState({ room: "", change: pre?.brief ?? "", w: "", h: "", unit: "ft", size: pre?.wallSize ?? "", notes: "" });
+  const [atts, setAtts] = useState<Att[]>([]);
+  const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  const warn = findContactDetails([f.room, f.change, f.notes, f.size].join(" "));
+  const inp = "w-full rounded-md border border-[#cfe6f5] bg-white px-3 py-2 text-[16px] sm:text-sm outline-none focus:border-[#8EC6E7] focus:ring-2 focus:ring-[#8EC6E7]/40";
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); if (busy || warn) return; setBusy(true); setErr("");
+    const wallSize = f.w && f.h ? `${f.w} × ${f.h} ${f.unit}` : f.size;
+    try { await papi(`projects/${projectId}/brief`, { room: f.room, change: f.change, wallSize, notes: f.notes, attachments: atts }); try { sessionStorage.removeItem("am-brief-" + projectId); } catch {} onDone(); }
+    catch (x: any) { setErr(x.message || "Could not send."); } finally { setBusy(false); }
+  }
+  return <form onSubmit={submit} className="am-brief" data-testid="brief-form">
+    <p className="am-brief-h">Tell the designer what you need</p>
+    <div className="grid gap-3 sm:grid-cols-2">
+      <label className="text-[13px] font-medium">Which room<select className={inp + " mt-1"} value={f.room} onChange={(e) => setF({ ...f, room: e.target.value })}><option value="">Choose…</option>{["Living room", "Bedroom", "Kids & nursery", "Dining room", "Kitchen", "Bathroom", "Hallway & stairs", "Office", "Commercial space", "Other"].map((r) => <option key={r}>{r}</option>)}</select></label>
+      <div className="text-[13px] font-medium">Wall size<div className="mt-1 flex items-center gap-1.5"><input className={inp} inputMode="decimal" placeholder="Width" value={f.w} onChange={(e) => setF({ ...f, w: e.target.value })} aria-label="Wall width" /><span>×</span><input className={inp} inputMode="decimal" placeholder="Height" value={f.h} onChange={(e) => setF({ ...f, h: e.target.value })} aria-label="Wall height" /><select className={inp + " !w-[72px]"} value={f.unit} onChange={(e) => setF({ ...f, unit: e.target.value })} aria-label="Unit"><option>ft</option><option>in</option><option>cm</option><option>m</option></select></div>{f.size && !(f.w && f.h) ? <span className="text-xs text-muted-foreground">From your selection: {f.size}</span> : null}</div>
+    </div>
+    <label className="mt-3 block text-[13px] font-medium">What would you like changed?<textarea required minLength={5} rows={3} className={inp + " mt-1"} value={f.change} onChange={(e) => setF({ ...f, change: e.target.value })} placeholder="Make the leaves darker green and leave space for a window on the left." /></label>
+    <label className="mt-3 block text-[13px] font-medium">Notes (optional)<textarea rows={2} className={inp + " mt-1"} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} placeholder="Doors, outlets, the date you need it…" /></label>
+    <div className="mt-3 flex flex-wrap items-center gap-2"><AttachButton onAdd={(a) => setAtts((x) => [...x, a])} disabled={busy} /><span className="text-xs text-muted-foreground">Optional: a photo of your wall</span></div>
+    {atts.length > 0 && <AttList items={atts} onRemove={(i) => setAtts((x) => x.filter((_, k) => k !== i))} />}
+    {(warn || err) && <p className="mt-2 text-sm text-destructive" role="alert">{warn ? `This looks like ${warn}. Contact details can't be shared. Everything stays on Artisan Mural.` : err}</p>}
+    <button type="submit" disabled={busy || !!warn} className="am-brief-send">{busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}Send to the designer</button>
+  </form>;
 }
 
 /** Bell with unread notifications (price came back, paid, delivered, new messages). */
