@@ -1,0 +1,36 @@
+.hang{position:relative;height:420vh;height:420svh;background:#141210}
+#hangB{height:260vh;height:260svh}
+.hang-stick{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
+.stage{position:absolute;left:50%;top:50%;width:max(100vw,100svh*1.791);aspect-ratio:1920/1072;transform:translate(-50%,-50%)}
+@supports not (height:100svh){.stage{width:max(100vw,100vh*1.791)}}
+.stage>img,.panels img{position:absolute;inset:0;width:100%;height:100%;display:block}
+.pn{clip-path:inset(0 100% 100% 0)}
+.wallfx{position:absolute;inset:0;-webkit-mask:url(dz-mask.png) 0 0/100% 100% no-repeat;mask:url(dz-mask.png) 0 0/100% 100% no-repeat}
+.roll{position:absolute;top:0;width:25%;height:4.6%;opacity:0;border-radius:8px/50%;background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,rgba(0,0,0,.08) 24%,rgba(255,255,255,.42) 44%,rgba(0,0,0,.06) 64%,rgba(0,0,0,.6) 100%),url(../img/tile-gilded-fan.webp) center/auto 100% repeat-x,#1b2236;box-shadow:0 14px 20px -8px rgba(0,0,0,.5),0 3px 4px rgba(0,0,0,.3);transform:translateY(-30%)}
+.roll::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:120%;background:linear-gradient(0deg,rgba(0,0,0,.18),rgba(0,0,0,0));pointer-events:none}
+.dseam{position:absolute;top:0;bottom:0;width:1px;background:rgba(40,30,20,.22);box-shadow:1px 0 0 rgba(255,255,255,.25);opacity:0}
+.fadewall{opacity:0}
+.hang-scrim{position:absolute;inset:0;background:linear-gradient(90deg,rgba(14,12,10,.66) 0%,rgba(14,12,10,.38) 36%,rgba(14,12,10,0) 60%),linear-gradient(180deg,rgba(14,12,10,.4) 0%,rgba(14,12,10,0) 22%);pointer-events:none}
+.hang-copy{position:absolute;left:clamp(20px,6vw,96px);top:clamp(110px,18vh,190px);max-width:min(800px,88vw);color:#fff}
+.tag{display:inline-block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;border:1px solid rgba(255,255,255,.5);border-radius:999px;padding:6px 12px;margin:0 0 26px}
+.hl{opacity:0;transform:translateY(22px);transition:opacity .8s var(--ease),transform .8s var(--ease);margin:0}
+.hl.in{opacity:1;transform:none}
+h1.hl,h2.hl{font-family:var(--serif);font-weight:400;font-size:clamp(46px,6.4vw,96px);line-height:.98;letter-spacing:-.012em;margin-bottom:22px;text-shadow:0 2px 24px rgba(0,0,0,.25)}
+.hl.sub{font-family:var(--serif);font-style:italic;font-size:clamp(22px,2.3vw,34px);line-height:1.2;margin-top:10px;text-shadow:0 1px 16px rgba(0,0,0,.35)}
+.hl.acts{margin-top:30px}
+.hang-meter{position:absolute;left:clamp(20px,6vw,96px);right:clamp(20px,6vw,96px);bottom:28px;height:2px;background:rgba(255,255,255,.25)}
+.hang-meter i{display:block;height:100%;background:#fff;transform-origin:left;transform:scaleX(0)}
+@media (max-width:760px){.hang-scrim{background:linear-gradient(180deg,rgba(14,12,10,.72) 0%,rgba(14,12,10,.45) 45%,rgba(14,12,10,0) 72%)}.hang-copy{left:20px;right:20px;top:96px}.hang-meter{left:20px;right:20px}.hl.sub{font-size:21px}}
+.dz-sec{padding:clamp(80px,12vh,140px) clamp(20px,6vw,96px);max-width:1400px;margin:0 auto}
+.dz-sec.split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(32px,6vw,100px);align-items:center}
+.dz-img img{width:100%;aspect-ratio:5/4;object-fit:cover;border-radius:4px}
+.earn{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,2.4vw,36px)}
+.earn-c{background:#fff;border:1px solid var(--line);border-radius:6px;padding:clamp(24px,3vw,44px)}
+.earn-n{font-family:var(--serif);font-style:italic;color:var(--gold);font-size:30px}
+.earn-c h3,.feat h3{font-family:var(--serif);font-weight:500;font-size:30px;margin:10px 0 10px}.earn-c p,.feat p{margin:0;color:var(--ink2)}
+.feat{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(20px,3vw,44px)}
+.feat h3{font-size:26px}
+@media (max-width:900px){.dz-sec.split,.earn{grid-template-columns:1fr}.feat{grid-template-columns:1fr 1fr}}
+@media (max-width:480px){.feat{grid-template-columns:1fr}}
+.dz-final{margin-top:20px}
+@media (prefers-reduced-motion:reduce){.hang{height:auto}.hang-stick{position:relative}.pn{clip-path:none!important}.roll{display:none}.fadewall{opacity:1!important;filter:none!important}.hl{opacity:1;transform:none}}

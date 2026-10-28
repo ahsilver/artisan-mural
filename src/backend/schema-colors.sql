@@ -1,0 +1,12 @@
+ALTER TABLE artwork_uploads ADD COLUMN description TEXT;
+ALTER TABLE artwork_uploads ADD COLUMN tags TEXT DEFAULT '[]';
+ALTER TABLE artwork_uploads ADD COLUMN palette TEXT;
+ALTER TABLE artwork_uploads ADD COLUMN drive_folder TEXT;
+ALTER TABLE artwork_colorways ADD COLUMN swatch TEXT;
+ALTER TABLE artwork_colorways ADD COLUMN source_name TEXT;
+ALTER TABLE artwork_uploads ADD COLUMN deleted_at TEXT;
+ALTER TABLE artwork_uploads ADD COLUMN deleted_by TEXT;
+ALTER TABLE artwork_colorways ADD COLUMN deleted_at TEXT;
+ALTER TABLE artwork_colorways ADD COLUMN archived_from TEXT;
+ALTER TABLE artwork_mockups ADD COLUMN deleted_at TEXT;
+ALTER TABLE artwork_mockups ADD COLUMN archived_from TEXT;

@@ -1,0 +1,1 @@
+CREATE POLICY "Owners and studio read print originals" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'print-originals' AND ((storage.foldername(name))[1] = auth.uid()::text OR public.has_role(auth.uid(), 'admin')));

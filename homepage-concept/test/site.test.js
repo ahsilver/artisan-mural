@@ -1,0 +1,10 @@
+const test=require('node:test');const assert=require('node:assert');const fs=require('fs');const path=require('path');
+const site=path.join(__dirname,'..','site');const html=fs.readFileSync(path.join(site,'index.html'),'utf8');
+test('title, viewport, core content',()=>{assert.match(html,/<title>Artisan Mural/);assert.match(html,/name="viewport"/);
+ for(const s of['Ask the designer','repeat','true scale','See it on your own wall','Canvas','Grasscloth','Linen','Suede','custom design','How it works'])assert.ok(html.toLowerCase().includes(s.toLowerCase()),s);
+ assert.ok(!/\bTab\b|Moses/.test(html),'no Tab/Moses');assert.ok(!/TODO|lorem/i.test(html));});
+test('local assets exist',()=>{const refs=[...html.matchAll(/(?:src|href)="((?:img\/)?[\w\-.\/]+\.(?:webp|css|js|woff2))"/g)].map(m=>m[1]);
+ assert.ok(refs.length>20);for(const r of refs)assert.ok(fs.existsSync(path.join(site,r)),r);});
+test('links go to live site',()=>{const ext=[...html.matchAll(/href="(https?:[^"]+)"/g)].map(m=>m[1]);for(const u of ext)assert.ok((u.startsWith('https://artisan-mural.pages.dev')||u.startsWith('https://artisan-home-concept-media.sites.tab.bot/')),u);});
+test('designers page',()=>{const d=fs.readFileSync(path.join(site,'designers','index.html'),'utf8');assert.match(d,/<title>/);assert.match(d,/name="viewport"/);assert.ok(d.includes('become-designer'));assert.ok(d.includes('Option A')&&d.includes('Option B'));assert.ok(!/\bTab\b|Moses/.test(d));
+ for(const r of ['designers.css','designers.js','dz-mask.png'])assert.ok(fs.existsSync(path.join(site,'designers',r)),r);});

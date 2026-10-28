@@ -1,0 +1,270 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+/* fonts served from this site (no third-party font request) */
+@font-face { font-family: "Cormorant Garamond"; font-style: normal; font-weight: 400 600; font-display: swap; src: url("/fonts/cormorant-garamond-latin-v21.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Inter Tight"; font-style: normal; font-weight: 400 700; font-display: swap; src: url("/fonts/inter-tight-latin-v9.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Artisan Mural design system.
+ * Brand palette: light blue, charcoal, cool gray, and supporting beige.
+ * All colors are oklch tokens. Never hardcode colors in components.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-clay: var(--clay);
+  --color-clay-foreground: var(--clay-foreground);
+  --color-olive: var(--olive);
+  --color-olive-foreground: var(--olive-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-panel-guide: var(--panel-guide);
+  --color-hero-foreground: var(--hero-foreground);
+  --color-hero-scrim: var(--hero-scrim);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-display: "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-sans: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+  --shadow-paper: 0 1px 2px oklch(0.25 0.03 60 / 6%), 0 12px 40px -24px oklch(0.25 0.03 60 / 22%);
+  --shadow-lift: 0 2px 6px oklch(0.25 0.03 60 / 8%), 0 32px 60px -30px oklch(0.25 0.03 60 / 32%);
+}
+
+:root {
+  --radius: 0.5rem;
+  --hero-foreground: oklch(0.99 0.004 80);
+  --hero-scrim: oklch(0.17 0.01 40);
+  --background: oklch(0.992 0.002 230);
+  --foreground: oklch(0.235 0.002 285);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.012 40);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.012 40);
+  --primary: oklch(0.8 0.075 235);
+  --primary-foreground: oklch(0.255 0.045 235);
+  --secondary: oklch(0.955 0.005 210);
+  --secondary-foreground: oklch(0.28 0.008 220);
+  --muted: oklch(0.958 0.004 210);
+  --muted-foreground: oklch(0.47 0.015 220);
+  --accent: oklch(0.94 0.027 235);
+  --accent-foreground: oklch(0.38 0.075 235);
+  --clay: oklch(0.44 0.07 235);
+  --clay-foreground: oklch(0.99 0 0);
+  --olive: oklch(0.45 0.05 110);
+  --olive-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.52 0.19 27);
+  --destructive-foreground: oklch(0.985 0.008 85);
+  --border: oklch(0.89 0.006 210);
+  --input: oklch(0.78 0.012 210);
+  --ring: oklch(0.5 0.1 235);
+  --panel-guide: oklch(0.58 0.16 145);
+  --chart-1: oklch(0.56 0.14 40);
+  --chart-2: oklch(0.47 0.055 125);
+  --chart-3: oklch(0.65 0.1 85);
+  --chart-4: oklch(0.42 0.04 240);
+  --chart-5: oklch(0.72 0.08 50);
+  --sidebar: oklch(0.96 0.009 85);
+  --sidebar-foreground: oklch(0.24 0.016 60);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: oklch(0.925 0.025 70);
+  --sidebar-accent-foreground: oklch(0.3 0.02 60);
+  --sidebar-border: oklch(0.89 0.012 80);
+  --sidebar-ring: oklch(0.56 0.14 40);
+}
+
+.dark {
+  --background: oklch(0.19 0.012 60);
+  --foreground: oklch(0.96 0.008 85);
+  --card: oklch(0.23 0.014 60);
+  --card-foreground: oklch(0.96 0.008 85);
+  --popover: oklch(0.23 0.014 60);
+  --popover-foreground: oklch(0.96 0.008 85);
+  --primary: oklch(0.8 0.075 235);
+  --primary-foreground: oklch(0.255 0.045 235);
+  --secondary: oklch(0.28 0.016 60);
+  --secondary-foreground: oklch(0.96 0.008 85);
+  --muted: oklch(0.28 0.016 60);
+  --muted-foreground: oklch(0.72 0.015 75);
+  --accent: oklch(0.32 0.035 235);
+  --accent-foreground: oklch(0.88 0.04 235);
+  --clay: oklch(0.8 0.075 235);
+  --clay-foreground: oklch(0.19 0.012 60);
+  --olive: oklch(0.6 0.07 125);
+  --olive-foreground: oklch(0.19 0.012 60);
+  --destructive: oklch(0.62 0.19 25);
+  --destructive-foreground: oklch(0.96 0.008 85);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.8 0.075 235);
+  --panel-guide: oklch(0.78 0.16 145);
+  --sidebar: oklch(0.23 0.014 60);
+  --sidebar-foreground: oklch(0.96 0.008 85);
+  --sidebar-primary: oklch(0.62 0.14 40);
+  --sidebar-primary-foreground: oklch(0.19 0.012 60);
+  --sidebar-accent: oklch(0.28 0.016 60);
+  --sidebar-accent-foreground: oklch(0.96 0.008 85);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.62 0.14 40);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+}
+
+@utility font-display {
+  font-family: var(--font-display);
+}
+
+@utility text-eyebrow {
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+@utility paper-grain {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    background-image: radial-gradient(
+      oklch(0.5 0.02 60 / 12%) 0.5px,
+      transparent 0.5px
+    );
+    background-size: 3px 3px;
+  }
+}
+
+@utility soft-panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  background-color: var(--color-card);
+  padding: 1.25rem;
+}
+
+.collection-backdrop {
+  position: relative;
+  isolation: isolate;
+  /* Shop: a very light leaf-and-dot pattern in the brand blues on a light-light-blue base */
+  background-color: oklch(0.975 0.012 235);
+}
+.collection-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(180deg, oklch(0.975 0.012 235 / 0) 0%, oklch(0.975 0.012 235 / .55) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cg fill='none' stroke='%232f5f7f' stroke-width='1' stroke-linecap='round' opacity='.10'%3E%3Cpath d='M40 70c0-18 8-30 20-38M60 32c-10 2-16 9-16 18 9-1 15-7 16-18zM50 52c-9 0-15 5-17 13 9 1 15-4 17-13zM47 66c-7 2-11 7-11 14 7-1 11-6 11-14z'/%3E%3Cpath d='M130 160c0-18 8-30 20-38M150 122c-10 2-16 9-16 18 9-1 15-7 16-18zM140 142c-9 0-15 5-17 13 9 1 15-4 17-13zM137 156c-7 2-11 7-11 14 7-1 11-6 11-14z'/%3E%3C/g%3E%3Cg fill='%238fc3e6' opacity='.28'%3E%3Ccircle cx='120' cy='40' r='2.2'/%3E%3Ccircle cx='132' cy='52' r='1.4'/%3E%3Ccircle cx='22' cy='140' r='2.2'/%3E%3Ccircle cx='34' cy='128' r='1.4'/%3E%3Ccircle cx='90' cy='100' r='1.6'/%3E%3C/g%3E%3Cg fill='none' stroke='%238fc3e6' stroke-width='1.1' opacity='.35'%3E%3Cpath d='M100 18c6 0 10 4 10 10M160 80c6 0 10 4 10 10M10 92c6 0 10 4 10 10M70 150c6 0 10 4 10 10'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: auto, 180px 180px;
+}
+.collection-backdrop .group.rounded-lg.shadow-paper {
+  border-color: oklch(0.9 0.015 235);
+  box-shadow: 0 1px 2px oklch(0.3 0.04 235 / 8%), 0 4px 10px -4px oklch(0.3 0.04 235 / 10%), 0 18px 40px -22px oklch(0.3 0.05 235 / 30%);
+}
+.collection-backdrop .group.rounded-lg.shadow-paper:hover {
+  box-shadow: 0 2px 4px oklch(0.3 0.04 235 / 9%), 0 10px 22px -8px oklch(0.3 0.04 235 / 16%), 0 28px 56px -24px oklch(0.3 0.05 235 / 36%);
+}
+.cat-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cat-chip { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid oklch(0.88 0.02 235); background: oklch(1 0 0 / .85); font-size: 13px; color: var(--foreground); transition: background .2s, border-color .2s, color .2s; white-space: nowrap; }
+.cat-chip:hover { border-color: var(--clay); }
+.cat-chip.on { background: var(--clay); border-color: var(--clay); color: var(--clay-foreground); }
+.cat-n { font-size: 11px; opacity: .6; }
+@media (max-width: 640px) {
+  .cat-chips { flex-wrap: nowrap; overflow-x: auto; margin-left: -1.25rem; margin-right: -1.25rem; padding: 2px 1.25rem 6px; scrollbar-width: none; }
+  .cat-chips::-webkit-scrollbar { display: none; }
+}
+
+/* Home: light blue damask wallpaper backdrop (pattern drawn with the primary token through a mask). */
+.wallpaper-blue {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--primary) 14%, var(--background)), var(--background) 70%);
+}
+.wallpaper-blue::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--primary);
+  opacity: 0.22;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='160' viewBox='0 0 120 160'%3E%3Cg fill='none' stroke='black' stroke-width='1.2'%3E%3Cpath d='M60 10c18 20 18 40 0 60c-18-20-18-40 0-60z'/%3E%3Cpath d='M60 90c18 20 18 40 0 60c-18-20-18-40 0-60z'/%3E%3Cpath d='M0 80c20-18 40-18 60 0c20 18 40 18 60 0'/%3E%3Ccircle cx='60' cy='80' r='5'/%3E%3Ccircle cx='0' cy='0' r='4'/%3E%3Ccircle cx='120' cy='0' r='4'/%3E%3Ccircle cx='0' cy='160' r='4'/%3E%3Ccircle cx='120' cy='160' r='4'/%3E%3C/g%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='160' viewBox='0 0 120 160'%3E%3Cg fill='none' stroke='black' stroke-width='1.2'%3E%3Cpath d='M60 10c18 20 18 40 0 60c-18-20-18-40 0-60z'/%3E%3Cpath d='M60 90c18 20 18 40 0 60c-18-20-18-40 0-60z'/%3E%3Cpath d='M0 80c20-18 40-18 60 0c20 18 40 18 60 0'/%3E%3Ccircle cx='60' cy='80' r='5'/%3E%3Ccircle cx='0' cy='0' r='4'/%3E%3Ccircle cx='120' cy='0' r='4'/%3E%3Ccircle cx='0' cy='160' r='4'/%3E%3Ccircle cx='120' cy='160' r='4'/%3E%3C/g%3E%3C/svg%3E");
+  -webkit-mask-size: 120px 160px;
+  mask-size: 120px 160px;
+}
+
+/* Scroll reveal: sections rise and fade in as they enter the screen. */
+[data-reveal] { opacity: 0; transform: translateY(32px); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1); }
+[data-reveal].is-in { opacity: 1; transform: none; }
+[data-reveal="left"] { transform: translateX(-40px); }
+[data-reveal="zoom"] { transform: scale(.94); }
+
+/* Wallpaper-roll strip that unrolls continuously across the page. */
+.roll-track { display: flex; width: max-content; gap: 1rem; animation: roll 50s linear infinite; }
+.roll-strip:hover .roll-track { animation-play-state: paused; }
+@keyframes roll { to { transform: translateX(-50%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { opacity: 1; transform: none; transition: none; }
+  .roll-track { animation: none; }
+}

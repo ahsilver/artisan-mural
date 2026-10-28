@@ -1,0 +1,1 @@
+ALTER TABLE public.artwork_uploads ADD COLUMN IF NOT EXISTS repeat_style text NOT NULL DEFAULT 'none' CHECK (repeat_style IN ('none','horizontal','both')), ADD COLUMN IF NOT EXISTS width_cm numeric CHECK (width_cm > 0 AND width_cm <= 10000), ADD COLUMN IF NOT EXISTS height_cm numeric CHECK (height_cm > 0 AND height_cm <= 10000);

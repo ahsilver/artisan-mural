@@ -1,0 +1,181 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791490365637,
+      "tag": "0000_designer_conversations",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791490885105,
+      "tag": "0001_guest_designer_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791559168687,
+      "tag": "0002_guest_chat_and_order_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791559675446,
+      "tag": "0003_samples_studio_only",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791744945947,
+      "tag": "0004_designer_uploads_and_mockup_jobs",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791828773657,
+      "tag": "0005_artwork_repeat_and_size",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791831126351,
+      "tag": "0006_studio_inbox_photos_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791831241338,
+      "tag": "0007_design_offers",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791831389558,
+      "tag": "0008_artwork_print_file",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791914917915,
+      "tag": "0009_designer_onboarding_admin",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791992835708,
+      "tag": "0010_trusted_designers_order_tracking",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791994984014,
+      "tag": "0011_customer_accounts_cart_custom_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791995014108,
+      "tag": "0012_order_owner_check",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792002632664,
+      "tag": "0013_payout_details_after_approval",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792008206822,
+      "tag": "0014_design_listing",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792075888373,
+      "tag": "0015_artwork_skus_color_sources_and_materials",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792164149794,
+      "tag": "0016_migration",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792165439143,
+      "tag": "0017_order_statuses_and_payment_method",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792166556272,
+      "tag": "0018_designer_collections",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792347320906,
+      "tag": "0019_explicit_design_submission",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792349476591,
+      "tag": "0020_private_originals_and_custom_project_quotes",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792349675668,
+      "tag": "0021_secure_request_assignment_and_quote_acceptance",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792349753154,
+      "tag": "0022_custom_request_artwork_context",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792350016833,
+      "tag": "0023_approved_designer_conversation_assignments",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792423295585,
+      "tag": "0024_private_original_owner_reads",
+      "breakpoints": true
+    }
+  ]
+}

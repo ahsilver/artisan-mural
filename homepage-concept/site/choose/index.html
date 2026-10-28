@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Artisan Mural · choose your homepage parts</title><meta name="robots" content="noindex">
+<style>
+@font-face{font-family:"Cormorant Garamond";src:url(/fonts/cormorant-garamond-latin-v21.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"Inter Tight";src:url(/fonts/inter-tight-latin-v9.woff2) format("woff2");font-weight:100 900;font-display:swap}
+*{box-sizing:border-box}html,body{margin:0;overflow-x:clip}body{font-family:"Inter Tight",system-ui,sans-serif;color:#082635;background:#f4f9fc;line-height:1.5}
+.w{max-width:1240px;margin:0 auto;padding:0 28px}
+header{background:#fff;border-bottom:1px solid #dbe8f0}header .w{display:flex;justify-content:space-between;align-items:center;height:68px}
+.logo{font-family:"Cormorant Garamond",serif;font-size:26px;color:#082635;text-decoration:none}.logo span{color:#8EC6E7}
+h1,h2{font-family:"Cormorant Garamond",serif;font-weight:500;line-height:1.05;margin:0}
+h1{font-size:clamp(38px,5vw,64px);margin-top:48px}h2{font-size:clamp(28px,3.4vw,40px);margin:56px 0 6px}
+.lead{font-size:18px;max-width:40em;margin:16px 0 0}.lead b{background:#8EC6E7;padding:1px 8px;font-weight:600;white-space:nowrap}
+.note{font-size:14px;color:#3d5a6a;margin:6px 0 22px}
+.grid{display:grid;gap:22px;grid-template-columns:repeat(3,minmax(0,1fr))}.grid.p{grid-template-columns:repeat(2,minmax(0,1fr))}
+.c{display:flex;flex-direction:column;background:#fff;border:1px solid #dbe8f0;color:#082635;text-decoration:none;transition:box-shadow .2s,transform .2s}
+.c:hover{box-shadow:0 10px 30px rgba(8,38,53,.12);transform:translateY(-2px)}.c:focus-visible{outline:3px solid #082635;outline-offset:3px}
+.im{display:block;aspect-ratio:16/10;overflow:hidden;background:#e6eef3}.im img{width:100%;height:100%;object-fit:cover;object-position:left top;display:block}
+.t{display:flex;flex-direction:column;gap:6px;padding:18px 20px 20px}.t b{font-size:20px;font-weight:600}
+.p .t b{display:inline-block;align-self:flex-start;background:#8EC6E7;padding:2px 12px;font-size:22px}
+.t em{font-style:normal;font-size:14px;font-weight:600;margin-top:4px}
+footer{margin:64px 0 0;padding:28px 0 40px;border-top:1px solid #dbe8f0;font-size:14px;color:#3d5a6a}
+@media (max-width:860px){.grid,.grid.p{grid-template-columns:1fr}.w{padding:0 20px}h1{margin-top:32px}}
+</style></head><body>
+<header><div class="w"><a class="logo" href="https://artisan-mural.pages.dev/">Artisan Mural<span>.</span></a><span class="note" style="margin:0">Homepage options</span></div></header>
+<main class="w">
+<h1>Pick the parts you like.</h1>
+<p class="lead">Open any version, then tell me the parts you want, for example <b>Hero B + Story A + Shop A</b>. Nothing here is on your live site.</p>
+<h2>The full versions</h2><p class="note">Tap to open the whole page.</p>
+<div class="grid"><a class="c" href="../"><span class="im"><img src="img/hero-a.webp" alt="Version 1 · v3 concept preview" loading="lazy" decoding="async"></span><span class="t"><b>Version 1 · v3 concept</b><span>Full-screen rooms that change every few seconds, a long scrolling story on a white page, and the new concept sections.</span><em>Open →</em></span></a><a class="c" href="../v4/"><span class="im"><img src="img/story-a.webp" alt="Version 2 · v4 · words on wallpaper preview" loading="lazy" decoding="async"></span><span class="t"><b>Version 2 · v4 · words on wallpaper</b><span>Your current site’s layout, menu, designs and footer, plus the big room photo. The 5 specialties are written on real wallpaper designs.</span><em>Open →</em></span></a><a class="c" href="../v4-white/"><span class="im"><img src="img/story-b.webp" alt="Version 3 · v4 · words on white preview" loading="lazy" decoding="async"></span><span class="t"><b>Version 3 · v4 · words on white</b><span>Same as version 2, but the words are on white with the design beside them.</span><em>Open →</em></span></a></div>
+<h2>The parts</h2><p class="note">Each part has a letter. Tap to see it on its page.</p>
+<div class="grid p"><a class="c" href="../#hero"><span class="im"><img src="img/hero-a.webp" alt="Hero A preview" loading="lazy" decoding="async"></span><span class="t"><b>Hero A</b><span>Full-screen room photo (v3). Rooms change every few seconds; lines appear as you scroll.</span><em>Open →</em></span></a><a class="c" href="../v4/#hero"><span class="im"><img src="img/hero-b.webp" alt="Hero B preview" loading="lazy" decoding="async"></span><span class="t"><b>Hero B</b><span>Big room photo with your current words and buttons (v4). The next part already shows at the bottom and moves the moment you scroll.</span><em>Open →</em></span></a><a class="c" href="https://artisan-mural.pages.dev/"><span class="im"><img src="img/hero-c.webp" alt="Hero C preview" loading="lazy" decoding="async"></span><span class="t"><b>Hero C</b><span>Your current live hero: words on the left, picture on the right.</span><em>Open →</em></span></a><a class="c" href="../v4/#story"><span class="im"><img src="img/story-a.webp" alt="Story A preview" loading="lazy" decoding="async"></span><span class="t"><b>Story A</b><span>5 specialties, one per wallpaper design. Words appear as you scroll and each sentence finishes in one scroll.</span><em>Open →</em></span></a><a class="c" href="../v4-white/#story"><span class="im"><img src="img/story-b.webp" alt="Story B preview" loading="lazy" decoding="async"></span><span class="t"><b>Story B</b><span>Same 5 specialties on white, with the design beside the words.</span><em>Open →</em></span></a><a class="c" href="../#manifesto"><span class="im"><img src="img/story-c.webp" alt="Story C preview" loading="lazy" decoding="async"></span><span class="t"><b>Story C</b><span>The v3 story: a long scrolling paragraph on white, then 7 numbered feature sections.</span><em>Open →</em></span></a><a class="c" href="../v4/#shop"><span class="im"><img src="img/shop-a.webp" alt="Shop A preview" loading="lazy" decoding="async"></span><span class="t"><b>Shop A</b><span>Your current site’s sections: designs, before/after room slider, categories, meet the artist, how it works, custom design.</span><em>Open →</em></span></a><a class="c" href="../#finishes"><span class="im"><img src="img/shop-b.webp" alt="Shop B preview" loading="lazy" decoding="async"></span><span class="t"><b>Shop B</b><span>The v3 sections: four finishes, custom design, collection, how it works.</span><em>Open →</em></span></a></div>
+</main><footer><div class="w">Artisan Mural · homepage preview. Your live site is not changed.</div></footer>
+</body></html>

@@ -1,0 +1,20 @@
+halfdrop-lock worker 6f98a39d progress (15:50Z)
+DONE source edits: designer-api PATCH repeat normalization; policies order_requests rejects print_design_snapshot; design-editor match control shown for full+sideways (half-drop disabled+note on sideways; straight only), chooseType forces hd=false for non-full, halfdrop note, tiled caption; sections.tsx AdminRepeatType same; match-info.tsx MatchFixed (customer fixed text + ?); MatchFixed added to routes/design.$slug.index.tsx (after repeat-type p) and design.$slug.preview.tsx (after SizeNotice), import at file top; cart.tsx chip "Match: X" (data-testid cart-match).
+Routes designers.* currently = A (swapped for prod build). RESTORE B from ops/backups/designers-B-source after deploy!
+STEER 15:42Z adds: A) auto repeat check block (edge maps, gradients; block msg; borderline tick), B) designer explanation upload + FAQ, C) DPI 150 min setting shared with print-pdf (MIN_PRINT_DPI 250 -> rules), D) DPI of owner's 2 green-leaf designs. Shot files/artisan-repeat-check-block.jpg.
+NEXT: build -> fix t96 sideways expectation -> steer items -> deploy.
+
+15:55Z: build OK (before repeat-check rewrite). lib/repeat-check.ts REWRITTEN (seamScores pure fn + verdict ok/borderline/bad + red seam marks); backup lib__repeat-check.ts. NEW lib/repeat-check.test.ts (4 cases). DO NOT re-explore; continue: fix test, RepeatStep UI block/tick, server submit block, auto-run, FAQ text, DPI (C/D).
+16:00Z: repeat-check test 4/4 pass. RepeatStep REWRITTEN (auto-run, bad->block msg data-testid repeat-block + saves repeatCheck {confirmed:false, verdict:bad}, borderline->tick repeat-looked). NEXT: server submit block (designer-api ~214), upload auto-detect uses verdict, FAQ text B, DPI C/D, build, t96 fix, deploy.
+16:04Z: DONE server submit block (verdict bad / style changed) in designer-api; FAQ Straight/Half-drop + repeat-check text; MatchLabel popover wording. NEXT: DPI C/D, build, t96 fix, deploy.
+16:10Z: DPI C done: print-pdf MIN_PRINT_DPI=150 + minDpi param (pdf+tiff), test updated (+200 case), settings hints, app-api default targetDpi 200. NEXT: D query DB green leaves, build, vitest, t96 fix, deploy.
+16:12Z: vitest 14/14 (repeat 4 + print 10). t96 updated (sideways: control shown, match-halfdrop disabled, note, shot artisan-halfdrop-locked-designer.jpg). Build running. NEXT: preview deploy branch hdlock, run t96/t93/t95/t90/t91, shots, prod deploy, restore B.
+16:14Z: build OK; PREVIEW deployed https://hdlock.artisan-mural.pages.dev (deployment a12b6045). NEXT: run t96 (shot), t93,t95,t90,t91 on preview; customer shot; prod deploy; restore B.
+16:16Z: t96 PASS on preview (390+1440: sideways control shown, half-drop disabled+note, mural none, no h-scroll; shot written). NEXT: suite t93/t95/t90/t91 running to /tmp/suite-hd.log; customer shot; prod deploy; restore B.
+16:17Z: customer shot files/artisan-match-fixed-customer.jpg (fernhouse 390, "Match: Straight ?" popover open; 1440 ok, no selector, no h-scroll). NEXT: wait suite, block shot, prod deploy, restore B.
+16:20Z: t93 PASS, t95 PASS on preview; NEW ops/t97_repeat_block.py PASS (upload non-repeat -> auto Mural; switch to full -> block msg, 0 confirm buttons, draft deleted); shot artisan-repeat-check-block.jpg. t90/t91 running (/tmp/suite-hd2.log, acct am.signup.1793117774@example.com). NEXT: prod deploy, restore B, notab crawl, D, worknotes, report.
+16:22Z: t90 PASS, t91 PASS (acct am.signup.1793117774@example.com left). Fixed empty msg box + red block style. NOW: prod build+deploy (designers A in place).
+16:24Z: PROD DEPLOYED db271c57 (ROLLBACK 1c257fef). Designers B source RESTORED (verified=True). NEXT: live t97 shot + t96 on live, notab crawl, D, worknotes, report. DO NOT redeploy.
+16:27Z: LIVE: t97 PASS (block shot retaken live), t96 PASS 390/1440, customer fernhouse Match: Straight 390/1440 (shot retaken live). NEXT: notab crawl, D, cleanup t90 acct, worknotes, report.
+16:33Z: WORKNOTES entry written. Waiting notab99 crawl (/tmp/notab99.log) then REPORT. D not done.
+16:36Z: notab99 0 hits/107 states. DONE. Final report sent to root. Nothing left but D (needs DB/owner pw).

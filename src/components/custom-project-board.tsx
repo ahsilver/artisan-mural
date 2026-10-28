@@ -1,0 +1,33 @@
+import { useEffect, useState } from 'react';
+import { useServerFn } from '@tanstack/react-start';
+import { Loader2, ArrowRight, Send } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Inbox } from '@/components/inbox';
+import { listCustomProjects, quoteCustomRequest } from '@/lib/custom-projects.functions';
+import { plainError } from "@/lib/original-source";
+type Data=Awaited<ReturnType<typeof listCustomProjects>>;
+type Request=Data['rows'][number];
+export function CustomProjectBoard(){
+ const load=useServerFn(listCustomProjects),quote=useServerFn(quoteCustomRequest);
+ const [data,setData]=useState<Data|null>(null),[error,setError]=useState(''),[selected,setSelected]=useState<Request|null>(null),[chat,setChat]=useState<string|null>(null),[filter,setFilter]=useState('all');
+ const refresh=()=>load().then(setData).catch(e=>setError(e.message));
+ useEffect(()=>{void refresh();},[]);
+ if(!data)return <div>{error?<p role="alert" className="text-destructive">{error}</p>:<Loader2 className="animate-spin" aria-label="Loading requests"/>}</div>;
+ const shown=data.rows.filter(r=>filter==='all'||(filter==='open'?r.offers.every(o=>o.status!=='accepted'&&o.status!=='paid'):r.offers.some(o=>o.status==='accepted'||o.status==='paid')));
+ return <section><div className="mb-6 flex flex-wrap items-end justify-between gap-4"><h2 className="text-3xl">Requests & projects</h2><div className="flex gap-1">{[['all','All'],['open','Open requests'],['active','Active projects']].map(([id = "all",label])=><Button key={id} size="sm" variant={filter===id?'default':'ghost'} onClick={()=>setFilter(id)}>{label}</Button>)}</div></div>
+ {error&&<p role="alert" className="mb-3 text-destructive">{error}</p>}
+ {!shown.length&&<p className="text-sm text-muted-foreground">No requests here yet.</p>}
+ <div className="space-y-4">{shown.map(r=><article key={r.id} className="rounded-lg border border-border bg-card p-5 sm:p-6"><div className="flex justify-between gap-3"><div><p className="text-xs uppercase text-muted-foreground">R-{r.id.slice(0,6)} · {r.room} · {new Date(r.created_at).toLocaleDateString()}</p><h3 className="mt-2 text-xl">{r.room} wallpaper</h3><p className="mt-1 text-xs text-muted-foreground">{r.customer_name} · {r.wall_size} · {r.budget?`Budget ${r.budget}`:'Budget not specified'}</p></div><span className="self-start rounded-full bg-muted px-3 py-1 text-xs">{r.offers.some(o=>o.status==='accepted'||o.status==='paid')?'In progress':r.status==='new'?'Open':r.status}</span></div><p className="mt-4 whitespace-pre-wrap text-sm">{r.brief}</p>
+ {data.canQuote&&!r.mine&&r.status==='new'&&<QuoteForm onQuote={async(amount,deliveryDays,description)=>{const result=await quote({data:{request:r.id,amount,deliveryDays,description}});await refresh();setChat(result.conversation);}}/>}
+ {r.offers.length>0&&<div className="mt-4 space-y-2">{r.offers.map(o=><p key={o.id} className="text-sm">${Number(o.amount).toFixed(2)} · {o.delivery_days??'—'} days · {o.status==='accepted'?o.proof_status==='approved'?'Design approved · awaiting payment':o.proof_status==='delivered'?'Proof ready for approval':'Quote accepted · design in progress':o.status}</p>)}</div>}
+ {r.orders.map(o=><p key={o.id} className="mt-2 text-xs text-muted-foreground">Print order #{o.id.slice(0,8)} · {o.square_feet} sq ft · {o.status.replaceAll('_',' ')}</p>)}
+ <div className="mt-4 flex flex-wrap gap-2"><Button size="sm" variant="ghost" onClick={()=>setSelected(r)}>View request<ArrowRight/></Button>{r.conversation&&<Button size="sm" variant="outline" onClick={()=>setChat(r.conversation)}>Open project & messages</Button>}</div></article>)}</div>
+ <Dialog open={!!selected} onOpenChange={open=>{if(!open)setSelected(null);}}><DialogContent className="max-h-[90dvh] overflow-y-auto"><DialogHeader><DialogTitle>{selected?.room} · Request details</DialogTitle></DialogHeader>{selected&&<><p className="text-sm">{selected.customer_name} · {selected.wall_size}</p><p className="text-sm">Budget: {selected.budget??'Not specified'} · Material: {selected.material}</p><p className="whitespace-pre-wrap text-sm">{selected.brief}</p><div className="grid grid-cols-2 gap-3">{selected.photos.map((src,i)=><a key={src} href={src ?? undefined} target="_blank" rel="noreferrer"><img src={src ?? undefined} alt={`Request reference ${i+1}`} className="aspect-square w-full rounded-md object-cover"/></a>)}</div>{selected.conversation&&<Button onClick={()=>{setChat(selected.conversation);setSelected(null);}}>Open project & messages<ArrowRight/></Button>}</>}</DialogContent></Dialog>
+ <Dialog open={!!chat} onOpenChange={open=>{if(!open){setChat(null);void refresh();}}}><DialogContent className="max-h-[95dvh] max-w-5xl overflow-y-auto"><DialogHeader><DialogTitle>Custom project</DialogTitle></DialogHeader>{chat&&<Inbox initialId={chat}/>}</DialogContent></Dialog>
+ </section>;
+}
+function QuoteForm({onQuote}:{onQuote:(amount:number,days:number,message:string)=>Promise<void>}){
+ const [price,setPrice]=useState(''),[days,setDays]=useState('5'),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ return <form className="mt-5 grid gap-3 sm:grid-cols-[140px_140px_1fr]" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{await onQuote(Number(price),Number(days),message);setMessage('');setPrice('');}catch(e){setError(plainError(e,'Could not send quote.'));}finally{setBusy(false);}}}><label className="text-xs">Design price (USD)<input required type="number" min="1" max="100000" step="0.01" value={price} onChange={e=>setPrice(e.target.value)} className="mt-1 h-11 w-full rounded-md border border-input bg-background px-3 text-sm"/></label><label className="text-xs">Delivery days<input required type="number" min="1" max="365" step="1" value={days} onChange={e=>setDays(e.target.value)} className="mt-1 h-11 w-full rounded-md border border-input bg-background px-3 text-sm"/></label><label className="text-xs">What's included<input required minLength={3} maxLength={500} value={message} onChange={e=>setMessage(e.target.value)} className="mt-1 h-11 w-full rounded-md border border-input bg-background px-3 text-sm"/></label><div className="sm:col-span-3"><Button size="sm" disabled={busy}>{busy?<Loader2 className="animate-spin"/>:<Send/>}Send quote</Button>{error&&<p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}</div></form>;
+}

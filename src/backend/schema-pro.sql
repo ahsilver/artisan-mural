@@ -1,0 +1,3 @@
+CREATE TABLE IF NOT EXISTS pro_applications (id TEXT PRIMARY KEY, user_id TEXT, email TEXT, status TEXT DEFAULT 'pending', business TEXT, role TEXT, answers TEXT, file_path TEXT, file_name TEXT, decision_note TEXT, decided_at TEXT, decided_by TEXT, created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));
+CREATE INDEX IF NOT EXISTS idx_pro_apps_user ON pro_applications(user_id);
+CREATE TABLE IF NOT EXISTS first_order_codes (email TEXT PRIMARY KEY, code TEXT UNIQUE, pct REAL, source TEXT, page TEXT, used_at TEXT, used_by TEXT, cart_id TEXT, created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')));

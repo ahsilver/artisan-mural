@@ -1,0 +1,13 @@
+CREATE SEQUENCE public.artwork_sku_seq START 1001;
+ALTER TABLE public.artwork_uploads ADD COLUMN sku text DEFAULT ('AM-' || lpad(nextval('public.artwork_sku_seq')::text, 6, '0'));
+CREATE UNIQUE INDEX artwork_uploads_sku_unique ON public.artwork_uploads(sku);
+GRANT USAGE ON SEQUENCE public.artwork_sku_seq TO authenticated, service_role;
+ALTER TABLE public.artwork_colorways ADD COLUMN print_file_url text;
+UPDATE public.artwork_colorways c SET print_file_url = u.print_file_url FROM public.artwork_uploads u WHERE c.upload_id = u.id;
+CREATE TABLE public.material_settings (id text PRIMARY KEY, name text NOT NULL, blurb text NOT NULL DEFAULT '', factor numeric NOT NULL DEFAULT 1 CHECK (factor > 0 AND factor <= 10), texture text, active boolean NOT NULL DEFAULT true, updated_at timestamptz NOT NULL DEFAULT now());
+GRANT SELECT ON public.material_settings TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.material_settings TO authenticated;
+GRANT ALL ON public.material_settings TO service_role;
+ALTER TABLE public.material_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public material settings" ON public.material_settings FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Owner manages materials" ON public.material_settings FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));

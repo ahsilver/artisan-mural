@@ -1,0 +1,3 @@
+INSERT INTO public.designer_accounts(slug,user_id) SELECT 'studio-'||substring(p.user_id::text from 1 for 8),p.user_id FROM public.designer_profiles p WHERE p.status='approved' ON CONFLICT(user_id) DO NOTHING;
+CREATE OR REPLACE FUNCTION public.assign_approved_designer() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN IF NEW.status='approved' THEN INSERT INTO public.designer_accounts(slug,user_id) VALUES ('studio-'||substring(NEW.user_id::text from 1 for 8),NEW.user_id) ON CONFLICT(user_id) DO NOTHING; END IF; RETURN NEW; END $$;
+CREATE TRIGGER assign_designer_on_approval AFTER INSERT OR UPDATE OF status ON public.designer_profiles FOR EACH ROW EXECUTE FUNCTION public.assign_approved_designer();

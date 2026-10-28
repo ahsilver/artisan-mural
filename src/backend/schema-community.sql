@@ -1,0 +1,11 @@
+ALTER TABLE designer_profiles ADD COLUMN tagline TEXT;
+ALTER TABLE designer_profiles ADD COLUMN photo_key TEXT;
+ALTER TABLE designer_profiles ADD COLUMN specialties TEXT DEFAULT '[]';
+ALTER TABLE designer_profiles ADD COLUMN portfolio TEXT DEFAULT '[]';
+ALTER TABLE designer_profiles ADD COLUMN response_label TEXT;
+ALTER TABLE designer_profiles ADD COLUMN turnaround_days INTEGER;
+ALTER TABLE designer_profiles ADD COLUMN public_hidden INTEGER DEFAULT 0;
+ALTER TABLE projects ADD COLUMN deadline TEXT;
+ALTER TABLE projects ADD COLUMN hidden INTEGER DEFAULT 0;
+CREATE TABLE IF NOT EXISTS reviews ("id" TEXT PRIMARY KEY, "kind" TEXT NOT NULL, "target" TEXT NOT NULL, "user_id" TEXT NOT NULL, "reviewer_name" TEXT NOT NULL, "rating" INTEGER NOT NULL, "body" TEXT DEFAULT '', "ref_id" TEXT, "hidden" INTEGER DEFAULT 0, "reply" TEXT, "reply_at" TEXT, "created_at" TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')), "updated_at" TEXT, UNIQUE(kind, target, user_id));
+CREATE INDEX IF NOT EXISTS reviews_target ON reviews(kind, target);

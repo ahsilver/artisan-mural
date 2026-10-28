@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "Customers submit order requests" ON public.order_requests;
+CREATE POLICY "Customers submit order requests" ON public.order_requests FOR INSERT TO authenticated WITH CHECK (status = 'awaiting_payment' AND user_id = auth.uid());
