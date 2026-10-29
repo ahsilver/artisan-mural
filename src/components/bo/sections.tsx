@@ -132,8 +132,8 @@ function EditDesign({ d, onDone }: { d: any; onDone: () => void }) {
 const fsz = (b: number) => (b >= 1024 ** 3 ? (b / 1024 ** 3).toFixed(1) + " GB" : Math.max(1, Math.round(b / 1024 ** 2)) + " MB");
 /** Owner: the real storage link of every full-resolution original (not the preview pictures). */
 function OriginalToggle({ id }: { id: string }) {
-  const [open, setOpen] = useState(false);
-  return <div style={{ marginTop: 6 }}><button type="button" className="bo-btn sm" data-testid="original-toggle" onClick={() => setOpen(!open)}>{open ? "Hide file link" : "Full-resolution file link"}</button>{open && <OriginalLinks id={id} />}</div>;
+  const [open, setOpen] = useState(true);
+  return <div style={{ marginTop: 6 }}><button type="button" className="bo-btn sm" data-testid="original-toggle" onClick={() => setOpen(!open)}>{open ? "Hide original file" : "Show original file (full size)"}</button>{open && <OriginalLinks id={id} />}</div>;
 }
 function OriginalLinks({ id }: { id: string }) {
   const { data, error } = useApi<any>(`admin/designs/u-${id}/originals`, [id]);

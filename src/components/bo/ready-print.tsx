@@ -96,10 +96,34 @@ export function ReadyToPrint({ order, art, compact }: { order: any; art: any; co
     {st.done && <div className="bo-msg ok" role="status">{st.done}</div>}
     {st.err && <div className="bo-msg err" role="alert">{st.err}</div>}
     {!compact && <div className="bo-sub" style={{ marginTop: 6 }}>Made in your browser from the designer's original{p.repeat ? ", tiled with its match" : ", cropped exactly where the customer placed it"}. Uncompressed it would be about {gb(full.W * full.H * n)}; LZW makes it smaller. Large walls take a few minutes. Use a computer (Chrome or Edge) for big files.</div>}
+    {!compact && <PrintViews plan={p.plan} repeat={p.repeat} src={art?.url} />}
     <div className="rp-sec"><span className="rp-lbl">Other files</span>
       <a className="bo-btn sm" href={original.url + "&download=" + encodeURIComponent(original.filename)} target="_blank" rel="noreferrer">Original file{original.size ? ` (${gb(original.size)})` : ""}</a>
       {p.tile && <button type="button" className="bo-btn sm" disabled={st.busy} onClick={() => run(p.tile!, "tile")}>Single repeat tile ({PRINT_DPI} DPI)</button>}
     </div>
+  </div>;
+}
+
+/** Two clear pictures for the owner: the full original (with the printed area framed) and exactly what prints. */
+export function PrintViews({ plan, repeat, src }: { plan: Plan; repeat?: boolean; src?: string }) {
+  if (!src || !plan?.draws?.length) return null;
+  const ar = plan.widthIn / plan.heightIn;
+  const d0 = plan.draws[0];
+  const frame = !repeat ? { l: -d0.x / d0.w, t: -d0.y / d0.h, w: 1 / d0.w, h: 1 / d0.h } : null;
+  const draws = plan.draws.slice(0, 600);
+  return <div className="rp-views" data-testid="print-views">
+    <figure className="rp-view"><figcaption>Full original</figcaption>
+      <div className="rp-view-box"><div className="rp-orig"><img src={src} alt="The full original design" />
+        {frame && <div className="rp-frame" style={{ left: `${frame.l * 100}%`, top: `${frame.t * 100}%`, width: `${frame.w * 100}%`, height: `${frame.h * 100}%` }}><span>Prints</span></div>}
+      </div></div>
+      <span className="rp-cap">{repeat ? "One repeat tile, as the designer uploaded it." : "The blue frame is the part the customer chose."}</span>
+    </figure>
+    <figure className="rp-view"><figcaption>What prints ({fmtIn(plan.widthIn)} × {fmtIn(plan.heightIn)})</figcaption>
+      <div className="rp-view-box"><div className="rp-wall" style={{ aspectRatio: String(ar), ["--ar" as any]: String(ar) }}>
+        {draws.map((d, i) => <img key={i} src={src} alt="" style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%`, width: `${d.w * 100}%`, height: `${d.h * 100}%` }} />)}
+      </div></div>
+      <span className="rp-cap">{repeat ? "The full repeat, tiled across the whole wall." : "Exactly the crop, edge to edge."} The button above makes this file.</span>
+    </figure>
   </div>;
 }
 

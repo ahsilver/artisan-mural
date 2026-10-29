@@ -25,9 +25,9 @@ export function useUnreadMessages(enabled = true) {
 /** Starter card (design name + picture + link) and the sent request form, inside a design chat. */
 function SpecialBody({ body }: { body: string }) {
   let d: any = null; try { d = JSON.parse(body.slice(7)); } catch { return <div className="ms-bub">{body}</div>; }
-  if (body.startsWith("::card ")) return <a className="am-card" href={d.link} target="_blank" rel="noreferrer" data-testid="starter-card">
-    {d.thumb ? <img src={d.thumb} alt="" loading="lazy" /> : <span className="am-card-ph" />}
-    <span className="am-card-t"><span className="am-card-k">Request about:</span><b>{d.title}</b><span className="am-card-l">See the design ›</span></span></a>;
+  if (body.startsWith("::card ")) return <a className="am-card am-card-big" href={d.link} target="_blank" rel="noreferrer" data-testid="starter-card">
+    {d.thumb ? <img src={d.thumb} alt={d.title} loading="lazy" /> : <span className="am-card-ph" />}
+    <span className="am-card-t"><span className="am-card-k">About this wallpaper</span><b>{d.title}</b>{d.sku ? <span className="am-card-sku" data-testid="starter-sku">SKU {d.sku}</span> : null}<span className="am-card-l">See the design ›</span></span></a>;
   return <div className="am-formcard" data-testid="request-details"><b>Request details</b>
     {d.room ? <div><span>Room</span>{d.room}</div> : null}{d.wallSize ? <div><span>Wall size</span>{d.wallSize}</div> : null}
     <div><span>Change</span>{d.change}</div>{d.notes ? <div><span>Notes</span>{d.notes}</div> : null}</div>;
@@ -159,7 +159,7 @@ export function Messenger({ admin, initialKey, urlMode, emptyText }: { admin?: b
           <div className="ms-head-main"><div className="ms-head-name" data-testid="ms-head-name">{t.name}</div><div className="ms-sub">{t.sub}{t.link ? <> · <a className="ms-link" href={t.link.href}>{t.link.label}</a></> : null}</div></div>
           {admin && t.kind === "store" && /test/i.test((t.sub ?? "") + (active?.sub ?? "")) && <button type="button" className="ms-btn" style={{ height: 26, fontSize: 12 }} onClick={async () => { if (!confirm("Delete this test chat?")) return; await papi("inbox/delete", { key }); setKey(null); void loadList(); }}>Delete</button>}
         </div>
-        <ThreadView key={key} messages={t.messages ?? []} after={t.needsBrief && t.projectId ? <BriefForm projectId={t.projectId} onDone={() => { void loadThread(key!); void loadList(); }} /> : null} canWrite={t.canWrite} guarded={t.guarded} showNames={t.readOnly} onSend={send}
+        <ThreadView key={key} messages={t.messages ?? []} after={t.needsBrief && t.projectId ? <BriefForm who={t.name} projectId={t.projectId} onDone={() => { void loadThread(key!); void loadList(); }} /> : null} canWrite={t.canWrite} guarded={t.guarded} showNames={t.readOnly} onSend={send}
           readOnlyNote={t.readOnly ? "You can read this chat between the designer and the customer. To write to one of them, start a new message." : undefined}
           emptyText={t.kind === "store" && !t.store ? "Write the first message." : "No messages yet. Say hello."} />
         {t.noAccount && <div className="ms-ro" style={{ borderTop: 0 }}>{t.email} has no account yet. They get the email (test mode) and see this chat once they sign up with that email.</div>}

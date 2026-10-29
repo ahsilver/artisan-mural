@@ -146,8 +146,8 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
   if (p === "start-chat" && m === "POST") {
     const slug = String(body.designSlug ?? "").slice(0, 120);
     if (!/^[a-z0-9-]{1,120}$/i.test(slug)) return bad("Unknown design.");
-    let designer: any = null; let title = "";
-    if (slug.startsWith("u-")) { const u: any = await DB.prepare(`SELECT owner_id, title FROM artwork_uploads WHERE id = ? AND deleted_at IS NULL`).bind(slug.slice(2)).first(); if (!u) return bad("This design was not found.", 404); designer = await designerOf(env, u.owner_id); title = u.title; }
+    let designer: any = null; let title = ""; let sku = String(body.sku ?? "").replace(/[^A-Za-z0-9-]/g, "").slice(0, 32);
+    if (slug.startsWith("u-")) { const u: any = await DB.prepare(`SELECT owner_id, title, sku FROM artwork_uploads WHERE id = ? AND deleted_at IS NULL`).bind(slug.slice(2)).first(); if (!u) return bad("This design was not found.", 404); designer = await designerOf(env, u.owner_id); title = u.title; sku = u.sku || sku; }
     else title = String(body.title ?? "").replace(/[\r\n]+/g, " ").trim().slice(0, 100) || slug;
     if (!designer) { // studio designs: the studio (the owner) answers as their designer
       const ow: any = await DB.prepare(`SELECT user_id FROM user_roles WHERE role = 'admin' ORDER BY rowid LIMIT 1`).first();
@@ -163,7 +163,7 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
     await DB.prepare(`INSERT INTO projects (id, kind, customer_id, customer_name, customer_email, designer_slug, designer_user_id, design_slug, title, brief, attachments, status) VALUES (?, 'edit', ?, ?, ?, ?, ?, ?, ?, '', '[]', 'requested')`)
       .bind(id, uid, name, me?.email ?? null, designer.slug, designer.uid, slug, t).run();
     const thumb = typeof body.thumb === "string" && /^(\/|https:\/\/)/.test(body.thumb) ? body.thumb.slice(0, 600) : null;
-    const card = { type: "design", slug, title, thumb, link: `/design/${slug}` };
+    const card = { type: "design", slug, title, sku: sku || null, designer: designer.name ?? null, thumb, link: `/design/${slug}` };
     await DB.prepare(`INSERT INTO project_messages (id, project_id, designer_user_id, sender_id, sender_role, body, attachments) VALUES (?, ?, ?, ?, 'customer', ?, '[]')`).bind(crypto.randomUUID(), id, designer.uid, uid, "::card " + JSON.stringify(card)).run();
     await notify(env, designer.uid, "message", `New chat from ${name}`, t, `/dashboard?view=messages&c=p.${id}.${designer.uid}`);
     return j({ id, key: `p.${id}.${designer.uid}` });

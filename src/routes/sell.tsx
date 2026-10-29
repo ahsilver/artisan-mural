@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Check, MessageCircle, Palette, Truck } from "lucide-react";
 import room from "@/assets/hero-mural.jpg";
+import { WallRoll } from "@/components/wall-roll";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { COMMISSION_RATE, ROYALTY_TIERS, money } from "@/lib/catalog";
@@ -35,17 +36,16 @@ function Sell() {
   const faqs = all.slice(0, 8).map((i) => [i.q, i.a.split(/\n\n+/)[0]]);
   return (
     <>
-      <section className="relative isolate overflow-hidden">
-        <img src={room} alt="An original botanical wallpaper mural installed in a living room" fetchPriority="high" className="absolute inset-0 -z-20 h-full w-full object-cover" />
-        <div className="absolute inset-0 -z-10 bg-hero-scrim/65" />
-        <div className="mx-auto max-w-7xl px-5 py-16 text-hero-foreground sm:px-8 sm:py-20">
+      <WallRoll src={room} label="An original botanical wallpaper mural, unrolling down the wall" minH="min-h-[460px] sm:min-h-[560px]">
+        <div className="absolute inset-0 -z-10 bg-hero-scrim/55" />
+        <div className="mx-auto flex min-h-[460px] max-w-7xl flex-col justify-center px-5 py-16 text-hero-foreground sm:min-h-[560px] sm:px-8 sm:py-20">
           <p className="text-xs font-medium uppercase">For artists, illustrators & wallpaper designers</p>
           <h1 className="mt-5 max-w-xl text-4xl leading-tight sm:text-6xl">Design with<br />Artisan Mural.</h1>
           <p className="mt-5 max-w-md text-base leading-7 text-hero-foreground/90">Your creativity belongs on real walls. Create original wallpaper, reach customers, and earn when they choose your work.</p>
-          <Button asChild size="lg" className="mt-7 h-12"><Link to="/become-designer">Apply as a designer <ArrowRight /></Link></Button>
+          <Button asChild size="lg" className="mt-7 h-12 w-fit"><Link to="/become-designer">Apply as a designer <ArrowRight /></Link></Button>
           <p className="mt-4 text-xs text-hero-foreground/80">Applications and every design are reviewed by our studio.</p>
         </div>
-      </section>
+      </WallRoll>
       <section className="border-b border-border bg-accent">
         <div className="mx-auto grid max-w-7xl gap-5 px-5 py-7 text-sm text-accent-foreground sm:grid-cols-3 sm:px-8">
           <p className="flex items-center gap-3"><Palette className="size-5 shrink-0" />Original murals & repeating patterns</p>

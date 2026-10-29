@@ -33,7 +33,7 @@
 .ms-av.store{background:var(--ms-own);color:#082635}
 .ms-empty{padding:28px 16px;text-align:center;color:var(--ms-m)}
 .ms-thread{display:flex;flex-direction:column;min-height:0;min-width:0}
-.ms-head{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--ms-b);background:#fff;position:sticky;top:0;z-index:1;min-height:52px}
+.ms-head{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--ms-b);background:#eaf5fc;position:sticky;top:0;z-index:1;min-height:52px}
 .ms-head-main{min-width:0;flex:1}
 .ms-head-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ms-head a.ms-link{font-size:12px;color:var(--ms-m);text-decoration:underline;text-underline-offset:2px}

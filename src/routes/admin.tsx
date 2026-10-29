@@ -43,6 +43,8 @@ function AdminPage() {
   useEffect(() => { const h = window.location.hash.slice(1).split(":")[0]; if (h) setSec(h); const on = () => { const x = window.location.hash.slice(1).split(":")[0]; if (x) setSec(x); }; window.addEventListener("hashchange", on); return () => window.removeEventListener("hashchange", on); }, []);
   useEffect(() => { if (typeof window !== "undefined" && window.location.hash.slice(1).split(":")[0] !== sec) window.history.replaceState(null, "", "#" + sec); }, [sec]);
   const unreadMsgs = useUnreadMessages(!!isAdmin);
+  const [badges, setBadges] = useState<Record<string, number>>({});
+  useEffect(() => { if (!isAdmin) return; let on = true; const go = () => api("admin/badges").then((r: any) => on && setBadges(r || {})).catch(() => {}); go(); const t = setInterval(go, 60000); return () => { on = false; clearInterval(t); }; }, [isAdmin, sec]);
   useEffect(() => {
     if (!session) { setIsAdmin(null); return; }
     api("admin/overview").then(() => setIsAdmin(true)).catch(() => setIsAdmin(false));
@@ -55,7 +57,7 @@ function AdminPage() {
     <div className="bo-mtop"><b className="bo-brand" style={{ fontSize: 19, padding: 0 }}>Artisan Mural<span className="bo-dot">.</span></b><select className="bo-sel" value={sec} onChange={(e) => setSec(e.target.value)} aria-label="Section">{[...NAV, ...NAV2].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select><NotificationBell /><a className="bo-btn sm" href="/">Site</a></div>
     <div className="bo-shell">
       <aside className="bo-side"><div className="bo-brand" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}><span>Artisan Mural<span className="bo-dot">.</span><small>Back office</small></span><NotificationBell /></div>
-        <nav className="bo-nav">{NAV.map(([k, l]) => <button key={k} className={sec === k ? "on" : ""} onClick={() => setSec(k)}>{l}{k === "messages" && unreadMsgs ? <span className="cnt">{unreadMsgs}</span> : null}</button>)}
+        <nav className="bo-nav">{NAV.map(([k, l]) => <button key={k} className={sec === k ? "on" : ""} onClick={() => setSec(k)}>{l}{k === "messages" && unreadMsgs ? <span className="cnt">{unreadMsgs}</span> : k !== "messages" && badges[k] ? <span className="cnt" data-testid={"badge-" + k}>{badges[k]}</span> : null}</button>)}
           <div className="grp">Site</div>{NAV2.map(([k, l]) => <button key={k} className={sec === k ? "on" : ""} onClick={() => setSec(k)}>{l}</button>)}
           <div className="grp">More</div><a href="/admin-classic">Classic studio tools</a><a href="/">View site</a><button onClick={() => supabase.auth.signOut()}>Sign out</button></nav>
         <div className="bo-sub" style={{ padding: "16px 10px 0" }}>{session.user?.email}</div></aside>

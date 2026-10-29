@@ -73,6 +73,7 @@ export function MyRoom({ design, selection, designerName, onAskFit }: { design: 
   const [mode, setMode] = useState<"idle" | "finding" | "pick" | "corners" | "show">("idle");
   const [taps, setTaps] = useState<P[]>([]);
   const [panels, setPanels] = useState(false);
+  const [moreTools, setMoreTools] = useState(false);
   const [keep, setKeep] = useState(true);
   const [adjust, setAdjust] = useState(false);
   const [note, setNote] = useState("");
@@ -416,6 +417,7 @@ export function MyRoom({ design, selection, designerName, onAskFit }: { design: 
       : aiWorking ? null
       : <>{aiFail && view === "ai" && <p className="text-xs text-muted-foreground" role="status">The AI picture didn't work this time ({aiFail}). Showing the quick preview instead.</p>}{note && <p className="text-xs text-muted-foreground" role="status">{note}</p>}</>}
     {error && <p className="text-sm text-destructive">{error}</p>}
+    {photo && (mode === "pick" || mode === "show") && sides.length > 0 && <p className="text-xs text-muted-foreground" data-testid="room-help-wall">Pick the wall you want papered. “Back wall” is the one facing you; “Left” and “Right” are the side walls.</p>}
     {photo && (mode === "pick" || mode === "show") && sides.length > 0 && <div className="flex flex-wrap gap-2" role="group" aria-label="Which wall">
       {sides.map((s) => <Button key={s} size="sm" variant={pick === s ? "default" : "outline"} onClick={() => { setPick(s); setUserWall(s); setMode("show"); }}>{sideName(s)}</Button>)}
       {walls.length > 1 && <Button size="sm" variant={pick === "all" ? "default" : "outline"} onClick={() => { setPick("all"); setUserWall("all"); setMode("show"); }}>All walls</Button>}
@@ -431,6 +433,7 @@ export function MyRoom({ design, selection, designerName, onAskFit }: { design: 
         <p className="text-xs text-muted-foreground">{ftIn(w.widthIn)} × {ftIn(w.heightIn)} · <b className="text-foreground">{count} panel{count > 1 ? "s" : ""}</b>, each {ftIn(PANEL_WIDTH_IN)} wide × {ftIn(w.heightIn)} long (3 in overlap) · {sqft.toFixed(1)} sq ft</p>
       </div>; })}
       <p className="border-t border-border pt-2"><b>Total: {totalPanels} panel{totalPanels > 1 ? "s" : ""} · {totalSqft.toFixed(1)} sq ft</b></p>
+      <p className="text-xs text-muted-foreground" data-testid="room-help-size">Why the wall size? It shows the pattern at its true size on your wall, and it works out how much wallpaper to print and the price. A tape measure is enough; you can change it before you order.</p>
     </div>}
     {photo && mode === "show" && brushOpen && <div className="space-y-2 rounded-md border border-border p-3 text-sm" role="group" aria-label="Brush">
       <div className="flex flex-wrap items-center gap-2">
@@ -445,16 +448,17 @@ export function MyRoom({ design, selection, designerName, onAskFit }: { design: 
         <span className="text-xs text-muted-foreground">{brush === "keep" ? "Paint over furniture to keep it in front." : "Paint over wall the wallpaper missed."}</span>
       </div>
     </div>}
+    {photo && mode === "show" && <div className="flex flex-wrap items-center gap-2"><Button size="sm" variant="ghost" aria-expanded={moreTools} data-testid="room-more-tools" onClick={() => setMoreTools(!moreTools)}>{moreTools ? "Fewer tools" : "More tools"}</Button>{moreTools && <span className="text-xs text-muted-foreground">Panels: shows where each roll's seam falls · Furniture in front: keeps sofas and lamps over the wallpaper · Brush (S/M/L = brush size): paint to fix spots the wallpaper missed · Adjust corners: move the wall's corners if the outline is off.</span>}</div>}
     {photo && <div className="flex flex-wrap gap-2">
-      {mode === "show" && <Button size="sm" variant="outline" onClick={() => setPanels(!panels)}>{panels ? "Hide panels" : "Show panels"}</Button>}
-      {mode === "show" && <Button size="sm" variant="outline" aria-pressed={keep} onClick={() => { keepTouched.current = true; setKeep(!keep); }}>{keep ? "Furniture in front: on" : "Furniture in front: off"}</Button>}
-      {mode === "show" && <Button size="sm" variant={brushOpen ? "default" : "outline"} aria-pressed={brushOpen} onClick={() => { const o = !brushOpen; setBrushOpen(o); setBrush(o ? "keep" : null); if (o) setAdjust(false); }}><Brush />Brush</Button>}
+      {mode === "show" && moreTools && <Button size="sm" variant="outline" onClick={() => setPanels(!panels)}>{panels ? "Hide panels" : "Show panels"}</Button>}
+      {mode === "show" && moreTools && <Button size="sm" variant="outline" aria-pressed={keep} onClick={() => { keepTouched.current = true; setKeep(!keep); }}>{keep ? "Furniture in front: on" : "Furniture in front: off"}</Button>}
+      {mode === "show" && moreTools && <Button size="sm" variant={brushOpen ? "default" : "outline"} aria-pressed={brushOpen} onClick={() => { const o = !brushOpen; setBrushOpen(o); setBrush(o ? "keep" : null); if (o) setAdjust(false); }}><Brush />Brush</Button>}
       {ai?.roomRender && (view === "ai"
         ? <Button size="sm" variant="outline" onClick={() => { setView("quick"); if (active.some(({ w }) => w.auto)) setAdjust(true); }}>Quick preview (exact size)</Button>
         : <Button size="sm" onClick={() => { setView("ai"); setAdjust(false); }}><Sparkles />AI picture</Button>)}
       {ai?.roomRender && view === "ai" && aiFail && !aiBusy && !aiShown && <Button size="sm" onClick={() => setAiRetry((n) => n + 1)}><Sparkles />Try the AI picture again</Button>}
-      {mode === "show" && !brushOpen && <Button size="sm" variant="outline" onClick={() => setAdjust(!adjust)}>{adjust ? (active.some(({ w }) => w.auto) ? "Looks right" : "Done adjusting") : "Adjust corners"}</Button>}
-      {(mode === "show" || mode === "pick") && <Button size="sm" variant="outline" onClick={() => { setTaps([]); setMode("corners"); }}><Plus />Add a wall by hand</Button>}
+      {mode === "show" && !brushOpen && (moreTools || adjust) && <Button size="sm" variant="outline" onClick={() => setAdjust(!adjust)}>{adjust ? (active.some(({ w }) => w.auto) ? "Looks right" : "Done adjusting") : "Adjust corners"}</Button>}
+      {(mode === "pick" || (mode === "show" && moreTools)) && <Button size="sm" variant="outline" onClick={() => { setTaps([]); setMode("corners"); }}><Plus />Add a wall by hand</Button>}
       {mode === "show" && <Button size="sm" variant="outline" onClick={() => { const a = document.createElement("a"); a.href = aiShown && !adjust ? aiShown.url : canvasRef.current!.toDataURL("image/jpeg", 0.9); a.download = "my-room.jpg"; a.click(); }}><Download />Save picture</Button>}
       <Button size="sm" variant="ghost" onClick={() => { setPhoto(null); setWalls([]); setMode("idle"); setNote(""); setTaps([]); resetTools(); }}><RotateCcw />{photo.sample ? "Other room" : "New photo"}</Button>
     </div>}

@@ -13,6 +13,7 @@ import { RoomShowcase } from "@/components/room-showcase";
 import { DesignerInvitation } from "@/components/designer-invitation";
 import { Button } from "@/components/ui/button";
 import { DesignCard } from "@/components/design-card";
+import { HomeSearch } from "@/components/home-search";
 import { PRICE_PER_SQFT, liveDesigns, money, registerShop, categories as allCategories } from "@/lib/catalog";
 import { ensureShop } from "@/lib/shop";
 import { loadSite } from "@/lib/site-settings";
@@ -116,6 +117,7 @@ function Index() {
           className="order-1 h-auto w-full object-cover lg:order-2 lg:h-[560px] lg:object-[62%_center]"
         />
       </section>
+      <HomeSearch designs={live} />
       <section aria-label="Made-to-measure wallpaper" className="border-b border-border">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-4 gap-y-4 px-5 py-6 text-xs sm:grid-cols-4 sm:px-8">
           <span className="flex items-center gap-2">

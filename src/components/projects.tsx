@@ -124,7 +124,7 @@ export function RequestChange({ design, designer, open: openProp, onOpenChange, 
     (async () => {
       try {
         const thumb = typeof design.image === "string" ? (design.image.startsWith("/") || design.image.startsWith("https://") ? design.image : new URL(design.image, window.location.origin).href) : undefined;
-        const r = await papi("projects/start-chat", { designSlug: design.slug, title: design.title, thumb });
+        const r = await papi("projects/start-chat", { designSlug: design.slug, title: design.title, sku: (design as any).sku, thumb });
         try { if (prefill) sessionStorage.setItem("am-brief-" + r.id, JSON.stringify(prefill)); } catch {}
         setOpen(false);
         await navigate({ to: "/messages", search: { c: r.key } as any });
@@ -143,7 +143,7 @@ export function RequestChange({ design, designer, open: openProp, onOpenChange, 
 }
 
 /** The request form shown inside a new design chat (customer side) until it's sent. */
-export function BriefForm({ projectId, onDone }: { projectId: string; onDone: () => void }) {
+export function BriefForm({ projectId, onDone, who }: { projectId: string; onDone: () => void; who?: string }) {
   const pre = (() => { try { return JSON.parse(sessionStorage.getItem("am-brief-" + projectId) || "null"); } catch { return null; } })();
   const [f, setF] = useState({ room: "", change: pre?.brief ?? "", w: "", h: "", unit: "ft", size: pre?.wallSize ?? "", notes: "" });
   const [atts, setAtts] = useState<Att[]>([]);
@@ -157,7 +157,7 @@ export function BriefForm({ projectId, onDone }: { projectId: string; onDone: ()
     catch (x: any) { setErr(x.message || "Could not send."); } finally { setBusy(false); }
   }
   return <form onSubmit={submit} className="am-brief" data-testid="brief-form">
-    <p className="am-brief-h">Tell the designer what you need</p>
+    <p className="am-brief-h">Hi! Tell {who ? who.split(" ")[0] : "the designer"} about your wall</p><p className="am-brief-sub">Fill in what you know. It goes into this chat, and you can keep talking after.</p>
     <div className="grid gap-3 sm:grid-cols-2">
       <label className="text-[13px] font-medium">Which room<select className={inp + " mt-1"} value={f.room} onChange={(e) => setF({ ...f, room: e.target.value })}><option value="">Choose…</option>{["Living room", "Bedroom", "Kids & nursery", "Dining room", "Kitchen", "Bathroom", "Hallway & stairs", "Office", "Commercial space", "Other"].map((r) => <option key={r}>{r}</option>)}</select></label>
       <div className="text-[13px] font-medium">Wall size<div className="mt-1 flex items-center gap-1.5"><input className={inp} inputMode="decimal" placeholder="Width" value={f.w} onChange={(e) => setF({ ...f, w: e.target.value })} aria-label="Wall width" /><span>×</span><input className={inp} inputMode="decimal" placeholder="Height" value={f.h} onChange={(e) => setF({ ...f, h: e.target.value })} aria-label="Wall height" /><select className={inp + " !w-[72px]"} value={f.unit} onChange={(e) => setF({ ...f, unit: e.target.value })} aria-label="Unit"><option>ft</option><option>in</option><option>cm</option><option>m</option></select></div>{f.size && !(f.w && f.h) ? <span className="text-xs text-muted-foreground">From your selection: {f.size}</span> : null}</div>
@@ -167,7 +167,7 @@ export function BriefForm({ projectId, onDone }: { projectId: string; onDone: ()
     <div className="mt-3 flex flex-wrap items-center gap-2"><AttachButton onAdd={(a) => setAtts((x) => [...x, a])} disabled={busy} /><span className="text-xs text-muted-foreground">Optional: a photo of your wall</span></div>
     {atts.length > 0 && <AttList items={atts} onRemove={(i) => setAtts((x) => x.filter((_, k) => k !== i))} />}
     {(warn || err) && <p className="mt-2 text-sm text-destructive" role="alert">{warn ? `This looks like ${warn}. Contact details can't be shared. Everything stays on Artisan Mural.` : err}</p>}
-    <button type="submit" disabled={busy || !!warn} className="am-brief-send">{busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}Send to the designer</button>
+    <button type="submit" disabled={busy || !!warn} className="am-brief-send">{busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}Send to {who ? who.split(" ")[0] : "the designer"}</button>
   </form>;
 }
 

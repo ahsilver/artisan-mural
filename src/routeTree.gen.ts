@@ -22,6 +22,7 @@ import { Route as CustomRequestRouteImport } from './routes/custom-request'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DesignerLoginRouteImport } from './routes/designer-login'
 import { Route as DesignerUploadRouteImport } from './routes/designer-upload'
+import { Route as HomeSampleRouteImport } from './routes/home-sample'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SellRouteImport } from './routes/sell'
@@ -104,6 +105,11 @@ const DesignerLoginRoute = DesignerLoginRouteImport.update({
 const DesignerUploadRoute = DesignerUploadRouteImport.update({
   id: '/designer-upload',
   path: '/designer-upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeSampleRoute = HomeSampleRouteImport.update({
+  id: '/home-sample',
+  path: '/home-sample',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MessagesRoute = MessagesRouteImport.update({
@@ -211,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/designer-login': typeof DesignerLoginRoute
   '/designer-upload': typeof DesignerUploadRoute
+  '/home-sample': typeof HomeSampleRoute
   '/messages': typeof MessagesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sell': typeof SellRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/designer-login': typeof DesignerLoginRoute
   '/designer-upload': typeof DesignerUploadRoute
+  '/home-sample': typeof HomeSampleRoute
   '/messages': typeof MessagesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sell': typeof SellRoute
@@ -278,6 +286,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/designer-login': typeof DesignerLoginRoute
   '/designer-upload': typeof DesignerUploadRoute
+  '/home-sample': typeof HomeSampleRoute
   '/messages': typeof MessagesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sell': typeof SellRoute
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/designer-login'
     | '/designer-upload'
+    | '/home-sample'
     | '/messages'
     | '/reset-password'
     | '/sell'
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/designer-login'
     | '/designer-upload'
+    | '/home-sample'
     | '/messages'
     | '/reset-password'
     | '/sell'
@@ -379,6 +390,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/designer-login'
     | '/designer-upload'
+    | '/home-sample'
     | '/messages'
     | '/reset-password'
     | '/sell'
@@ -413,6 +425,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DesignerLoginRoute: typeof DesignerLoginRoute
   DesignerUploadRoute: typeof DesignerUploadRoute
+  HomeSampleRoute: typeof HomeSampleRoute
   MessagesRoute: typeof MessagesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SellRoute: typeof SellRoute
@@ -524,6 +537,13 @@ declare module '@tanstack/react-router' {
       path: '/designer-upload'
       fullPath: '/designer-upload'
       preLoaderRoute: typeof DesignerUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home-sample': {
+      id: '/home-sample'
+      path: '/home-sample'
+      fullPath: '/home-sample'
+      preLoaderRoute: typeof HomeSampleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/messages': {
@@ -669,6 +689,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   DesignerLoginRoute: DesignerLoginRoute,
   DesignerUploadRoute: DesignerUploadRoute,
+  HomeSampleRoute: HomeSampleRoute,
   MessagesRoute: MessagesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SellRoute: SellRoute,

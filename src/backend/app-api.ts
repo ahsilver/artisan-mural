@@ -275,6 +275,16 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     const { billingRoutes } = await import("./invoices-api");
     return await billingRoutes(env, who, p, m, body, sp);
   }
+  if (p === "badges") {
+    const one = async (q: string) => Number(((await DB.prepare(q).first()) as any)?.n ?? 0);
+    return j({
+      designs: await one(`SELECT COUNT(*) n FROM artwork_uploads WHERE review_status = 'pending' AND submitted_at IS NOT NULL AND deleted_at IS NULL`),
+      designers: await one(`SELECT COUNT(*) n FROM designer_profiles WHERE status = 'pending'`),
+      orders: await one(`SELECT COUNT(*) n FROM order_requests WHERE status NOT IN ('shipped','delivered','cancelled','refunded','awaiting_payment','completed')`),
+      print: await one(`SELECT COUNT(*) n FROM order_requests WHERE status IN ('paid','ready_to_print','processing','printing')`),
+      jobs: await one(`SELECT COUNT(*) n FROM custom_requests WHERE status = 'new'`).catch(() => 0),
+    });
+  }
   if (p === "overview") {
     const settings = await getSettings(env);
     const counts = (await DB.prepare(`SELECT status, COUNT(*) n, SUM(estimated_total) t FROM order_requests GROUP BY status`).all()).results ?? [];
