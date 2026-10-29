@@ -460,7 +460,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     // built-in catalog designs too
     let builtIn: any[] = [];
     try { const { designs } = await import("@/lib/catalog"); builtIn = (designs as any[]).map((d) => ({ slug: d.slug, categories: parseJ((ov.get(d.slug) as any)?.categories, null) ?? d.categories, madeFor: parseJ((ov.get(d.slug) as any)?.rooms, null) ?? d.room, title: (ov.get(d.slug) as any)?.title || d.title, designer: d.designer, image: d.image, hidden: listing.get(d.slug) ?? false, pricePerSqft: (ov.get(d.slug) as any)?.price_per_sqft ?? null, builtIn: true })); } catch {}
-    return j({ uploads: list.map((x: any) => ({ ...x, thumb: x.thumbPath ? signed[x.thumbPath] : null, mockups: (x.mockPaths ?? []).map((k: string) => signed[k]).filter(Boolean), colors: x.colors.map((c: any) => ({ ...c, thumb: c.path ? signed[c.path] ?? null : null })) })), builtIn, featured: settings.homepage.featuredSlugs ?? [] });
+    return j({ uploads: list.map((x: any) => ({ ...x, thumb: x.thumbPath ? signed[x.thumbPath] : null, mockups: (x.mockPaths ?? []).map((k: string) => signed[k]).filter(Boolean), colors: x.colors.map((c: any) => ({ ...c, thumb: c.path ? signed[c.path] ?? null : null })) })), builtIn, featured: settings.homepage.featuredSlugs ?? [], defaultRate: Number(settings.general?.pricePerSqft) || null });
   }
   mm = p.match(/^colorways\/([0-9a-f-]{36})$/);
   if (mm && (m === "POST" || m === "DELETE")) {
@@ -495,7 +495,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
       }
       const job = key ? jobs.find((x) => x.file_key === key) : null;
       out.push({ color: r.name, filename: r.filename, mime: r.mime_type, size: r.byte_size, width: r.pixel_width, height: r.pixel_height, dpi: r.effective_dpi, uploadedAt: r.created_at,
-        storage: key ? `Artisan Mural file storage › ${key}` : null,
+        storage: key ? "Our stored copy (Artisan Mural storage)" : null,
         url: key ? env.PUBLIC_ORIGIN + "/storage/v1" + (await signUrl(env, "print-originals", r.storage_path, ttl)) + "&download=" + encodeURIComponent(r.filename || "original") : null, urlDays: 7,
         drive: job?.src && /^[\w-]{10,}$/.test(job.src) ? `https://drive.google.com/file/d/${job.src}/view` : null });
     }
@@ -504,7 +504,8 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
   mm = p.match(/^designs\/([a-z0-9-]{1,80})\/listing$/);
   if (mm && m === "POST") {
     await DB.prepare(`INSERT INTO design_listing (slug, hidden, updated_at, updated_by) VALUES (?, ?, ?, ?) ON CONFLICT(slug) DO UPDATE SET hidden = excluded.hidden, updated_at = excluded.updated_at, updated_by = excluded.updated_by`).bind(mm[1], body.hidden ? 1 : 0, nowIso(), who.uid).run();
-    return j({ ok: true });
+    try { const { invalidateShopCache } = await import("@/lib/shop.server"); invalidateShopCache(); } catch {}
+    return j({ ok: true, hidden: !!body.hidden });
   }
   mm = p.match(/^designs\/([a-z0-9-]{1,80})\/override$/);
   if (mm && m === "POST") {
@@ -523,6 +524,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
         if (rooms) await DB.prepare(`UPDATE design_overrides SET rooms = ? WHERE slug = ?`).bind(rooms, mm[1]).run();
       }
     }
+    try { const { invalidateShopCache } = await import("@/lib/shop.server"); invalidateShopCache(); } catch {}
     return j({ ok: true });
   }
   // ----- archive: what designers removed (nothing is really deleted until the owner says so) -----

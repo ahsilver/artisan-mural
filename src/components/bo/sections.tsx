@@ -1,7 +1,7 @@
 import { RepeatIcon, repeatTypeOf, type RepeatType } from "@/components/designer/design-editor";
 import { MatchLabel } from "../designer/match-info";
 import { ThumbsBar } from "./thumbs";
-import { designBySlug, materials, defaultMaterials } from "@/lib/catalog";
+import { designBySlug, designerBySlug, materials, defaultMaterials } from "@/lib/catalog";
 const finishName = (id: string) => (materials.find((m) => m.id === id) ?? defaultMaterials.find((m) => m.id === id))?.name ?? id;
 /** The designer's recommended finish(es) + note, read-only, for the owner's review screens. */
 function RecFinish({ r }: { r: any }) {
@@ -48,7 +48,7 @@ export function Overview({ go }: { go: (s: string) => void }) {
 const REVIEW_TONE: any = { approved: "ok", pending: "warn", rejected: "bad" };
 export function Designs() {
   const { data, error, reload } = useApi<any>("admin/designs");
-  const [tab, setTab] = useState("pending");
+  const [tab, setTab] = useState(() => (typeof window !== "undefined" && window.location.hash.includes("designs:review") ? "pending" : "all"));
   const [edit, setEdit] = useState<any>(null);
   const s = useSaver();
   if (error) return <Msg m={{ text: error }} />;
@@ -60,9 +60,9 @@ export function Designs() {
   return <div>
     <div className="bo-top"><h1>Designs</h1></div>
     <ThumbsBar key={count("approved")} />
-    <div className="bo-tabs">{[["pending", `To review (${count("pending")})`], ["approved", `Approved (${count("approved")})`], ["rejected", "Rejected"], ["drafts", "Drafts"], ["all", "All uploads"], ["builtin", `Sample designs (${data.builtIn.length})`], ["archived", "Deleted by designers"]].map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}</div>
+    <div className="bo-tabs">{[["all", `All designs (${data.uploads.length + data.builtIn.length})`], ["pending", `To review (${count("pending")})`], ["approved", `Approved (${count("approved")})`], ["rejected", "Rejected"], ["drafts", "Drafts"], ["builtin", `Sample designs (${data.builtIn.length})`], ["archived", "Deleted by designers"]].map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}</div>
     <Msg m={s.msg} />
-    {tab === "archived" ? <Archive /> : tab === "builtin" ? <table className="bo-tbl stack"><thead><tr><th></th><th>Design</th><th>Designer</th><th>Price / sq ft</th><th>Shop</th><th></th></tr></thead><tbody>
+    {tab === "all" ? <AllDesigns data={data} onOpen={setEdit} listing={listing} /> : tab === "archived" ? <Archive /> : tab === "builtin" ? <table className="bo-tbl stack"><thead><tr><th></th><th>Design</th><th>Designer</th><th>Price / sq ft</th><th>Shop</th><th></th></tr></thead><tbody>
       {data.builtIn.map((d: any) => <tr key={d.slug}><td><img className="bo-thumb" src={d.image} alt="" /></td><td>{d.title}<div className="bo-sub">{d.slug}</div></td><td data-l="Designer">{d.designer}</td><td data-l="Price">{d.pricePerSqft ? money(d.pricePerSqft) : "Default"}</td>
         <td><Switch checked={!d.hidden} onChange={(v) => listing(d.slug, !v)} label={d.hidden ? "Hidden" : "Visible"} /></td><td><button className="bo-btn sm" onClick={() => setEdit(d)}>Edit</button></td></tr>)}
     </tbody></table> :
@@ -77,7 +77,48 @@ export function Designs() {
             <td>{u.review === "approved" ? <Switch checked={!u.hidden} onChange={(v) => listing(u.slug, !v)} /> : <span className="bo-sub">—</span>}</td>
             <td><div className="bo-row">{u.review !== "approved" && <button className="bo-btn sm pri" disabled={s.busy} onClick={() => review(u, "approved")}>Approve</button>}{u.review !== "rejected" && <button className="bo-btn sm" disabled={s.busy} onClick={() => review(u, "rejected")}>Reject</button>}<button className="bo-btn sm" onClick={() => setEdit(u)}>Edit</button>{u.review === "approved" && <a className="bo-btn sm" href={`/design/${u.slug}`} target="_blank" rel="noreferrer">View</a>}</div></td></tr>)}
         </tbody></table>}
-    <Drawer open={!!edit} onClose={() => setEdit(null)}>{edit && <EditDesign d={edit} onDone={() => { setEdit(null); reload(); }} />}</Drawer>
+    <Drawer wide open={!!edit} onClose={() => setEdit(null)}>{edit && <EditDesign key={edit.slug} d={edit} defaultRate={data.defaultRate} onChanged={reload} onDone={() => { setEdit(null); reload(); }} />}</Drawer>
+  </div>;
+}
+/** Owner: what a design is right now, in plain words. */
+function designStatus(d: any): { label: string; tone?: "ok" | "warn" | "bad" | "info"; key: string } {
+  if (d.builtIn) return d.hidden ? { label: "Hidden", tone: "info", key: "hidden" } : { label: "Live", tone: "ok", key: "live" };
+  if (d.review === "approved") return d.hidden ? { label: "Hidden", tone: "info", key: "hidden" } : { label: "Live", tone: "ok", key: "live" };
+  if (d.review === "rejected") return { label: "Declined", tone: "bad", key: "declined" };
+  if (d.submittedAt) return { label: "Pending", tone: "warn", key: "pending" };
+  return { label: "Draft", key: "draft" };
+}
+const priceText = (d: any, defaultRate?: number | null) => d.pricePerSqft ? `${money(d.pricePerSqft)} / sq ft` : `Default${defaultRate ? ` (${money(defaultRate)})` : ""}`;
+/** Owner: every design in one list (designer uploads + sample designs), searchable. */
+function AllDesigns({ data, onOpen, listing }: { data: any; onOpen: (d: any) => void; listing: (slug: string, hidden: boolean) => void }) {
+  const [q, setQ] = useState("");
+  const [st, setSt] = useState("shop");
+  const rows = [...data.uploads.map((u: any) => ({ ...u, designerName: u.ownerName || u.owner, image: u.thumb })), ...data.builtIn.map((d: any) => ({ ...d, designerName: designerBySlug(d.designer)?.name || d.designer, sample: true }))];
+  const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const hay = (d: any) => [d.title, d.sku, d.slug, d.id, d.designerName, d.owner, ...(d.categories ?? []), ...(d.tags ?? []), ...(d.madeFor ?? []), d.palette, ...(d.colors ?? []).map((c: any) => c.name)].filter(Boolean).join(" ").toLowerCase();
+  const order: Record<string, number> = { live: 0, hidden: 1, pending: 2, declined: 3, draft: 4 };
+  const shown = rows.filter((d) => (st === "any" || (st === "shop" ? designStatus(d).key !== "draft" : st === "samples" ? d.sample : st === "uploads" ? !d.sample : designStatus(d).key === st)) && words.every((w) => hay(d).includes(w))).sort((a, b) => (order[designStatus(a).key] ?? 9) - (order[designStatus(b).key] ?? 9) || String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  const n = (k: string) => rows.filter((d) => designStatus(d).key === k).length;
+  return <div data-testid="all-designs">
+    <div className="bo-row" style={{ gap: 8, margin: "4px 0 10px" }}>
+      <input className="bo-in" style={{ flex: "1 1 260px", maxWidth: 420 }} type="search" placeholder="Search name, designer, style, keyword or ID" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search designs" data-testid="design-search" />
+      <select className="bo-sel" style={{ width: "auto", flex: "0 0 auto" }} value={st} onChange={(e) => setSt(e.target.value)} aria-label="Status" data-testid="design-status-filter">
+        <option value="shop">All except drafts ({rows.length - n("draft")})</option><option value="any">Everything, drafts too ({rows.length})</option><option value="live">Live ({n("live")})</option><option value="hidden">Hidden ({n("hidden")})</option><option value="pending">Pending ({n("pending")})</option><option value="declined">Declined ({n("declined")})</option><option value="draft">Drafts ({n("draft")})</option><option value="uploads">Designer uploads only</option><option value="samples">Sample designs only</option>
+      </select>
+      <span className="bo-sub">{shown.length} of {rows.length}</span>
+    </div>
+    {shown.length === 0 ? <div className="bo-empty">No design matches.</div> :
+      <table className="bo-tbl stack ad-tbl"><thead><tr><th></th><th>Design</th><th>Designer</th><th>Status</th><th>Price</th><th>Added</th><th>In shop</th></tr></thead><tbody>
+        {shown.map((d: any) => { const s = designStatus(d); const canList = d.sample || d.review === "approved"; return <tr key={d.slug} onClick={() => onOpen(d)} style={{ cursor: "pointer" }} data-testid="design-row" title="Open this design">
+          <td>{d.image ? <img className="bo-thumb" src={d.image} alt="" loading="lazy" /> : <div className="bo-thumb" />}</td>
+          <td><b style={{ fontWeight: 600 }}>{d.title}</b><div className="bo-sub">{d.sample ? "Sample design" : d.sku || d.id?.slice(0, 8)}{d.colors?.length ? ` · ${d.colors.length} color${d.colors.length === 1 ? "" : "s"}` : ""}{d.kind ? ` · ${d.kind === "mural" ? "Mural" : "Repeat"}` : ""}</div></td>
+          <td data-l="Designer">{d.designerName || "—"}</td>
+          <td data-l="Status"><Pill tone={s.tone}>{s.label}</Pill></td>
+          <td data-l="Price">{priceText(d, data.defaultRate)}</td>
+          <td data-l="Added">{d.createdAt ? fmtDate(d.createdAt) : "—"}</td>
+          <td data-l="In shop" onClick={(e) => e.stopPropagation()}>{canList ? <Switch checked={!d.hidden} onChange={(v) => listing(d.slug, !v)} label={d.hidden ? "Hidden" : "Visible"} /> : <span className="bo-sub">Not yet</span>}</td>
+        </tr>; })}
+      </tbody></table>}
   </div>;
 }
 function AdminRepeatType({ d }: { d: any }) {
@@ -92,24 +133,66 @@ function AdminRepeatType({ d }: { d: any }) {
     <Msg m={s.msg} />
   </Field>;
 }
-function EditDesign({ d, onDone }: { d: any; onDone: () => void }) {
+function EditDesign({ d, onDone, onChanged, defaultRate }: { d: any; onDone: () => void; onChanged?: () => void; defaultRate?: number | null }) {
   const s = useSaver();
+  const up = !d.builtIn && !!d.id;
+  const inch = (cm: any) => (cm ? String(Math.round((Number(cm) / 2.54) * 10) / 10) : "");
   const [f, setF] = useState<any>({ title: d.title ?? "", story: d.story ?? "", description: d.description ?? "", pricePerSqft: d.pricePerSqft ?? "", categories: canonicalCategories(d.categories ?? []), rooms: canonicalRooms(d.madeFor ?? []) });
+  const first = { tags: (d.tags ?? []).join(", "), palette: d.palette ?? "", notes: d.notes ?? "", widthIn: inch(d.widthCm), heightIn: inch(d.heightCm) };
+  const [g, setG] = useState<any>(first);
+  const [hidden, setHidden] = useState<boolean>(!!d.hidden);
+  const [review, setReview] = useState<string>(d.review);
+  const st = designStatus({ ...d, hidden, review });
+  const canList = d.builtIn || review === "approved";
   const [tax, setTax] = useState(getTaxonomy());
   useEffect(() => { loadSite().then((site: any) => { if (site?.taxonomy) { setTaxonomy(site.taxonomy); setTax(getTaxonomy()); } }).catch(() => {}); }, []);
   const chips = (key: "categories" | "rooms", list: string[]) => <div className="bo-row" style={{ gap: 5 }}>{list.map((x) => { const on = f[key].includes(x); return <button key={x} type="button" aria-pressed={on} className={"bo-btn sm" + (on ? " pri" : "")} onClick={() => setF({ ...f, [key]: on ? f[key].filter((y: string) => y !== x) : [...f[key], x] })}>{x}</button>; })}</div>;
   const [colors, setColors] = useState<any[]>(d.colors ?? []);
   const colorEdit = async (c: any, body: any) => { const r = await s.run(() => api(`admin/colorways/${c.id}`, body === "DELETE" ? { method: "DELETE" } : { body }), "Color saved"); if (r !== undefined && r !== false) { const fresh = await api("admin/designs"); const u = fresh.uploads.find((x: any) => x.id === d.id); if (u) setColors(u.colors); } };
-  return <div><h2>Edit {d.title}</h2><div className="bo-sub" style={{ marginBottom: 12 }}>Changes show in the shop. Leave price empty to use the site price.</div><Msg m={s.msg} />
-    <Field label="Title"><input className="bo-in" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></Field>
-    {!d.builtIn && d.id && <AdminRepeatType d={d} />}
-    <Field label="Price per sq ft ($)" hint={`Empty = the default price.${d.suggestedPrice ? ` Designer suggests $${Number(d.suggestedPrice).toFixed(2)}.` : ""}`}><div className="bo-row" style={{ flexWrap: "nowrap" }}><input className="bo-in" type="number" step="0.01" value={f.pricePerSqft} onChange={(e) => setF({ ...f, pricePerSqft: e.target.value })} />{d.suggestedPrice ? <button type="button" className="bo-btn sm" onClick={() => setF({ ...f, pricePerSqft: d.suggestedPrice })}>Use suggested</button> : null}</div></Field>
+  const setListed = (v: boolean) => s.run(async () => { await api(`admin/designs/${d.slug}/listing`, { body: { hidden: !v } }); setHidden(!v); onChanged?.(); }, v ? "Visible in the shop again (updates within 2 minutes)." : "Hidden from the shop. Nothing is deleted; switch it back on any time.");
+  const doReview = (action: string) => { const note = action === "rejected" ? prompt("Reason for the designer (optional)") ?? "" : ""; s.run(async () => { await api(`admin/designs/${d.id}/review`, { body: { action, note } }); setReview(action); onChanged?.(); }, action === "approved" ? "Approved. It is now live in the shop." : "Declined."); };
+  const save = async () => {
+    const extra: any = {};
+    if (up) {
+      if (g.tags !== first.tags) extra.tags = g.tags;
+      if (g.palette !== first.palette) extra.palette = g.palette;
+      if (g.notes !== first.notes) extra.notes = g.notes;
+      for (const [k, col] of [["widthIn", "widthCm"], ["heightIn", "heightCm"]] as const) if (g[k] !== first[k]) { const n = Number(g[k]); if (!(n > 0 && n < 2000)) { alert("Size must be a number of inches."); return; } extra[col] = Math.round(n * 2.54 * 100) / 100; }
+    }
+    if (await s.run(async () => { await api(`admin/designs/${d.slug}/override`, { body: f }); if (Object.keys(extra).length) await api(`designer/uploads/${d.id}`, { body: extra }); })) onDone();
+  };
+  return <div data-testid="design-page">
+    <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 10 }}>
+      {(d.thumb || d.image) ? <img src={d.thumb || d.image} alt="" style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 8, flex: "none" }} /> : null}
+      <div style={{ minWidth: 0 }}><h2 style={{ margin: "0 0 4px" }}>{d.title}</h2>
+        <div className="bo-sub">{d.builtIn ? `Sample design · ${designerBySlug(d.designer)?.name || d.designer}` : `${d.ownerName || d.owner || "Designer"} · ${d.sku || d.id}`}{d.createdAt ? ` · added ${fmtDate(d.createdAt)}` : ""}{d.sales?.orders ? ` · ${d.sales.orders} sold` : ""}</div>
+        <div style={{ marginTop: 6 }}><Pill tone={st.tone}>{st.label}</Pill></div></div>
+    </div>
+    <div className="rp-box" style={{ margin: "0 0 12px" }} data-testid="listing-box">
+      {canList ? <div className="bo-row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+        <div><b>In the shop</b><div className="bo-sub">{hidden ? "Hidden: customers can't see or buy it. Nothing is deleted." : "Visible: customers can see and buy it."}</div></div>
+        <div className="bo-row" style={{ gap: 8 }}><Switch checked={!hidden} onChange={setListed} label={hidden ? "Hidden" : "Visible"} />{!hidden && <a className="bo-btn sm" href={`/design/${d.slug}`} target="_blank" rel="noreferrer">View in shop</a>}</div>
+      </div> : <div className="bo-row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+        <div><b>Not in the shop</b><div className="bo-sub">{review === "rejected" ? "Declined." : d.submittedAt ? "Waiting for your review." : "Draft: the designer hasn't sent it yet."} It shows in the shop once approved.</div></div>
+        <div className="bo-row" style={{ gap: 6 }}>{up && <button className="bo-btn sm pri" disabled={s.busy} onClick={() => doReview("approved")}>Approve</button>}{up && review !== "rejected" && <button className="bo-btn sm" disabled={s.busy} onClick={() => doReview("rejected")}>Decline</button>}</div>
+      </div>}
+    </div>
+    {up && <div className="rp-box" style={{ margin: "0 0 12px" }}><b>Original files</b><div className="bo-sub">The full-size files for printing. They are big, so they open only when you ask.</div><OriginalToggle id={d.id} big /></div>}
+    <div className="bo-sub" style={{ marginBottom: 12 }}>Edit anything below, then press Save. Changes show in the shop within 2 minutes.</div><Msg m={s.msg} />
+    <Field label="Name"><input className="bo-in" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} data-testid="edit-title" /></Field>
+    <Field label="Price per sq ft ($)" hint={`Empty = the site price${defaultRate ? ` (${money(defaultRate)})` : ""}.${d.suggestedPrice ? ` Designer suggests $${Number(d.suggestedPrice).toFixed(2)}.` : ""}`}><div className="bo-row" style={{ flexWrap: "nowrap" }}><input className="bo-in" type="number" step="0.01" value={f.pricePerSqft} onChange={(e) => setF({ ...f, pricePerSqft: e.target.value })} data-testid="edit-price" />{d.suggestedPrice ? <button type="button" className="bo-btn sm" onClick={() => setF({ ...f, pricePerSqft: d.suggestedPrice })}>Use suggested</button> : null}</div></Field>
+    {up && <AdminRepeatType d={d} />}
+    {up && <Field label="Design size (inches)" hint={d.kind === "mural" ? "The full picture size the designer gave. The product page and size calculator use it." : "The size of one repeat tile. Printing uses it to scale the pattern."}><div className="bo-row" style={{ flexWrap: "nowrap", gap: 6 }}><input className="bo-in" type="number" step="0.1" value={g.widthIn} onChange={(e) => setG({ ...g, widthIn: e.target.value })} aria-label="Width in inches" style={{ maxWidth: 120 }} /><span>×</span><input className="bo-in" type="number" step="0.1" value={g.heightIn} onChange={(e) => setG({ ...g, heightIn: e.target.value })} aria-label="Height in inches" style={{ maxWidth: 120 }} /><span className="bo-sub">in{g.widthIn && g.heightIn ? ` (${(Number(g.widthIn) / 12).toFixed(1)} × ${(Number(g.heightIn) / 12).toFixed(1)} ft)` : ""}</span></div></Field>}
     <Field label="Style" hint="Shop filters and category links use these. Edit the lists in Settings > Categories.">{chips("categories", tax.styles)}</Field>
     <Field label="Theme / subject">{chips("categories", tax.themes)}</Field>
     <Field label="Rooms">{chips("rooms", tax.rooms)}</Field>
+    {up && <Field label="Search keywords" hint="Separated by commas. Shop search finds the design by these."><input className="bo-in" value={g.tags} onChange={(e) => setG({ ...g, tags: e.target.value })} data-testid="edit-tags" /></Field>}
+    {up && <Field label="Main colors"><input className="bo-in" value={g.palette} onChange={(e) => setG({ ...g, palette: e.target.value })} /></Field>}
     <Field label="Short description"><textarea className="bo-ta" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></Field>
     <Field label="Story"><textarea className="bo-ta" value={f.story} onChange={(e) => setF({ ...f, story: e.target.value })} /></Field>
-    {!d.builtIn && colors.length > 0 && <Field label={`Colors (${colors.length})`} hint="The first color is the main picture. Changes show in the shop within 2 minutes.">
+    {up && <Field label="Printing notes (from the designer)"><textarea className="bo-ta" value={g.notes} onChange={(e) => setG({ ...g, notes: e.target.value })} /></Field>}
+    {up && d.designerDescription && d.designerDescription !== f.description && <div className="bo-sub" style={{ margin: "-4px 0 10px" }}>Designer's own description: {d.designerDescription}</div>}
+    {up && colors.length > 0 && <Field label={`Colors (${colors.length})`} hint="The first color is the main picture. Changes show in the shop within 2 minutes.">
       <div data-testid="admin-colors">{colors.map((c: any, i: number) => <div key={c.id} className="bo-row" style={{ gap: 6, padding: "5px 0", borderTop: i ? "1px solid #f0efed" : "none", flexWrap: "nowrap" }}>
         {c.thumb ? <img src={c.thumb} alt="" className="bo-thumb" style={{ width: 40, height: 40 }} /> : <div className="bo-thumb" style={{ width: 40, height: 40 }} />}
         <input type="color" className="bo-swatch" defaultValue={c.swatch || "#cccccc"} onBlur={(e) => e.target.value !== c.swatch && colorEdit(c, { swatch: e.target.value })} aria-label={`Color dot for ${c.name}`} />
@@ -117,37 +200,33 @@ function EditDesign({ d, onDone }: { d: any; onDone: () => void }) {
         {i > 0 && <button type="button" className="bo-btn sm" onClick={() => colorEdit(c, { move: -1 })} aria-label="Move up">↑</button>}
         {colors.length > 1 && <button type="button" className="bo-btn sm" onClick={() => confirm(`Remove the color "${c.name}"? Its print file stays in storage.`) && colorEdit(c, "DELETE")}>Remove</button>}
       </div>)}</div>
-      {d.designerDescription && !d.description && <div className="bo-sub">Designer's description: {d.designerDescription}</div>}
     </Field>}
     {d.recommendedFinish && (d.recommendedFinish.ids?.length || d.recommendedFinish.note) ? <Field label="Recommended finish (from the designer)"><RecFinish r={d.recommendedFinish} /></Field> : null}
-    {(d.notes || d.tags?.length || d.palette) && <Field label="From the designer">
-      <div className="bo-sub">{d.notes && <>Printing notes: {d.notes}<br /></>}{d.palette && <>Main colors: {d.palette}<br /></>}{d.tags?.length ? <>Keywords: {d.tags.join(", ")}</> : null}</div>
-    </Field>}
-    {!d.builtIn && d.colors?.length > 0 && <AdminRoomPictures d={d} />}
-    {!d.builtIn && d.id && <OriginalLinks id={d.id} />}
+    <div style={{ position: "sticky", bottom: 0, background: "#fff", padding: "10px 0", borderTop: "1px solid #f0efed", margin: "6px 0 14px", zIndex: 2 }}><button className="bo-btn pri" disabled={s.busy} onClick={save} data-testid="edit-save">Save changes</button></div>
+    {up && colors.length > 0 && <AdminRoomPictures d={d} />}
     {d.printFile && <Field label="Print file"><a className="bo-btn sm" href={d.printFile} target="_blank" rel="noreferrer">Open print file</a></Field>}
-    <button className="bo-btn pri" disabled={s.busy} onClick={async () => { if (await s.run(() => api(`admin/designs/${d.slug}/override`, { body: f }))) onDone(); }}>Save</button>
   </div>;
 }
 const fsz = (b: number) => (b >= 1024 ** 3 ? (b / 1024 ** 3).toFixed(1) + " GB" : Math.max(1, Math.round(b / 1024 ** 2)) + " MB");
-/** Owner: the real storage link of every full-resolution original (not the preview pictures). */
-function OriginalToggle({ id }: { id: string }) {
-  const [open, setOpen] = useState(true);
-  return <div style={{ marginTop: 6 }}><button type="button" className="bo-btn sm" data-testid="original-toggle" onClick={() => setOpen(!open)}>{open ? "Hide original file" : "Show original file (full size)"}</button>{open && <OriginalLinks id={id} />}</div>;
+/** Owner: the full-size original files, closed until asked for (they are big). */
+function OriginalToggle({ id, big }: { id: string; big?: boolean }) {
+  const [open, setOpen] = useState(false);
+  return <div style={{ marginTop: big ? 4 : 6 }} data-testid="original-box"><button type="button" className="bo-btn sm" data-testid="original-toggle" onClick={(e) => { e.stopPropagation(); setOpen(!open); }}>{open ? "Hide original files" : "Show original files"}</button>{open && <OriginalLinks id={id} />}</div>;
 }
 function OriginalLinks({ id }: { id: string }) {
   const { data, error } = useApi<any>(`admin/designs/u-${id}/originals`, [id]);
   const [copied, setCopied] = useState("");
   const copy = async (t: string) => { try { await navigator.clipboard.writeText(t); setCopied(t); setTimeout(() => setCopied(""), 1500); } catch {} };
-  return <Field label="Full-resolution original files (for printing)">
+  return <Field label="Original files (full size, for printing)">
     {error ? <div className="bo-sub">{error}</div> : !data ? <div className="bo-sub">Loading…</div> : !data.originals.length ? <div className="bo-sub">No original uploaded yet.</div> :
       data.originals.map((o: any, i: number) => <div key={i} className="rp-box" style={{ margin: "6px 0" }} data-testid="original-link">
         <div style={{ fontWeight: 600 }}>{o.color}: {o.filename || "no original file"}</div>
         {o.filename && <div className="bo-sub">{o.width && o.height ? `${o.width.toLocaleString()} × ${o.height.toLocaleString()} px` : ""}{o.dpi ? ` · saved at ${o.dpi} DPI = ${(o.width / o.dpi / 12).toFixed(1)} × ${(o.height / o.dpi / 12).toFixed(1)} ft` : ""}{o.size ? ` · ${fsz(o.size)}` : ""}{o.mime ? ` · ${o.mime.replace("image/", "").replace("application/", "").toUpperCase()}` : ""}</div>}
-        {o.storage && <div className="bo-sub" style={{ marginTop: 4 }}>Stored at: {o.storage}</div>}
-        {o.url && <div className="lk-row"><span className="lk-url" title={o.url}>{o.url}</span><button type="button" className="bo-btn sm" onClick={() => copy(o.url)}>{copied === o.url ? "Copied" : "Copy link"}</button><a className="bo-btn sm pri" href={o.url} target="_blank" rel="noreferrer">Open / download</a></div>}
-        {o.url && <div className="bo-sub">This link works for {o.urlDays} days; open this page again for a fresh one.</div>}
-        {o.drive && <div className="lk-row"><span className="bo-sub">Imported from Google Drive:</span><span className="lk-url" title={o.drive}>{o.drive}</span><button type="button" className="bo-btn sm" onClick={() => copy(o.drive)}>{copied === o.drive ? "Copied" : "Copy"}</button><a className="bo-btn sm" href={o.drive} target="_blank" rel="noreferrer">Open in Drive</a></div>}
+        {o.url && <div style={{ marginTop: 8 }}><div style={{ fontWeight: 600, fontSize: 13 }}>Our stored copy</div><div className="bo-sub">The file saved on our own storage. Use this one for printing.</div>
+          <div className="bo-row" style={{ gap: 6, marginTop: 4 }}><a className="bo-btn sm pri" href={o.url} target="_blank" rel="noreferrer">Download</a><button type="button" className="bo-btn sm" onClick={() => copy(o.url)}>{copied === o.url ? "Copied" : "Copy download link"}</button></div>
+          <div className="bo-sub" style={{ marginTop: 2 }}>Download link (fresh each time you open this page).</div></div>}
+        {o.drive && <div style={{ marginTop: 8 }}><div style={{ fontWeight: 600, fontSize: 13 }}>Designer's original (Google Drive)</div><div className="bo-sub">Where the designer had the file. We copied it from here; it may change or be removed by them.</div>
+          <div className="bo-row" style={{ gap: 6, marginTop: 4 }}><a className="bo-btn sm" href={o.drive} target="_blank" rel="noreferrer">Open in Drive</a><button type="button" className="bo-btn sm" onClick={() => copy(o.drive)}>{copied === o.drive ? "Copied" : "Copy Drive link"}</button></div></div>}
       </div>)}
   </Field>;
 }

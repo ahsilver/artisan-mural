@@ -6,7 +6,11 @@ import type { ShopData } from "@/lib/catalog";
 /** Public: approved designer uploads shaped as shop designs (safe fields only), plus slugs the studio removed. */
 export const getShopDesigns = createServerFn({ method: "GET" }).handler(async (): Promise<ShopData> => {
   const { loadShopData } = await import("@/lib/shop.server");
-  return loadShopData();
+  const d = await loadShopData();
+  // a design the owner switched off is not sent to the browser at all (orders/printing read the full list on the server)
+  const off = new Set(d.hidden ?? []);
+  if (!off.size) return d;
+  return { ...d, designs: d.designs.filter((x) => !off.has(x.slug)), overrides: d.overrides?.filter((o: any) => !(off.has(o.slug) && String(o.slug).startsWith("u-"))) } as ShopData;
 });
 
 /** Studio only: take a design off the site or put it back. */

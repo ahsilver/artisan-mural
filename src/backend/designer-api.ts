@@ -212,6 +212,7 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
         f("error", JSON.stringify(meta));
       }
       if (sets.length) await DB.prepare(`UPDATE artwork_uploads SET ${sets.join(", ")} WHERE id = ?`).bind(...vals, u.id).run();
+      if (sets.length) { try { const { invalidateShopCache } = await import("@/lib/shop.server"); invalidateShopCache(); } catch {} }
       return j({ ok: true });
     }
   }
