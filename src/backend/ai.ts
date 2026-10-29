@@ -201,6 +201,8 @@ export function repeatRule(repeat: string, strip = false) {
       ? "REPEAT TYPE: SIDEWAYS ONLY. Image 2 repeats only left to right. One copy of image 2 covers the wall's FULL height, from the ceiling line down to the baseboard; copies sit side by side across the wall. Never stack copies on top of each other and never repeat it up and down."
       : "REPEAT TYPE: FULL REPEAT. Image 2 is one seamless tile: repeat it in every direction (left-right and up-down) at the stated scale, with no visible seams.";
 }
+/** Designer room pictures (2026-10-29): the whole mural, never cropped. */
+export const WHOLE_MURAL_RULE = "REPEAT TYPE: MURAL. Image 2 is ONE scene. Show the WHOLE mural: every edge of image 2 must be visible on the wall, nothing cut off, never squash or stretch it. Make the papered wall the same shape as image 2 (pick the wall and framing so the full mural fits it edge to edge). Never tile, repeat, mirror or duplicate it.";
 export function roomPhotoPrompt(o: { mural: boolean; wall: string; scale: string; repeat?: string; strip?: boolean }) {
   const where = o.wall
     ? `Hang this wallpaper on the ${o.wall} only, like a professional installer would. Other walls stay exactly as they are.`
@@ -295,7 +297,9 @@ Do NOT put wallpaper on the floor, the ceiling (including sloped ceilings), wind
     prompt = `The first image is a photo of a real room. The second image is a wallpaper design. Edit the first photo so the ${body.wall || "main back wall"} is covered with this wallpaper, edge to edge, following the wall's perspective and lighting.${scale}${body.kind || body.repeat ? " " + repeatRule(body.kind === "mural" ? "none" : body.repeat) : ""} Keep the wallpaper's pattern and colors exactly as given. Keep everything else in the room exactly the same: furniture, windows, doors, outlets, floor, ceiling, decor and camera angle. Do not add or remove objects. Photorealistic.`;
   } else {
     aspect = "4:3";
-    prompt = `Create a photorealistic interior photo of a ${body.room || "living room"} with the given wallpaper design covering the main back wall, edge to edge and from the ceiling line down to the baseboard.${scale}${body.kind || body.repeat ? " " + repeatRule(body.kind === "mural" ? "none" : body.repeat) : ""} Keep the wallpaper's pattern and colors exactly as given; do not redraw or change the design. Natural daylight, tasteful furniture in front of the wall that leaves most of the wallpaper visible, straight-on camera view, magazine quality.`;
+    // designer room pictures of a mural show the WHOLE mural (owner, 2026-10-29); customers' room photos are unchanged
+    const wholeMural = purpose === "mockup" && body.whole === true && body.kind === "mural";
+    prompt = `Create a photorealistic interior photo of a ${body.room || "living room"} with the given wallpaper design covering the main back wall, edge to edge and from the ceiling line down to the baseboard.${scale}${wholeMural ? " " + WHOLE_MURAL_RULE : body.kind || body.repeat ? " " + repeatRule(body.kind === "mural" ? "none" : body.repeat) : ""} Keep the wallpaper's pattern and colors exactly as given; do not redraw or change the design. Natural daylight, tasteful furniture in front of the wall that leaves most of the wallpaper visible, straight-on camera view, magazine quality.`;
   }
   // the same picture asked again (same room, same design, same words) comes from the cache: no second paid call
   const provider0 = ai.provider === "openai" ? "openai" : "google";

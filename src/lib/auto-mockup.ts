@@ -55,8 +55,8 @@ export function pickRooms(designId: string, seed = 0, count = 3, prefer: string[
 const load = async (src: string) => { const i = new Image(); i.crossOrigin = "anonymous"; i.src = src; await i.decode(); return i; };
 
 /** Composites the design on the room's wall at real size, keeping furniture and the room's light. */
-export async function makeMockup(designSrc: string, design: { kind: "mural" | "repeating"; widthCm: number; heightCm: number; repeat?: string }, room: RoomScene | SampleRoom): Promise<Blob> {
-  if ("mask" in room && (room as SampleRoom).mask) return makeSampleMockup(designSrc, design, room as SampleRoom);
+export async function makeMockup(designSrc: string, design: { kind: "mural" | "repeating"; widthCm: number; heightCm: number; repeat?: string }, room: RoomScene | SampleRoom, fit: MockupFit = "cover"): Promise<Blob> {
+  if ("mask" in room && (room as SampleRoom).mask) return makeSampleMockup(designSrc, design, room as SampleRoom, fit);
   return makePoolMockup(designSrc, design, room as RoomScene);
 }
 /** Old scene compositor (rectangle wall, polygons, colour-keyed detail zones); kept for reference only. */
@@ -141,6 +141,16 @@ export function resolveMockupRoom(typeOrId: string, rotKey: string): SampleRoom 
   const vs = variantsOf(typeOrId); if (!vs.length) return null;
   return vs[rotationNumber(rotKey) % vs.length];
 }
+/** Like resolveMockupRoom, but among the versions of a room type takes the one whose wall shape is closest to the
+ *  design's (width / height), so a whole mural fills as much of the wall as possible. Ties keep the usual rotation. */
+export function resolveMockupRoomForShape(typeOrId: string, rotKey: string, aspect?: number): SampleRoom | null {
+  const exact = SAMPLE_ROOMS.find((r) => r.id === typeOrId); if (exact) return exact;
+  const vs = variantsOf(typeOrId); if (!vs.length) return null;
+  if (!aspect || !isFinite(aspect) || aspect <= 0) return vs[rotationNumber(rotKey) % vs.length];
+  const start = rotationNumber(rotKey) % vs.length, order = [...vs.slice(start), ...vs.slice(0, start)];
+  const miss = (r: SampleRoom) => Math.abs(Math.log(r.widthIn / r.heightIn / aspect));
+  return order.reduce((a, r) => (miss(r) < miss(a) - 0.02 ? r : a), order[0]!) ?? null;
+}
 /** Sensible rooms for a design by what it is made for / its categories (kids designs -> kids' room, playroom, nursery). */
 export function defaultMockupRooms(madeFor: string[] = [], categories: string[] = []): string[] {
   const t = [...madeFor, ...categories].join(" ").toLowerCase();
@@ -177,7 +187,11 @@ function cleanHalo(F: Uint8ClampedArray, P: Uint8ClampedArray, A: Uint8ClampedAr
   }
   for (const i of clear) F[i + 3] = 0;
 }
-export async function makeSampleMockup(designSrc: string, design: { kind: "mural" | "repeating"; widthCm: number; heightCm: number; repeat?: string }, room: SampleRoom): Promise<Blob> {
+/** "cover" (default, unchanged): the mural fills the whole wall (edges cropped). "whole" (designer room pictures, since
+ *  2026-10-29): the WHOLE design is shown, never cropped: scaled to fit inside the wall, centred, the room's own wall
+ *  showing around it where the shapes differ; a repeat tile bigger than the wall is shrunk until one full copy fits. */
+export type MockupFit = "cover" | "whole";
+export async function makeSampleMockup(designSrc: string, design: { kind: "mural" | "repeating"; widthCm: number; heightCm: number; repeat?: string }, room: SampleRoom, fit: MockupFit = "cover"): Promise<Blob> {
   const [roomImg, art] = await Promise.all([load(room.image), load(designSrc)]);
   const W = roomImg.naturalWidth, H = roomImg.naturalHeight;
   const base = document.createElement("canvas"); base.width = W; base.height = H;
@@ -187,7 +201,22 @@ export async function makeSampleMockup(designSrc: string, design: { kind: "mural
   const AW = 1600, AH = Math.round((AW * wallHcm) / wallWcm), s = AW / wallWcm;
   const flat = document.createElement("canvas"); flat.width = AW; flat.height = AH;
   const fx = flat.getContext("2d")!;
-  if (design.kind === "mural") {
+  const whole = fit === "whole", ar = art.naturalWidth / art.naturalHeight;
+  if (whole && design.kind === "mural") {
+    // the whole picture, its own proportions, as big as the wall allows; centred, bare wall around it
+    const k = Math.min(AW / art.naturalWidth, AH / art.naturalHeight), mw = art.naturalWidth * k, mh = art.naturalHeight * k;
+    fx.drawImage(art, (AW - mw) / 2, (AH - mh) / 2, mw, mh);
+  } else if (whole) {
+    const side = design.repeat === "horizontal";
+    let tw = side ? AH * ar : Math.max(8, design.widthCm * s), th = side ? AH : tw / ar;
+    const k = Math.min(1, AW / tw, AH / th); tw *= k; th *= k; // at least one full copy of the design on the wall
+    const y0 = side ? (AH - th) / 2 : 0;
+    for (let col = 0, x = -((AW % tw) / 2); x < AW; x += tw, col++) {
+      if (side) { fx.drawImage(art, x, y0, tw, th); continue; }
+      const off = design.repeat === "halfdrop" && col % 2 ? th / 2 : 0;
+      for (let y = -off - th; y < AH; y += th) fx.drawImage(art, x, y, tw, th);
+    }
+  } else if (design.kind === "mural") {
     let mw = design.widthCm * s, mh = design.heightCm * s;
     if (mh < AH) { const k = AH / mh; mw *= k; mh *= k; } // a mural always fills the wall height
     if (mw < AW) { const k = AW / mw; mw *= k; mh *= k; } // and its width

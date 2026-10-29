@@ -3,7 +3,7 @@ import { api } from "@/components/bo/common";
 import { uploadFile } from "@/lib/designer-files";
 import { categoryOf, type SampleRoom } from "@/lib/room-mask";
 import { RoomCategoryTabs, usedCategories } from "@/components/room-category-tabs";
-import { MAX_MOCKUP_ROOMS, MOCKUP_ROOMS, makeSampleMockup, resolveMockupRoom, sampleRoomById } from "@/lib/auto-mockup";
+import { MAX_MOCKUP_ROOMS, MOCKUP_ROOMS, makeSampleMockup, resolveMockupRoom, resolveMockupRoomForShape, sampleRoomById } from "@/lib/auto-mockup";
 
 /** "Show it in these rooms": pick up to 5 sample rooms (in order) for a design's room pictures. */
 export function MockupRoomPicker({ value, onChange, max = MAX_MOCKUP_ROOMS }: { value: string[]; onChange: (ids: string[]) => void; max?: number }) {
@@ -47,14 +47,34 @@ export async function aiSceneMockup(designSrc: string, dims: Dims, room: SampleR
   return await (await fetch(r.image)).blob();
 }
 /** AI room picture first; the flat composite only when the AI is switched off or out of pictures for today. */
-export async function sceneMockup(designSrc: string, dims: Dims, room: SampleRoom): Promise<{ blob: Blob; ai: boolean }> {
+/** Designer room pictures (since 2026-10-29) must show the WHOLE design. True when the AI way would crop it: a mural
+ *  (the image model fills the wall and cuts the edges) or a repeat whose one copy is bigger than the room's wall. Those
+ *  are made by our own exact composite in "whole" mode instead (the full design fitted to the wall, furniture in front). */
+export async function needsWholeComposite(designSrc: string, dims: Dims, room: SampleRoom): Promise<boolean> {
+  if (dims.kind === "mural") return true;
+  const di = await loadI(designSrc); const ar = di.naturalWidth / di.naturalHeight || 1;
+  if (dims.repeat === "horizontal") return room.heightIn * ar > room.widthIn * 1.02;
+  const tw = (dims.widthCm || 0) / 2.54; return tw > room.widthIn * 1.02 || tw / ar > room.heightIn * 1.02;
+}
+/** The room for a designer picture: for a mural, the version of that room type whose wall shape is closest to the design's. */
+export function designerRoom(typeOrId: string, rotKey: string, dims: Dims, aspect?: number): SampleRoom | null {
+  return dims.kind === "mural" && aspect ? resolveMockupRoomForShape(typeOrId, rotKey, aspect) : resolveMockupRoom(typeOrId, rotKey);
+}
+/** The design's real shape, read from its picture (the size fields can be stale after a file swap). */
+export async function pictureAspect(src?: string): Promise<number | undefined> {
+  if (!src) return undefined;
+  try { const i = await loadI(src); return i.naturalWidth / i.naturalHeight || undefined; } catch { return undefined; }
+}
+export async function sceneMockup(designSrc: string, dims: Dims, room: SampleRoom, opts: { whole?: boolean } = {}): Promise<{ blob: Blob; ai: boolean }> {
+  if (opts.whole && (await needsWholeComposite(designSrc, dims, room))) return { blob: await makeSampleMockup(designSrc, dims, room, "whole"), ai: false };
   let last: any = null;
   for (let i = 0; i < 2; i++) { try { return { blob: await aiSceneMockup(designSrc, dims, room), ai: true }; } catch (e: any) { last = e; if (/limit|quota|switched on|turned off|sign in/i.test(String(e?.message))) break; } }
   void last;
   return { blob: await makeSampleMockup(designSrc, dims, room), ai: false };
 }
 export async function remakeRoomMockups(uploadId: string, colors: { id: string; src: string; has?: boolean }[], dims: Dims, rooms: string[], rotKey: string, onStep?: (done: number, total: number) => void) {
-  const list = rooms.map((t) => resolveMockupRoom(t, rotKey)).filter(Boolean) as SampleRoom[];
+  const aspect = dims.kind === "mural" ? await pictureAspect(colors.find((c) => c.src)?.src) : undefined;
+  const list = rooms.map((t) => designerRoom(t, rotKey, dims, aspect)).filter(Boolean) as SampleRoom[];
   const total = list.length * colors.length; let done = 0; let kept = "";
   for (const c of colors) {
     if (!c.src) continue;
@@ -63,7 +83,8 @@ export async function remakeRoomMockups(uploadId: string, colors: { id: string; 
     let keys: string[];
     try {
       keys = await Promise.all(list.map(async (r) => {
-        const blob = c.has ? await aiSceneMockup(c.src, dims, r) : (await sceneMockup(c.src, dims, r)).blob;
+        // the whole design always (a picture that would crop it is made by the exact composite, even when pictures exist)
+        const blob = (await needsWholeComposite(c.src, dims, r)) ? await makeSampleMockup(c.src, dims, r, "whole") : c.has ? await aiSceneMockup(c.src, dims, r) : (await sceneMockup(c.src, dims, r)).blob;
         const k = (await uploadFile(blob, { uploadId, purpose: "mockup", filename: `mockup-${r.id}.jpg` }, () => {})).key;
         onStep?.(++done, total); return k;
       }));

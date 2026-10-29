@@ -5,8 +5,8 @@ import { api, Msg, Field, Pill, useSaver } from "@/components/bo/common";
 import { uploadFile, driveImport, driveFolder, makePreview, previewFromStored, fmtBytes, readDims } from "@/lib/designer-files";
 import { importSummary } from "@/lib/drive-verify";
 import { checkRepeat, type RepeatResult } from "@/lib/repeat-check";
-import { pickRooms, makeMockup, makeSampleMockup, defaultMockupRooms, resolveMockupRoom } from "@/lib/auto-mockup";
-import { MockupRoomPicker, remakeRoomMockups, sceneMockup } from "@/components/mockup-rooms";
+import { pickRooms, makeMockup, makeSampleMockup, defaultMockupRooms } from "@/lib/auto-mockup";
+import { MockupRoomPicker, remakeRoomMockups, sceneMockup, designerRoom, pictureAspect } from "@/components/mockup-rooms";
 import { DriveFolderPicker } from "@/components/designer/drive-folder";
 import { dominantColor } from "@/lib/designer-files";
 import { loadSite } from "@/lib/site-settings";
@@ -598,7 +598,7 @@ function MockupStep({ design, onChanged }: { design: any; onChanged: () => void 
     const out = [...gen];
     // all rooms at once (about 10 s in total instead of one after another)
     const res = await Promise.allSettled(rooms.map(async (room) => {
-      const r: any = await api("ai/render", { body: { purpose: "mockup", design: design64, room, scaleText: w, kind: design.kind, repeat: design.repeat } });
+      const r: any = await api("ai/render", { body: { purpose: "mockup", design: design64, room, scaleText: w, kind: design.kind, repeat: design.repeat, whole: true } });
       const blob = await (await fetch(r.image)).blob();
       out.push({ room: room + " (AI)", blob, url: URL.createObjectURL(blob), on: true }); setGen([...out]);
     }));
@@ -608,16 +608,16 @@ function MockupStep({ design, onChanged }: { design: any; onChanged: () => void 
   async function generate(sd: number) {
     setGen([]);
     const out = [];
-    if (roomSel.length) { await Promise.all(roomSel.map(async (id) => { const r = resolveMockupRoom(id, design.sku || design.id); if (!r) return; const { blob } = await sceneMockup(color.preview, dims() as any, r); out.push({ room: r.name, blob, url: URL.createObjectURL(blob), on: true }); setGen([...out]); })); return; }
+    if (roomSel.length) { const asp = design.kind === "mural" ? await pictureAspect(color.preview) : undefined; await Promise.all(roomSel.map(async (id) => { const r = designerRoom(id, design.sku || design.id, dims() as any, asp); if (!r) return; const { blob } = await sceneMockup(color.preview, dims() as any, r, { whole: true }); out.push({ room: r.name, blob, url: URL.createObjectURL(blob), on: true }); setGen([...out]); })); return; }
     const rooms = pickRooms(design.id + color.id, sd, 3, design.madeFor ?? []);
-    for (const r of rooms) { const blob = await makeMockup(color.preview, { kind: design.kind, widthCm: design.kind === "mural" ? (design.meta?.originalWidthCm ?? design.widthCm) : design.widthCm, heightCm: design.kind === "mural" ? (design.meta?.originalHeightCm ?? design.heightCm) : design.heightCm, repeat: design.repeat }, r); out.push({ room: r.name, blob, url: URL.createObjectURL(blob), on: true }); setGen([...out]); }
+    for (const r of rooms) { const blob = await makeMockup(color.preview, { kind: design.kind, widthCm: design.kind === "mural" ? (design.meta?.originalWidthCm ?? design.widthCm) : design.widthCm, heightCm: design.kind === "mural" ? (design.meta?.originalHeightCm ?? design.heightCm) : design.heightCm, repeat: design.repeat }, r, "whole"); out.push({ room: r.name, blob, url: URL.createObjectURL(blob), on: true }); setGen([...out]); }
   }
   async function generateAll() {
     // the same rooms for every color that has none yet, so switching colors on the shop page keeps the room
     const rooms = pickRooms(design.id, seed, 3, design.madeFor ?? []);
     for (const col of design.colors.filter((c: any) => !c.mockups.length)) {
       const keys = [];
-      for (const r of rooms) { const blob = await makeMockup(col.preview, { kind: design.kind, widthCm: design.kind === "mural" ? (design.meta?.originalWidthCm ?? design.widthCm) : design.widthCm, heightCm: design.kind === "mural" ? (design.meta?.originalHeightCm ?? design.heightCm) : design.heightCm, repeat: design.repeat }, r); keys.push((await uploadFile(blob, { uploadId: design.id, purpose: "mockup", filename: `mockup-${r.name.replace(/\s+/g, "-").toLowerCase()}.jpg` }, () => {})).key); }
+      for (const r of rooms) { const blob = await makeMockup(col.preview, { kind: design.kind, widthCm: design.kind === "mural" ? (design.meta?.originalWidthCm ?? design.widthCm) : design.widthCm, heightCm: design.kind === "mural" ? (design.meta?.originalHeightCm ?? design.heightCm) : design.heightCm, repeat: design.repeat }, r, "whole"); keys.push((await uploadFile(blob, { uploadId: design.id, purpose: "mockup", filename: `mockup-${r.name.replace(/\s+/g, "-").toLowerCase()}.jpg` }, () => {})).key); }
       await api(`designer/colorways/${col.id}/mockups`, { body: { keys } });
     }
     onChanged();
