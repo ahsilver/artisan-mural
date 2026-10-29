@@ -50,17 +50,23 @@ export async function uploadFile(file: File | Blob, opts: { uploadId: string; pu
   return { key: start.key as string, size: done.size as number, dims: done.dims, filename: name, mime: type };
 }
 /** Google Drive: the server copies the whole file into our storage in 32 MB pieces, 3 at a time. */
-export async function driveImport(link: string, uploadId: string, onProgress: (done: number, total: number, name: string) => void) {
-  const s = await api("designer/drive/start", { body: { uploadId, link } });
+export async function driveImport(link: string, uploadId: string, onProgress: (done: number, total: number, name: string) => void, opts: { fresh?: boolean } = {}) {
+  const s = await api("designer/drive/start", { body: { uploadId, link, fresh: !!opts.fresh } });
   onProgress(0, s.total, s.filename);
-  if (s.reused) { const r = await api("designer/drive/finish", { body: { job: s.job } }); onProgress(Number(r.total), Number(r.total), r.filename ?? s.filename); return { key: r.key as string, size: Number(r.total), dims: r.dims, filename: r.filename ?? s.filename, mime: r.mime || s.mime || "application/octet-stream", reused: true }; }
-  const n = s.parts as number; const doneBytes = new Array(n).fill(0); let next = 1;
+  const out = (r: any, extra: any = {}) => ({ key: r.key as string, size: Number(r.stored ?? r.total), driveBytes: Number(r.driveBytes ?? r.total), verified: r.verified !== false, dims: r.dims, filename: r.filename ?? s.filename, mime: r.mime || s.mime || "application/octet-stream", ...extra });
+  if (s.reused) { const r = await api("designer/drive/finish", { body: { job: s.job } }); onProgress(Number(r.total), Number(r.total), r.filename ?? s.filename); return out(r, { reused: true }); }
+  const n = s.parts as number; const doneBytes = new Array(n).fill(0);
+  // a resumed copy skips the pieces already stored
+  const have = new Set<number>((s.have ?? []).map(Number));
+  for (const p of have) doneBytes[p - 1] = Math.min(s.partSize, s.total - (p - 1) * s.partSize);
+  const todo: number[] = []; for (let i = 1; i <= n; i++) if (!have.has(i)) todo.push(i);
+  onProgress(doneBytes.reduce((a, b) => a + b, 0), s.total, s.filename);
   const worker = async () => {
-    while (next <= n) {
-      const part = next++;
+    while (todo.length) {
+      const part = todo.shift()!;
       for (let attempt = 1; ; attempt++) {
         try { await api("designer/drive/part", { body: { job: s.job, part } }); break; }
-        catch (e) { if (attempt >= 5) throw new Error(`Drive import stopped at piece ${part} of ${n}: ${(e as Error).message}`); await new Promise((r) => setTimeout(r, 2000 * attempt)); }
+        catch (e) { if (attempt >= 6) throw new Error(`Drive import stopped at piece ${part} of ${n}: ${(e as Error).message}. Press Import again to continue where it stopped.`); await new Promise((r) => setTimeout(r, 2000 * attempt)); }
       }
       doneBytes[part - 1] = Math.min(s.partSize, s.total - (part - 1) * s.partSize);
       onProgress(doneBytes.reduce((a, b) => a + b, 0), s.total, s.filename);
@@ -68,7 +74,8 @@ export async function driveImport(link: string, uploadId: string, onProgress: (d
   };
   await Promise.all([worker(), worker(), worker()]);
   const r = await api("designer/drive/finish", { body: { job: s.job } });
-  return { key: r.key as string, size: Number(r.total), dims: r.dims, filename: r.filename ?? s.filename, mime: r.mime || s.mime || "application/octet-stream" };
+  if (r.verified === false) throw new Error(`Size check failed: Google Drive has ${Number(r.driveBytes).toLocaleString("en-US")} bytes, storage has ${Number(r.stored).toLocaleString("en-US")}. Import it again.`);
+  return out(r);
 }
 export async function driveFolder(link: string) { return (await api("designer/drive/list", { body: { link } })).files as { id: string; name: string; link: string }[]; }
 export type DriveEntry = { id: string; name: string; link: string; folder: boolean; type: string; modified?: string; copied?: boolean; size?: number; usedIn?: string[] };

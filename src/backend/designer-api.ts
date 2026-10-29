@@ -3,6 +3,8 @@ import type { Who } from "./policies";
 import { signUrl } from "./storage";
 import { getSettings } from "./app-api";
 import { imageDims } from "@/lib/image-dims";
+import { planParts, partRange, verifyCopy, builtSize, tiffDpi } from "@/lib/drive-verify";
+import { readTiff } from "@/lib/tiff";
 import { defaultMaterials } from "@/lib/catalog";
 import { canonicalCategories } from "@/lib/design-taxonomy";
 type Env = any;
@@ -49,7 +51,17 @@ const signed = async (env: Env, key: string | null, ttl = 3600) => { if (!key) r
 async function dimsFromR2(env: Env, key: string) {
   const o = await env.FILES.get(key, { range: { offset: 0, length: 4 * 1024 * 1024 } });
   if (!o) return null;
-  return imageDims(new Uint8Array(await o.arrayBuffer()));
+  const b = new Uint8Array(await o.arrayBuffer());
+  const d = imageDims(b);
+  const isTiff = (b[0] === 73 && b[1] === 73 && b[2] === 42) || (b[0] === 77 && b[1] === 77 && b[3] === 42);
+  if (d && (!isTiff || d.dpi)) return d;
+  if (!isTiff) return d;
+  // TIFF whose directory sits past the first 4 MB (Photoshop often writes it at the end): read the header by ranges
+  try {
+    const info = await readTiff(async (s, l) => { const x = await env.FILES.get(key, { range: { offset: s, length: l } }); return x ? new Uint8Array(await x.arrayBuffer()) : new Uint8Array(0); });
+    const dpi = tiffDpi(info.xres, info.resUnit);
+    return { width: info.width, height: info.height, type: "tiff", ...(dpi ? { dpi } : {}) };
+  } catch { return d; }
 }
 const MIME: Record<string, string> = { tif: "image/tiff", tiff: "image/tiff", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", psd: "image/vnd.adobe.photoshop", pdf: "application/pdf", svg: "image/svg+xml", ai: "application/pdf", eps: "application/postscript" };
 function mimeOf(name: string, ct: string) { const ext = name.split(".").pop()?.toLowerCase() ?? ""; return MIME[ext] ?? (ct && !ct.includes("octet") ? ct : "application/octet-stream"); }
@@ -276,7 +288,7 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
     const u: any = (await ownUpload(env, who, body.uploadId)) ?? (await ownProject(env, who, body.uploadId)); if (!u) return bad("Design not found", 404);
     const id = driveId(String(body.link || ""));
     if (!id) return bad("That doesn't look like a Google Drive file link.");
-    if (!u.project) {
+    if (!u.project && !body.fresh) {
       // the same Drive file was already copied for this designer (e.g. one folder used for several designs): reuse it, no second copy
       const prev: any = await DB.prepare(`SELECT * FROM import_jobs WHERE owner_id = ? AND src = ? AND status = 'done' AND file_key LIKE 'print-originals/%' ORDER BY created_at DESC LIMIT 1`).bind(who.uid, id).first();
       if (prev) { const ob = await env.FILES.head(prev.file_key); if (ob && Number(ob.size) === Number(prev.total)) return j({ job: prev.id, reused: true, filename: prev.filename, total: Number(prev.total), key: prev.file_key, mime: prev.mime, partSize: PART, parts: 0 }); }
@@ -292,13 +304,20 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
     fname = fname.replace(/\uFFFD/g, "x");
     try { await head.body?.cancel(); } catch {}
     const settings = await getSettings(env);
-    if (total > settings.designerRules.maxUploadGb * 1024 ** 3) return bad(`Files up to ${settings.designerRules.maxUploadGb} GB.`);
+    const plan = planParts(total, settings.designerRules.maxUploadGb, PART);
+    if ("error" in plan) return bad(plan.error);
+    // resume: an unfinished copy of the same Drive file for this design (page closed, connection dropped) continues where it stopped
+    const open: any = await DB.prepare(`SELECT * FROM import_jobs WHERE owner_id = ? AND upload_id = ? AND src = ? AND status = 'running' AND total = ? ORDER BY created_at DESC LIMIT 1`).bind(who.uid, u.id, id, total).first();
+    if (open) {
+      const have = (((await DB.prepare(`SELECT part FROM import_parts WHERE job_id = ?`).bind(open.id).all()).results ?? []) as any[]).map((x) => Number(x.part));
+      return j({ job: open.id, filename: open.filename, total, key: open.file_key, mime: open.mime, partSize: PART, parts: plan.parts, have, resumed: true });
+    }
     const key = keyFor(who, u.project ? "project-files" : "print-originals", u.id, fname);
     const mime = mimeOf(fname, ct);
     const mp = await env.FILES.createMultipartUpload(key, { httpMetadata: { contentType: mime } });
     const job = crypto.randomUUID();
     await DB.prepare(`INSERT INTO import_jobs (id, owner_id, upload_id, src, file_key, r2_upload_id, filename, mime, total, done, parts, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '[]', 'running')`).bind(job, who.uid, u.id, id, key, mp.uploadId, fname, mime, total).run();
-    return j({ job, filename: fname, total, key, mime, partSize: PART, parts: Math.ceil(total / PART) });
+    return j({ job, filename: fname, total, key, mime, partSize: PART, parts: plan.parts, have: [] });
   }
   if (p === "drive/list" && m === "POST") {
     // one folder link -> every file in it (and its sub-folders), names + type; sizes come from drive/info
@@ -362,10 +381,11 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
     const jb: any = await DB.prepare(`SELECT * FROM import_jobs WHERE id = ? AND owner_id = ?`).bind(body.job, who.uid).first();
     if (!jb) return bad("Import not found", 404);
     const part = Number(body.part); const total = Number(jb.total);
-    const start = (part - 1) * PART; const end = Math.min(total, start + PART) - 1;
-    if (!(part >= 1) || start >= total) return bad("Bad part");
+    const pr = partRange(part, total, PART); if (!pr) return bad("Bad part");
+    const { start, end } = pr;
     const have: any = await DB.prepare(`SELECT etag FROM import_parts WHERE job_id = ? AND part = ?`).bind(jb.id, part).first();
     if (have) return j({ part, etag: have.etag, cached: true });
+    if (jb.status !== "running") return bad(jb.status === "failed" ? (jb.error || "This import failed. Import the file again.") : "This import is already finished.", 409);
     const r = await fetch(driveUrl(jb.src), { headers: { range: `bytes=${start}-${end}` } });
     const len = Number(r.headers.get("content-length") || 0);
     if ((r.status !== 206 && !(r.status === 200 && start === 0 && end === total - 1)) || len !== end - start + 1) { try { await r.body?.cancel(); } catch {} return bad(`Google Drive answered ${r.status}; retrying`, 502); }
@@ -380,17 +400,27 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
   if (p === "drive/finish" && m === "POST") {
     const jb: any = await DB.prepare(`SELECT * FROM import_jobs WHERE id = ? AND owner_id = ?`).bind(body.job, who.uid).first();
     if (!jb) return bad("Import not found", 404);
-    if (jb.status === "done") return j({ status: "done", key: jb.file_key, filename: jb.filename, mime: jb.mime, total: jb.total, dims: parseJ(jb.dims) });
+    if (jb.status === "done") { const ob = await env.FILES.head(jb.file_key); return j({ status: "done", key: jb.file_key, filename: jb.filename, mime: jb.mime, total: jb.total, stored: ob ? Number(ob.size) : null, driveBytes: Number(jb.total), verified: !!ob && Number(ob.size) === Number(jb.total), dims: parseJ(jb.dims) }); }
+    if (jb.status === "failed") return bad(jb.error || "This import failed. Import the file again.");
     const parts = ((await DB.prepare(`SELECT part, etag, bytes FROM import_parts WHERE job_id = ? ORDER BY part`).bind(jb.id).all()).results ?? []) as any[];
     const need = Math.ceil(Number(jb.total) / PART);
+    const fail = async (error: string) => { await DB.prepare(`UPDATE import_jobs SET status = 'failed', error = ? WHERE id = ?`).bind(error, jb.id).run(); return bad(error, 409); };
     if (parts.length !== need) return bad(`Only ${parts.length} of ${need} pieces arrived. Try again.`);
+    const pre = verifyCopy({ driveBytes: Number(jb.total), partBytes: parts.map((x) => Number(x.bytes)), partsExpected: need, storedBytes: Number(jb.total) });
+    if (!pre.ok) return fail(pre.error);
     const mp = env.FILES.resumeMultipartUpload(jb.file_key, jb.r2_upload_id);
     await mp.complete(parts.map((x) => ({ partNumber: x.part, etag: x.etag })));
-    await recordObject(env, jb.file_key, Number(jb.total), jb.mime || "application/octet-stream", who.uid);
+    // the size check: what storage holds must be exactly what Google Drive has, byte for byte in count
+    const ob = await env.FILES.head(jb.file_key);
+    let driveNow: number | null = null;
+    try { if (/^[\w-]{10,}$/.test(jb.src || "")) { const h = await fetch(driveUrl(jb.src), { headers: { range: "bytes=0-0" } }); driveNow = Number((h.headers.get("content-range") ?? "").split("/")[1] || 0) || null; try { await h.body?.cancel(); } catch {} } } catch {}
+    const chk = verifyCopy({ driveBytes: Number(jb.total), driveBytesNow: driveNow, partBytes: parts.map((x) => Number(x.bytes)), partsExpected: need, storedBytes: ob ? Number(ob.size) : null });
+    if (!chk.ok) return fail(chk.error);
+    await recordObject(env, jb.file_key, Number(ob!.size), jb.mime || "application/octet-stream", who.uid);
     let dims = null; try { dims = await dimsFromR2(env, jb.file_key); } catch {}
-    await DB.prepare(`UPDATE import_jobs SET done = total, status = 'done', dims = ? WHERE id = ?`).bind(JSON.stringify(dims), jb.id).run();
+    await DB.prepare(`UPDATE import_jobs SET done = total, status = 'done', dims = ?, error = NULL WHERE id = ?`).bind(JSON.stringify(dims), jb.id).run();
     await DB.prepare(`DELETE FROM import_parts WHERE job_id = ?`).bind(jb.id).run();
-    return j({ status: "done", key: jb.file_key, filename: jb.filename, mime: jb.mime, total: jb.total, dims });
+    return j({ status: "done", key: jb.file_key, filename: jb.filename, mime: jb.mime, total: jb.total, stored: Number(ob!.size), driveBytes: Number(jb.total), verified: true, dims });
   }
   // ---- attach files to a design ----
   mm = p.match(/^uploads\/([0-9a-f-]{36})\/colorways$/);
@@ -411,13 +441,32 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
       await DB.prepare(`INSERT INTO artwork_colorways (id, upload_id, name, position, artwork_path, swatch, source_name) VALUES (?, ?, ?, ?, ?, ?, ?)`).bind(cid, u.id, String(b.name || (pos === 0 ? "Original" : `Color ${pos + 1}`)).slice(0, 40), pos, previewPath, cleanSwatch(b.swatch), b.sourceName || null).run();
     }
     if (b.originalKey) {
+      // server-side truth: the stored file's real size and the pixel size + DPI in its header (never trust the browser's numbers)
+      const ob = await env.FILES.head(b.originalKey);
+      if (!ob) return bad("The print file is missing from storage. Upload or import it again.", 409);
+      const job: any = await DB.prepare(`SELECT total, status FROM import_jobs WHERE file_key = ? ORDER BY created_at DESC LIMIT 1`).bind(b.originalKey).first();
+      if (job && (job.status !== "done" || Number(job.total) !== Number(ob.size))) return bad(`Size check failed: Google Drive has ${Number(job.total).toLocaleString("en-US")} bytes but storage has ${Number(ob.size).toLocaleString("en-US")}. Import the file again.`, 409);
+      b.size = Number(ob.size);
+      try { const dd: any = await dimsFromR2(env, b.originalKey); if (dd?.width && dd?.height) { b.width = dd.width; b.height = dd.height; b.dpi = dd.vector ? null : (dd.dpi ?? b.dpi ?? null); } } catch {}
+      // the main colorway got a new file with a different pixel size: the design's built size / max print size follow the new file
+      let resizedMeta: any = null;
+      const isMain = Number((existing.find((x: any) => x.id === cid) as any)?.position ?? pos) === Math.min(...existing.map((x: any) => Number(x.position)).concat([pos]));
+      if (cid && isMain && u.kind === "mural" && b.width && b.height) {
+        const prev: any = await DB.prepare(`SELECT p.pixel_width, p.pixel_height FROM artwork_colorways c JOIN print_originals p ON p.id = c.current_original_id WHERE c.id = ?`).bind(cid).first();
+        if (prev && (Number(prev.pixel_width) !== Number(b.width) || Number(prev.pixel_height) !== Number(b.height))) {
+          const rules = (await getSettings(env)).designerRules; const bs = builtSize({ width: b.width, height: b.height, dpi: b.dpi || undefined }, rules.minDpi || 150);
+          if (bs) { resizedMeta = { fileDpi: bs.fromFile ? bs.dpi : null, originalWidthCm: bs.widthCm, originalHeightCm: bs.heightCm }; const meta = { ...(parseJ(u.error, {}) || {}), fileDpi: bs.fromFile ? bs.dpi : null, originalWidthCm: bs.widthCm, originalHeightCm: bs.heightCm };
+            await DB.prepare(`UPDATE artwork_uploads SET width_cm = ?, height_cm = ?, max_print_width_cm = ?, max_print_height_cm = ?, error = ? WHERE id = ?`).bind(bs.widthCm, bs.heightCm, bs.widthCm, bs.heightCm, JSON.stringify(meta), u.id).run(); }
+        }
+      }
       let po = crypto.randomUUID();
       const path = b.originalKey.slice("print-originals/".length);
       // the same stored file used again (e.g. one Drive folder, several designs): share its record instead of a second copy
       const same: any = await DB.prepare(`SELECT id FROM print_originals WHERE storage_path = ? AND owner_id = ?`).bind(path, who.uid).first();
-      if (same) { await DB.prepare(`UPDATE artwork_colorways SET current_original_id = ? WHERE id = ?`).bind(same.id, cid).run(); return j({ ok: true, colorwayId: cid, sharedOriginal: true }); }
+      if (same) { await DB.prepare(`UPDATE artwork_colorways SET current_original_id = ? WHERE id = ?`).bind(same.id, cid).run(); return j({ ok: true, colorwayId: cid, sharedOriginal: true, meta: resizedMeta }); }
       await DB.prepare(`INSERT INTO print_originals (id, owner_id, colorway_id, storage_path, filename, mime_type, byte_size, pixel_width, pixel_height, validation_status, effective_dpi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified', ?)`).bind(po, who.uid, cid, path, String(b.filename || "original").slice(0, 200), b.mime || "application/octet-stream", Number(b.size) || 0, b.width || null, b.height || null, b.dpi || null).run();
       await DB.prepare(`UPDATE artwork_colorways SET current_original_id = ? WHERE id = ?`).bind(po, cid).run();
+      return j({ ok: true, colorwayId: cid, meta: resizedMeta });
     }
     return j({ ok: true, colorwayId: cid });
   }

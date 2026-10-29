@@ -3,6 +3,7 @@ import { MatchLabel } from "./match-info";
 import { X, UploadCloud } from "lucide-react";
 import { api, Msg, Field, Pill, useSaver } from "@/components/bo/common";
 import { uploadFile, driveImport, driveFolder, makePreview, previewFromStored, fmtBytes, readDims } from "@/lib/designer-files";
+import { importSummary } from "@/lib/drive-verify";
 import { checkRepeat, type RepeatResult } from "@/lib/repeat-check";
 import { pickRooms, makeMockup, makeSampleMockup, defaultMockupRooms, resolveMockupRoom } from "@/lib/auto-mockup";
 import { MockupRoomPicker, remakeRoomMockups, sceneMockup } from "@/components/mockup-rooms";
@@ -353,14 +354,15 @@ function ColorRow({ design, color, index, onChanged, getId, rules, onLocal, onFi
     else throw new Error("no preview");
     const dims = orig.dims;
     const autoSw = color?.swatch ? undefined : (await dominantColor(previewBlob)) ?? undefined;
-    await api(`designer/uploads/${id}/colorways`, { body: { colorwayId: color?.id, name, swatch: autoSw, sourceName: orig.filename, previewKey, originalKey: orig.key, filename: orig.filename, mime: orig.mime, size: orig.size, width: dims?.width, height: dims?.height, dpi: dims?.vector ? null : dims?.dpi } });
+    const saved: any = await api(`designer/uploads/${id}/colorways`, { body: { colorwayId: color?.id, name, swatch: autoSw, sourceName: orig.filename, previewKey, originalKey: orig.key, filename: orig.filename, mime: orig.mime, size: orig.size, width: dims?.width, height: dims?.height, dpi: dims?.vector ? null : dims?.dpi } });
     if (!design.colors.length || color?.position === 0) {
       // auto-detect: do the edges join like a repeat?
       try {
         const url = URL.createObjectURL(previewBlob);
         const r = await checkRepeat(url, "both"); URL.revokeObjectURL(url);
         const seamless = r.lr.ok && !!r.tb?.ok, sideways = r.lr.ok && !r.tb?.ok;
-        const m: any = { ...(design.meta ?? {}), autoDetect: { seamless, sideways, lr: r.lr.score, tb: r.tb?.score } };
+        // the server re-sized the design to a new main file: keep its new size facts, don't write the old ones back
+        const m: any = { ...(design.meta ?? {}), ...(saved?.meta ?? {}), autoDetect: { seamless, sideways, lr: r.lr.score, tb: r.tb?.score } };
         // the designer's own choice wins; otherwise start from what the edges say
         const chosen = !!design.meta?.repeatChosen || design.review === "approved";
         const t: RepeatType = chosen ? repeatTypeOf(design.kind, design.repeat) : seamless ? "full" : sideways ? "sideways" : "mural";
@@ -419,7 +421,11 @@ function ColorRow({ design, color, index, onChanged, getId, rules, onLocal, onFi
       if (/\/folders\//.test(l)) { setFolder(await driveFolder(l.trim())); return; }
       setFolder(null);
       const id = await getId();
+      setWarn(""); setInfo("");
       const orig: any = await driveImport(l.trim(), id, (d, t, n) => setProg({ done: d, total: t, label: `Copying ${n} from Google Drive into our storage` }));
+      // what arrived, checked against Google Drive: exact size, real pixels and the DPI saved in the file
+      const sum = importSummary({ name: orig.filename, bytes: orig.size, driveBytes: orig.driveBytes, dims: orig.dims, minDpi: rules?.minDpi || 150 });
+      setInfo(sum.line); if (sum.warn) setWarn(sum.warn);
       setProg({ done: 0, total: 1, label: "Making the shop picture from your file…" });
       let preview: Blob | null = null;
       try { preview = await previewFromStored(orig.key, orig.mime, orig.size, orig.dims, (x) => setProg({ done: x, total: 1, label: "Making the shop picture from your file…" })); } catch (e: any) { setErr(e.message); preview = null; }
@@ -455,6 +461,7 @@ function ColorRow({ design, color, index, onChanged, getId, rules, onLocal, onFi
         {needPreview && <div className="bo-msg" style={{ marginTop: 8 }}>Your print file is saved ({fmtBytes(needPreview.size)}). This file type is too big to preview in the browser, so please add a JPG of the same design for the shop picture:
           <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "block", marginTop: 6 }} onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; try { const p = await makePreview(f, await readDims(f)); await attach(needPreview, p); setNeedPreview(null); } catch (er: any) { setErr(er.message); } }} /></div>}
         {err && <div className="bo-msg bad" style={{ marginTop: 8 }}>{err}</div>}
+        {info && !err && <div className="bo-msg" data-testid="import-check" style={{ marginTop: 8, background: "#eef7fc", color: "#082635" }}>{info}</div>}
         {warn && !err && <div className="bo-msg" data-testid="dpi-warn" style={{ marginTop: 8, background: "#fff8e6", color: "#7a5300" }}>{warn}</div>}
   </div>;
 }

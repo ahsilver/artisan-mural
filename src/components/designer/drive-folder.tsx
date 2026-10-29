@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Folder } from "lucide-react";
 import { api } from "@/components/bo/common";
+import { importSummary } from "@/lib/drive-verify";
 import { driveFolderFull, driveInfo, driveImport, driveTiffThumb, dominantColor, previewFromStored, makePreview, uploadFile, fmtBytes, type DriveEntry } from "@/lib/designer-files";
 import { checkRepeat } from "@/lib/repeat-check";
 
@@ -71,6 +72,7 @@ export function DriveFolderPicker({ design, onChanged }: { design: any; onChange
         const say = (t: string) => setStatus((s) => ({ ...s, [f.id]: t }));
         say("Copying…");
         const orig: any = await driveImport(f.link, design.id, (d, t) => say(t > 1 ? `Copying ${Math.floor((d / t) * 100)}%` : "Copying…"));
+        const chk = importSummary({ name: orig.filename, bytes: orig.size, driveBytes: orig.driveBytes, dims: orig.dims, minDpi: 150 });
         say(orig.reused ? "Already copied · making picture…" : "Making picture…");
         let preview: Blob | null = null;
         try { preview = await previewFromStored(orig.key, orig.mime, orig.size, orig.dims, (x) => say(`Making picture ${Math.floor(x * 100)}%`)); } catch { preview = null; }
@@ -78,7 +80,7 @@ export function DriveFolderPicker({ design, onChanged }: { design: any; onChange
         if (pk.role === "color") {
           const pv = await uploadFile(preview, { uploadId: design.id, purpose: "preview", filename: "preview.jpg" }, () => {});
           const sw = pk.autoSwatch ? (await dominantColor(preview)) ?? pk.swatch : pk.swatch;
-          const r = await api(`designer/uploads/${design.id}/colorways`, { body: { name: pk.name || niceName(f.name), swatch: sw, sourceName: f.name, previewKey: pv.key, originalKey: orig.key, filename: orig.filename, mime: orig.mime, size: orig.size, width: orig.dims?.width, height: orig.dims?.height } });
+          const r = await api(`designer/uploads/${design.id}/colorways`, { body: { name: pk.name || niceName(f.name), swatch: sw, sourceName: f.name, previewKey: pv.key, originalKey: orig.key, filename: orig.filename, mime: orig.mime, size: orig.size, width: orig.dims?.width, height: orig.dims?.height, dpi: orig.dims?.vector ? null : orig.dims?.dpi } });
           made[f.id] = r.colorwayId;
           if (first) {
             first = false;
@@ -91,7 +93,7 @@ export function DriveFolderPicker({ design, onChanged }: { design: any; onChange
           const up = await uploadFile(small, { uploadId: design.id, purpose: "mockup", filename: "photo.jpg" }, () => {});
           await api(`designer/colorways/${target}/mockups`, { body: { keys: [up.key] } });
         }
-        say("Added");
+        say(`Added · ${chk.line}${chk.warn ? " · " + chk.warn : ""}`);
       }
       setDone(`Added ${nColors} color${nColors === 1 ? "" : "s"}${nExtra ? ` and ${nExtra} extra picture${nExtra === 1 ? "" : "s"}` : ""}. Only the files you picked were copied.`);
       setPicks({}); onChanged();
