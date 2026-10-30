@@ -68,7 +68,7 @@ export async function policyWrite(db: D1, who: Who, table: string, op: "insert" 
   if (op === "insert") {
     switch (table) {
       case "guest_designer_requests": return;
-      case "order_requests": if ((row.status ?? "awaiting_payment") !== "awaiting_payment") fail(); if (row.print_design_snapshot != null) fail(); // print geometry (repeat + match) always comes from the design, never from the customer if (uid && row.user_id && row.user_id !== uid) fail(); return;
+      case "order_requests": if ((row.status ?? "awaiting_payment") !== "awaiting_payment") fail(); if (row.print_design_snapshot != null) fail(); if (uid && row.user_id && row.user_id !== uid) fail(); return; // print geometry (repeat + match) always comes from the design, never from the customer
       case "conversations": if (!uid || row.customer_id !== uid) fail(); return;
       case "designer_messages": {
         if (!uid || row.sender_id !== uid) fail();
