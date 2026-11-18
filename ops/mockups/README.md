@@ -37,3 +37,10 @@ mockups_v1.py is the old fully procedural version.
 On design approval (repeat designs): run both renders from the design's web image + repeat width, upload the
 two JPGs to R2 next to the design images, show them as extra gallery images. Murals: render_peel needs the
 mural scaled to the wall instead of tiled (small change in paper()).
+
+## Room mockups (room_mockup.py, 2026-11)
+Furnished-room pictures for every design without AI: uses the 33 built-in sample rooms (photo + hand-made furniture
+mask + wall corners + real wall size). True scale, perspective, furniture in front, the room's own light and shadows,
+paper stops at crown molding and baseboard, mask edges refined against the wall colour. ~3 s per picture.
+    python room_mockup.py ../../src/lib/sample-rooms.json ../../public/s/rooms design.jpg mural 0 living-1 out.jpg
+    python room_mockup.py ../../src/lib/sample-rooms.json ../../public/s/rooms tile.jpg repeat 54 bedroom-1 out.jpg
