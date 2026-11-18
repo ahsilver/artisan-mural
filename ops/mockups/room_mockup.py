@@ -63,10 +63,17 @@ if kind == "repeat":
         for x in range(0, fw, tw):
             flat.paste(tile, (x, y))
 else:  # mural: cover the wall, keep proportions, centred (the customer can move it on the site)
+    # a fade / ombre (same colour all the way across, changing top to bottom) must keep its whole height:
+    # widening it changes nothing, cropping it loses the fade
+    small = np.asarray(art.resize((64, 64)), np.float32)
+    uniform_x = float(np.mean(np.std(small, axis=1))) < 4.0
     k = max(fw / art.width, fh / art.height)
     a2 = art.resize((int(art.width * k) + 1, int(art.height * k) + 1), Image.LANCZOS)
     ox, oy = (a2.width - fw) // 2, (a2.height - fh) // 2
     flat = a2.crop((ox, oy, ox + fw, oy + fh))
+    if uniform_x:
+        flat = art.resize((fw, fh), Image.LANCZOS)
+        print("fade: fitted to full wall height", file=sys.stderr)
 
 # 2) perspective warp of the flat wall onto the wall quad
 def coeffs(dst, src):
@@ -126,5 +133,4 @@ pure = (alpha[..., 0] > 0.98)                               # fully wall: exact 
 outimg[pure] = lit[pure]
 res = Image.fromarray((outimg * 255).astype(np.uint8)).resize((W, H), Image.LANCZOS)
 res.save(out, quality=82)
-
 print(out, room["name"], f'{room["widthIn"]}x{room["heightIn"]} in wall')
