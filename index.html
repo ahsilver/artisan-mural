@@ -1394,18 +1394,6 @@ a.s:hover,a.s:focus-visible{transform:translateY(-6px) rotate(0deg)!important;bo
 /* hero fills the first screen under the header */
 .hero{height:max(520px,calc(100svh - var(--hdrH,160px)))!important}
 @media (max-width:760px){.hero{height:max(480px,calc(100svh - var(--hdrH,120px)))!important}}
-@media (max-width:760px){
-.flat a.s:nth-of-type(1){left:-3%!important;top:2%!important;width:36%!important;height:31%!important;transform:rotate(-2deg)!important}
-.flat a.s:nth-of-type(2){left:30%!important;top:0%!important;width:38%!important;height:30%!important;transform:rotate(2deg)!important}
-.flat a.s:nth-of-type(3){left:66%!important;top:3%!important;width:37%!important;height:31%!important;transform:rotate(-1.5deg)!important}
-.flat a.s:nth-of-type(4){left:-4%!important;top:33%!important;width:34%!important;height:30%!important;transform:rotate(1.5deg)!important}
-.flat a.s:nth-of-type(5){left:28%!important;top:31%!important;width:40%!important;height:29%!important;transform:rotate(-1deg)!important}
-.flat a.s:nth-of-type(6){left:66%!important;top:35%!important;width:38%!important;height:28%!important;transform:rotate(2deg)!important}
-.flat a.s:nth-of-type(7){left:4%!important;top:63%!important;width:30%!important;height:22%!important;transform:rotate(2deg)!important}
-.flat a.s:nth-of-type(8){left:70%!important;top:63%!important;width:30%!important;height:22%!important;transform:rotate(-2deg)!important}
-.flat .dish{display:none}
-.slide .fade{background:linear-gradient(180deg,rgba(25,14,17,0) 30%,rgba(25,14,17,.55) 55%,rgba(25,14,17,.85) 100%)!important}
-}
 /* designer profile: calm, one line of actions */
 #view-designer .dp-banner{height:clamp(150px,17vw,230px);position:relative}
 #view-designer .dp-banner::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(20,10,12,.18))}
@@ -2114,6 +2102,167 @@ header{position:relative}
 .mcs-open::after{content:"+";font-size:14px;letter-spacing:0}
 .mat-cmp[open] .mcs-open::after{content:"–"}
 @media (max-width:560px){.mcs-balls{display:none}.mcs-t b{font-size:18px}}
+/* chat: like a messaging app on a phone */
+#view-chat .chat{max-width:860px!important;grid-template-columns:250px minmax(0,1fr)!important;height:min(760px,calc(100vh - 170px))!important;border-radius:22px!important;border:1px solid var(--line);box-shadow:0 30px 60px -36px rgba(32,29,29,.45)!important;overflow:hidden}
+#view-chat .inbox{background:#F5F2EC}
+#view-chat .inbox-h{padding:16px 16px 10px;border-bottom:0}
+#view-chat .inbox-h b{font:600 17px/1 var(--f-body);letter-spacing:0;text-transform:none}
+#view-chat .thread{border-bottom:0;border-left:0;margin:2px 8px;border-radius:12px;padding:10px}
+#view-chat .thread[aria-current="true"]{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+#view-chat .ct-main{background:#fff}
+#view-chat .ct-head{padding:12px 16px;border-bottom:1px solid #EFEBE4;background:rgba(255,255,255,.92);backdrop-filter:blur(8px)}
+#view-chat .ct-head .av{width:38px;height:38px;position:relative}
+#view-chat .ct-head .av::after{content:"";position:absolute;right:0;bottom:0;width:10px;height:10px;border-radius:50%;background:#4CAF6A;border:2px solid #fff}
+#view-chat .ct-head b{font-size:15px}
+#view-chat .ct-msgs{background:#FBFAF7;padding:18px 16px!important;gap:3px!important}
+#view-chat .msg{max-width:72%;gap:2px}
+#view-chat .msg + .msg:not(.me), #view-chat .msg.me + .msg.me{margin-top:0}
+#view-chat .msg:not(.me) + .msg.me, #view-chat .msg.me + .msg:not(.me){margin-top:10px}
+#view-chat .msg .bub{border-radius:20px;padding:9px 14px;font-size:14.5px;line-height:1.4;background:#EFEBE4;border-bottom-left-radius:6px;box-shadow:none}
+#view-chat .msg.me .bub{background:#201D1D!important;color:#fff!important;border-radius:20px;border-bottom-right-radius:6px}
+#view-chat .msg.me .bub.card,#view-chat .msg.me .bub.form{background:#fff!important;color:var(--ink)!important;border:1px solid #E6E1D8}
+#view-chat .msg .bub.card{border-radius:18px}
+#view-chat .msg .bub.card img{max-width:260px;border-radius:0}
+#view-chat .msg time{font-size:10.5px;color:#A49C92;padding:0 6px}
+#view-chat .msg.me time::after{content:" ✓";color:#A49C92;letter-spacing:-2px}
+#view-chat .msg.me.dlv time::after{content:" ✓✓";color:#A49C92}
+#view-chat .msg.me.read time::after{content:" ✓✓";color:#4A90D9}
+#view-chat .typing::after{content:"typing";margin-left:6px;font-size:11px;color:#A49C92;align-self:center}
+#view-chat .sysmsg{background:transparent;font-size:11.5px;color:#A49C92;margin:10px 0}
+#view-chat .offer{border:0;border-radius:18px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 20px -12px rgba(0,0,0,.2);padding:14px 16px}
+#view-chat .offer .ot{color:#8C7B5A}
+#view-chat .offer .btn{border-radius:999px}
+#view-chat .typing{background:#EFEBE4;border-radius:20px;border-bottom-left-radius:6px}
+#view-chat .ct-compose{padding:10px 12px;border-top:1px solid #EFEBE4;gap:8px;align-items:flex-end;background:#fff}
+#view-chat .ct-compose textarea{border-radius:22px;border:1px solid #E6E1D8;background:#F7F5F1;padding:10px 16px;font-size:14.5px;min-height:42px}
+#view-chat .ct-compose .btn{width:42px;height:42px;min-height:0;padding:0;border-radius:50%;font-size:0;flex:none;position:relative}
+#view-chat .ct-compose .btn::after{content:"";position:absolute;inset:0;margin:auto;width:16px;height:16px;background:no-repeat center/16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 19V5M5 12l7-7 7 7'/%3E%3C/svg%3E")}
+#view-chat .ct-note{text-align:center;padding:0 12px 10px;color:#A49C92}
+#view-chat .ct-req{border-radius:18px;margin:8px 12px;border:1px solid #E6E1D8!important;background:#fff}
+@media (max-width:860px){#view-chat .chat{grid-template-columns:1fr!important;height:calc(100svh - 120px)!important;border-radius:0!important;border:0;box-shadow:none!important;display:flex!important;flex-direction:column}
+  #view-chat .ct-main{flex:1;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto auto}
+  #view-chat .ct-msgs{height:auto!important}
+  #view-chat .msg{max-width:84%}
+  #view-chat section.pg{padding-left:0;padding-right:0}}
+/* pay design + print together, in the chat */
+.paybox{gap:10px!important;min-width:min(340px,70vw)}
+.pb-wall{display:flex;gap:8px}
+.pb-wall label{flex:1;display:grid;gap:3px;font-size:11px;color:var(--ink-2)}
+.pb-wall label{position:relative}
+.pb-wall input{height:38px;border:1px solid #E6E1D8;border-radius:10px;padding:0 28px 0 10px;font:inherit;font-size:14px;width:100%;background:#F7F5F1;color:var(--ink)}
+.pb-wall em{position:absolute;right:10px;bottom:11px;font-style:normal;font-size:12px;color:var(--ink-2)}
+.pb-mat{display:flex;flex-wrap:wrap;gap:6px}
+.pb-mat button{border:1px solid #E6E1D8;background:#fff;border-radius:999px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--ink)}
+.pb-mat button small{margin-left:4px;color:var(--ink-2)}
+.pb-mat button[aria-pressed=true]{background:#201D1D;color:#fff;border-color:#201D1D}.pb-mat button[aria-pressed=true] small{color:#D3C3A2}
+.pb-rows{display:grid;gap:5px;font-size:13px;border-top:1px solid #EFEBE4;padding-top:8px}
+.pb-rows div{display:flex;justify-content:space-between;gap:10px}.pb-rows span{color:var(--ink-2)}
+.pb-rows .tot{font-size:15px;border-top:1px solid #EFEBE4;padding-top:6px}.pb-rows .tot span{color:var(--ink);font-weight:600}
+.pb-go{border-radius:999px!important;min-height:42px}
+.pb-go:disabled{opacity:.45}
+.pb-note{font-size:11.5px;color:var(--ink-2)}
+/* phone & tablet header */
+.mob-l{display:none}
+.mob-l .icob{border:0;background:none;padding:0;cursor:pointer;color:var(--ink)}
+.mm-bg{position:fixed;inset:0;z-index:90;background:rgba(20,15,15,.35)}
+.mob-menu{position:fixed;z-index:91;top:0;bottom:0;left:0;width:min(330px,86vw);background:var(--paper);display:flex;flex-direction:column;box-shadow:12px 0 30px rgba(0,0,0,.18);animation:fdIn .25s ease}
+.mm-bg[hidden],.mob-menu[hidden]{display:none}
+.mm-h{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}
+.mm-h b{font:350 22px/1 var(--f-display)}.mm-h button{border:0;background:none;font-size:18px;cursor:pointer;color:var(--ink)}
+.mm-body{overflow:auto;padding:8px 0 24px}
+.mm-group{padding:10px 18px;border-bottom:1px solid var(--line);display:grid}
+.mm-k{font:700 10.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);margin:6px 0 4px}
+.mm-group>a,.mm-group summary{display:flex;justify-content:space-between;align-items:center;padding:11px 0;font-size:15px;color:var(--ink);cursor:pointer;list-style:none}
+.mm-group summary::-webkit-details-marker{display:none}
+.mm-group summary::after{content:"+";color:var(--ink-2);font-size:18px}.mm-group details[open] summary::after{content:"–"}
+.mm-sub{display:grid;padding:0 0 8px 10px}.mm-sub a{padding:8px 0;font-size:14px;color:var(--ink-2)}
+.mm-colors i{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:8px;vertical-align:-2px;border:1px solid rgba(0,0,0,.1)}
+@media (max-width:1000px){
+  .bar{display:grid!important;grid-template-columns:1fr auto 1fr!important;grid-template-rows:auto auto;height:auto!important;gap:8px 10px!important;padding:8px 0 10px;border-bottom:0}
+  .mob-l{display:flex;align-items:center;gap:2px;grid-column:1;grid-row:1}
+  .bar .logo{grid-column:2;grid-row:1;justify-self:center}
+  .bar .icons{grid-column:3;grid-row:1;justify-self:end}
+  .bar .search{display:flex!important;grid-column:1/-1;grid-row:2;width:100%!important;height:42px!important;border-radius:4px!important;margin:0}
+  .acc-desk{display:none!important}
+  .nav{display:none!important}
+}
+@media (max-width:420px){.bar .logo .am-word{width:132px!important;height:16px!important}.bar .logo .am-mono{width:26px!important;height:22px!important}.icob{width:32px!important}}
+/* artisan pro */
+.pro-hero{position:relative;height:clamp(420px,60vh,600px);overflow:hidden;color:#fff}
+.pro-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pro-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(32,29,29,.85) 0%,rgba(32,29,29,.55) 40%,rgba(32,29,29,.05) 75%)}
+.pro-hero-in{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;justify-content:center;gap:12px;max-width:1280px;margin:0 auto}
+.pro-hero .k{color:var(--sand,#D3C3A2)}
+.pro-hero h1{margin:0;font:350 clamp(36px,4.6vw,62px)/1.04 var(--f-display);max-width:14ch}.pro-hero h1 span{font-style:italic}
+.pro-hero p{margin:0;max-width:46ch;font-size:15px;opacity:.92}
+.pro-hero small{font-size:12px;opacity:.75}
+.pro-hero .btn-wine{background:#fff;color:#201D1D}
+.pro-strip{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}
+.pro-strip div{padding:20px 10px;text-align:center;display:grid;gap:4px}.pro-strip div+div{border-left:1px solid var(--line)}
+.pro-strip b{font:350 clamp(24px,2.4vw,32px)/1 var(--f-display)}.pro-strip span{font-size:12px;color:var(--ink-2)}
+.pro-wrap{display:grid;gap:clamp(36px,5vw,64px);max-width:1120px;margin:0 auto}
+.pro-ben{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.pro-ben>div{border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:6px;align-content:start;background:var(--paper)}
+.pb-ic{width:38px;height:38px;border-radius:50%;background:var(--soft);display:grid;place-items:center;margin-bottom:4px}
+.pb-ic svg{width:18px;height:18px;fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.pro-ben b{font:400 19px/1.2 var(--f-display)}.pro-ben p{margin:0;font-size:13px;color:var(--ink-2)}
+.pro-spaces{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.pro-spaces a{position:relative;display:block;aspect-ratio:4/3;border-radius:12px;overflow:hidden}
+.pro-spaces img{width:100%;height:100%;object-fit:cover;transition:transform .6s}.pro-spaces a:hover img{transform:scale(1.04)}
+.pro-spaces span{position:absolute;left:14px;bottom:12px;color:#fff;font:600 12px/1 var(--f-body);letter-spacing:.1em;text-transform:uppercase;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+.pro-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;counter-reset:p}
+.pro-steps li{counter-increment:p;background:var(--soft);border-radius:12px;padding:16px;display:grid;gap:4px}
+.pro-steps li::before{content:counter(p);width:26px;height:26px;border-radius:50%;background:var(--sand,#D3C3A2);display:grid;place-items:center;font-size:12px;font-weight:700;margin-bottom:6px}
+.pro-steps b{font-size:14px}.pro-steps span{font-size:13px;color:var(--ink-2)}
+.pro-bottom{display:grid;grid-template-columns:1fr 1.1fr;gap:clamp(24px,4vw,48px);align-items:start}
+.pro-faqw .faq details{border-bottom:1px solid var(--line);padding:12px 0}.pro-faqw summary{cursor:pointer;font-weight:600;font-size:14px}.pro-faqw details p{margin:8px 0 0;font-size:13.5px;color:var(--ink-2)}
+#view-pro .apply-form{margin:0;border-radius:16px;background:var(--paper);box-shadow:0 20px 50px -34px rgba(32,29,29,.4);max-width:none}
+.pro-fh h2{margin:4px 0;font:350 26px/1.15 var(--f-display)!important}.pro-fh p{margin:0;font-size:13px;color:var(--ink-2)}
+#view-pro .af-grid input{height:42px;border-radius:8px;border-width:1px;font-size:14px}
+#view-pro .seg-chips button{border-radius:999px;font-size:12.5px;padding:6px 12px}
+#view-pro .apply-form .btn.big{border-radius:10px;min-height:46px}
+@media (max-width:860px){.pro-ben,.pro-spaces,.pro-steps,.pro-bottom{grid-template-columns:1fr}.pro-strip{grid-template-columns:1fr 1fr}.pro-strip div:nth-child(3){border-left:0}}
+@media (max-width:560px){.pro-hero::after{background:linear-gradient(180deg,rgba(32,29,29,.3),rgba(32,29,29,.85))}#view-pro .af-grid{grid-template-columns:1fr}}
+/* chat: close the form, attach photos */
+.ct-req{position:relative}
+.ct-req-x{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:0;background:#F2EEE7;color:var(--ink);font-size:13px;cursor:pointer}
+.ct-req-x:hover{background:#E7E1D6}
+.ct-formback{justify-self:start;margin:0 14px;border:0;background:none;padding:6px 0;font-size:12px;color:var(--ink-2);text-decoration:underline;cursor:pointer}
+.ct-formback[hidden]{display:none}
+.ct-att{position:relative;flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#F2EEE7;cursor:pointer}
+.ct-att:hover{background:#E7E1D6}
+.ct-att input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.ct-att svg{width:18px;height:18px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.msg .bub.pics{padding:3px!important;display:grid;gap:3px;background:#201D1D!important;overflow:hidden;max-width:280px}
+.bub.pics-2,.bub.pics-4{grid-template-columns:1fr 1fr}.bub.pics-3{grid-template-columns:1fr 1fr 1fr}
+.bub.pics img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:16px;display:block}
+.bub.pics-1 img{aspect-ratio:4/3}
+/* phone banner: short landscape like US Tiles, not the full screen */
+@media (max-width:760px){
+  .hero{height:clamp(300px,82vw,420px)!important}
+  .flat .dish{display:block!important}
+  .flat .tag{display:none}
+  #hero .slide .fade{background:linear-gradient(90deg,rgba(32,29,29,.9) 0%,rgba(32,29,29,.72) 45%,rgba(32,29,29,.15) 80%,rgba(32,29,29,0) 100%)!important}
+  .hero-copy{top:50%!important;bottom:auto!important;transform:translateY(-58%)!important;left:16px!important;right:auto!important;max-width:62%!important}
+  .hero-copy .k{font-size:9px;letter-spacing:.14em}
+  .hero-copy h1{font-size:clamp(26px,8vw,34px)!important;margin:8px 0 8px!important}
+  .hero-copy p{font-size:12px;line-height:1.45;margin:0 0 10px}
+  .hero-copy .btn{min-height:32px;padding:0 10px;font-size:9.5px;letter-spacing:.08em}
+  .hero-ui{bottom:12px!important}
+  .s3split .s3a{width:96px!important;top:14px!important}
+  .hero-copy .ctas{display:flex;flex-wrap:nowrap;gap:6px}
+  .hero-copy p{display:none}
+  .hero-copy{max-width:66%!important;transform:translateY(-62%)!important}
+  #hero .slide .fade{background:linear-gradient(90deg,rgba(32,29,29,.9) 0%,rgba(32,29,29,.7) 40%,rgba(32,29,29,.1) 68%,rgba(32,29,29,0) 100%)!important}
+}
+/* chat: let the Requests list open above everything (the window no longer clips it) */
+#view-chat .chat{overflow:visible!important}
+#view-chat .inbox{border-radius:22px 0 0 22px;overflow:hidden}
+#view-chat .ct-main{border-radius:0 22px 22px 0;position:relative}
+#view-chat .ct-head{border-radius:0 22px 0 0;position:relative;z-index:20}
+#view-chat .ct-compose,#view-chat .ct-note{border-bottom-right-radius:22px}
+#view-chat .ct-reqs-pop{z-index:60}
+@media (max-width:860px){#view-chat .inbox,#view-chat .ct-main,#view-chat .ct-head{border-radius:0}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -2142,6 +2291,7 @@ header{position:relative}
 <div class="topbar"><div class="pg"><span>Are you an artist? <a href="#sell">Sell your designs on Artisan Mural</a></span><span>Design professional? <a href="#pro">Artisan Pro: 20% off &amp; free samples</a></span></div></div>
 <header class="top pg">
   <div class="bar">
+    <div class="mob-l"><button type="button" class="icob" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="mobMenu"><svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16M4 12h12M4 17h16"/></svg></button><a class="icob" href="#account" aria-label="My account"><svg class="ico"><use href="#i-user"/></svg></a></div>
     <a class="logo" href="#home" aria-label="Artisan Murals home"><span class="am-logo"><svg class="am-mono" viewBox="379 224 50 42" aria-hidden="true"><defs><mask id="amCut"><rect x="379" y="224" width="50" height="42" fill="#fff"/><path d="M 409.855469 226.078125 L 397.675781 256.226562 L 400.476562 257.355469 L 412.65625 227.210938 Z M 409.855469 226.078125 " fill="#000"/></mask></defs><path d="M 426.113281 262.488281 C 426.113281 261.683594 425.679688 261.414062 425.140625 261.089844 C 424.605469 260.820312 423.957031 260.390625 423.578125 259.472656 L 410.710938 228.183594 C 410.101562 229.652344 409.320312 231.425781 408.820312 232.1875 L 415.769531 249.613281 L 400.253906 249.613281 L 408.121094 230.4375 L 408.398438 231.140625 C 408.761719 228.46875 407.417969 227.40625 406.121094 226.988281 L 393.628906 226.988281 C 386.035156 226.988281 381.023438 231.355469 381.023438 238.035156 C 381.023438 243.742188 384.632812 247.566406 389.964844 247.566406 C 392.714844 247.566406 394.4375 246.4375 394.4375 244.660156 C 394.4375 243.367188 393.519531 242.398438 392.066406 242.398438 C 391.367188 242.398438 390.828125 242.558594 390.183594 242.773438 C 389.480469 243.042969 388.835938 243.257812 387.863281 243.257812 C 385.011719 243.257812 383.285156 240.835938 383.285156 237.386719 C 383.285156 232.214844 387.21875 228.984375 392.984375 228.984375 L 401.386719 228.984375 C 404.457031 228.984375 405.75 230.761719 404.671875 233.453125 L 393.953125 259.472656 C 393.519531 260.441406 392.984375 260.820312 392.390625 261.144531 C 391.851562 261.464844 391.421875 261.734375 391.421875 262.488281 C 391.421875 263.191406 391.960938 263.621094 392.714844 263.621094 L 396.808594 263.621094 C 397.5625 263.621094 398.046875 263.191406 398.046875 262.488281 C 398.046875 261.734375 397.507812 261.414062 397.023438 261.195312 C 396.375 260.820312 395.785156 260.496094 396.269531 259.472656 L 399.445312 251.660156 L 416.578125 251.660156 L 419.703125 259.527344 C 420.132812 260.605469 419.703125 260.925781 419.21875 261.25 C 418.785156 261.519531 418.410156 261.789062 418.410156 262.488281 C 418.410156 263.191406 418.949219 263.621094 419.703125 263.621094 L 424.820312 263.621094 C 425.574219 263.621094 426.113281 263.191406 426.113281 262.488281 " fill="#C9B691" mask="url(#amCut)"/></svg><svg class="am-word" viewBox="240 290 309 38" aria-hidden="true"><g fill="currentColor"><path transform="translate(242.7534 326.1432)" d="M 1.640625 0 L 5.1875 0 C 5.84375 0 6.265625 -0.375 6.265625 -0.984375 C 6.265625 -1.640625 5.796875 -1.921875 5.375 -2.109375 C 4.765625 -2.4375 4.3125 -2.71875 4.671875 -3.609375 L 7.4375 -10.390625 L 22.375 -10.390625 L 25.078125 -3.5625 C 25.453125 -2.625 25.078125 -2.34375 24.609375 -2.0625 C 24.234375 -1.828125 23.953125 -1.59375 23.953125 -0.984375 C 23.953125 -0.375 24.375 0 25.078125 0 L 29.484375 0 C 30.1875 0 30.609375 -0.375 30.609375 -0.984375 C 30.609375 -1.6875 30.234375 -1.921875 29.765625 -2.203125 C 29.296875 -2.4375 28.78125 -2.8125 28.453125 -3.609375 L 17.171875 -31.03125 C 16.984375 -31.546875 16.609375 -31.828125 16.09375 -31.828125 L 15.0625 -31.828125 C 14.546875 -31.828125 14.21875 -31.546875 14 -31.03125 L 2.671875 -3.609375 C 2.34375 -2.765625 1.828125 -2.4375 1.359375 -2.15625 C 0.890625 -1.875 0.515625 -1.640625 0.515625 -0.984375 C 0.515625 -0.375 0.984375 0 1.640625 0 Z M 8.1875 -12.171875 L 15.015625 -28.828125 L 21.671875 -12.171875 Z M 8.1875 -12.171875 "/><path transform="translate(273.969 326.1432)" d="M 3.28125 0 L 7.8125 0 C 8.375 0 8.796875 -0.328125 8.796875 -0.890625 C 8.796875 -1.453125 8.375 -1.734375 7.90625 -2.015625 C 7.390625 -2.25 6.875 -2.578125 6.875 -3.28125 L 6.875 -16.375 C 8.046875 -19.796875 9.78125 -21.25 11.703125 -21.25 C 12.453125 -21.25 12.875 -21.0625 13.390625 -20.734375 C 13.765625 -20.5 14.265625 -20.3125 14.875 -20.3125 C 16.140625 -20.3125 16.9375 -21.109375 16.9375 -22.1875 C 16.9375 -23.4375 15.8125 -24.328125 13.859375 -24.328125 C 11.140625 -24.328125 8.515625 -22.65625 6.875 -19.515625 L 6.875 -22.28125 C 6.875 -23.265625 6.3125 -23.859375 5.421875 -23.859375 L 3.140625 -23.859375 C 2.53125 -23.859375 2.109375 -23.4375 2.109375 -22.890625 C 2.109375 -22.328125 2.53125 -22.046875 2.953125 -21.71875 C 3.421875 -21.390625 3.984375 -21.015625 3.984375 -20.125 L 3.984375 -3.28125 C 3.984375 -2.578125 3.515625 -2.25 3.046875 -1.96875 C 2.625 -1.734375 2.25 -1.453125 2.25 -0.890625 C 2.25 -0.328125 2.671875 0 3.28125 0 Z M 3.28125 0 "/><path transform="translate(292.3614 326.1432)" d="M 10.0625 0.46875 C 13.0625 0.46875 15.15625 -1.359375 15.15625 -2.4375 C 15.15625 -2.765625 14.96875 -3 14.640625 -3 C 14.3125 -3 13.90625 -2.71875 13.4375 -2.390625 C 12.734375 -1.96875 11.890625 -1.546875 10.859375 -1.546875 C 9.03125 -1.546875 7.859375 -2.859375 7.859375 -4.90625 L 7.859375 -22.234375 L 13.953125 -22.234375 C 14.5 -22.234375 14.78125 -22.5625 14.78125 -23.078125 C 14.78125 -23.53125 14.5 -23.859375 13.953125 -23.859375 L 7.859375 -23.859375 L 7.859375 -28.59375 C 7.859375 -29.015625 7.578125 -29.34375 7.15625 -29.34375 C 6.546875 -29.34375 6.359375 -28.734375 6.21875 -27.890625 C 5.703125 -25.5 4.640625 -24.28125 2.203125 -23.90625 C 1.453125 -23.8125 0.890625 -23.671875 0.890625 -23.03125 C 0.890625 -22.5625 1.21875 -22.234375 1.6875 -22.234375 L 4.953125 -22.234375 L 4.953125 -4.59375 C 4.953125 -1.546875 7.015625 0.46875 10.0625 0.46875 Z M 10.0625 0.46875 "/><path transform="translate(308.7882 326.1432)" d="M 5.140625 -28.125 C 6.5 -28.125 7.390625 -29.0625 7.390625 -30.375 C 7.390625 -31.734375 6.5 -32.625 5.140625 -32.625 C 3.796875 -32.625 2.90625 -31.734375 2.90625 -30.375 C 2.90625 -29.0625 3.796875 -28.125 5.140625 -28.125 Z M 3.28125 0 L 7.625 0 C 8.234375 0 8.609375 -0.328125 8.609375 -0.890625 C 8.609375 -1.453125 8.234375 -1.734375 7.8125 -1.96875 C 7.34375 -2.25 6.875 -2.578125 6.875 -3.28125 L 6.875 -22.28125 C 6.875 -23.265625 6.3125 -23.859375 5.421875 -23.859375 L 3.140625 -23.859375 C 2.53125 -23.859375 2.109375 -23.4375 2.109375 -22.890625 C 2.109375 -22.328125 2.53125 -22.046875 2.953125 -21.71875 C 3.421875 -21.390625 3.984375 -21.015625 3.984375 -20.125 L 3.984375 -3.28125 C 3.984375 -2.578125 3.515625 -2.25 3.046875 -1.96875 C 2.625 -1.734375 2.25 -1.453125 2.25 -0.890625 C 2.25 -0.328125 2.671875 0 3.28125 0 Z M 3.28125 0 "/><path transform="translate(319.4586 326.1432)" d="M 12.078125 0.46875 C 17.640625 0.46875 21.8125 -1.96875 21.8125 -6.5 C 21.8125 -11.1875 17.3125 -12.3125 13.015625 -13.25 C 9.171875 -14.078125 5.5625 -14.96875 5.5625 -18.34375 C 5.5625 -21.0625 8 -22.890625 11.9375 -22.890625 C 16.046875 -22.890625 16.84375 -20.921875 17.453125 -19.328125 C 17.875 -18.296875 18.25 -17.453125 19.421875 -17.453125 C 20.265625 -17.453125 20.875 -17.875 20.875 -19 C 20.875 -22.234375 16.890625 -24.328125 12.078125 -24.328125 C 6.359375 -24.328125 2.8125 -21.859375 2.8125 -17.59375 C 2.8125 -12.828125 7.34375 -11.796875 11.65625 -10.859375 C 15.484375 -10.015625 19.046875 -9.21875 19.046875 -5.890625 C 19.046875 -2.953125 16.28125 -0.984375 12.171875 -0.984375 C 7.53125 -0.984375 6.640625 -3.1875 5.9375 -5 C 5.515625 -6.21875 5.140625 -7.203125 3.796875 -7.203125 C 2.765625 -7.203125 2.109375 -6.546875 2.109375 -5.46875 C 2.109375 -2.8125 5.890625 0.46875 12.078125 0.46875 Z M 12.078125 0.46875 "/><path transform="translate(343.2798 326.1432)" d="M 10.25 0.46875 C 13.765625 0.46875 16.75 -0.796875 18.578125 -2.90625 L 18.578125 -2.203125 C 18.578125 -0.609375 19.609375 0.46875 21.34375 0.46875 C 22.46875 0.46875 23.3125 0.046875 23.3125 -0.703125 C 23.3125 -1.171875 23.078125 -1.453125 22.515625 -1.734375 C 22 -2.109375 21.484375 -2.484375 21.484375 -3.421875 L 21.484375 -15.90625 C 21.484375 -21.390625 17.640625 -24.328125 11.9375 -24.328125 C 5.9375 -24.328125 2.8125 -21.0625 2.8125 -18.671875 C 2.8125 -17.59375 3.46875 -16.9375 4.5 -16.9375 C 5.84375 -16.9375 6.171875 -17.78125 6.546875 -19.09375 C 7.015625 -20.78125 7.71875 -22.796875 11.609375 -22.796875 C 16 -22.796875 18.578125 -20.21875 18.578125 -16.046875 L 18.578125 -13.859375 C 8 -13.8125 1.921875 -11.375 1.921875 -6.03125 C 1.921875 -2.109375 5.234375 0.46875 10.25 0.46875 Z M 4.8125 -6.453125 C 4.8125 -10.015625 8.84375 -12.125 14.828125 -12.125 C 16.328125 -12.125 17.453125 -11.984375 18.578125 -11.65625 L 18.578125 -4.8125 C 17.03125 -2.71875 14.265625 -1.40625 11.328125 -1.40625 C 7.71875 -1.40625 4.8125 -3.375 4.8125 -6.453125 Z M 4.8125 -6.453125 "/><path transform="translate(368.2242 326.1432)" d="M 3.28125 0 L 7.625 0 C 8.234375 0 8.609375 -0.328125 8.609375 -0.890625 C 8.609375 -1.453125 8.234375 -1.734375 7.8125 -1.96875 C 7.34375 -2.25 6.875 -2.578125 6.875 -3.28125 L 6.875 -17.265625 C 8.5625 -20.359375 11.703125 -22.328125 14.96875 -22.328125 C 18.390625 -22.328125 20.640625 -20.171875 20.640625 -16.796875 L 20.640625 -3.28125 C 20.640625 -2.578125 20.171875 -2.25 19.75 -1.96875 C 19.328125 -1.734375 18.90625 -1.453125 18.90625 -0.890625 C 18.90625 -0.328125 19.328125 0 19.9375 0 L 24.28125 0 C 24.890625 0 25.265625 -0.328125 25.265625 -0.890625 C 25.265625 -1.453125 24.890625 -1.734375 24.46875 -1.96875 C 24.046875 -2.25 23.53125 -2.578125 23.53125 -3.28125 L 23.53125 -17.03125 C 23.53125 -21.484375 20.453125 -24.328125 15.90625 -24.328125 C 12.359375 -24.328125 9.03125 -22.5625 6.875 -19.65625 L 6.875 -22.28125 C 6.875 -23.265625 6.3125 -23.859375 5.421875 -23.859375 L 3.140625 -23.859375 C 2.53125 -23.859375 2.109375 -23.4375 2.109375 -22.890625 C 2.109375 -22.328125 2.53125 -22.046875 2.953125 -21.71875 C 3.421875 -21.390625 3.984375 -21.015625 3.984375 -20.125 L 3.984375 -3.28125 C 3.984375 -2.578125 3.515625 -2.25 3.046875 -1.96875 C 2.625 -1.734375 2.25 -1.453125 2.25 -0.890625 C 2.25 -0.328125 2.671875 0 3.28125 0 Z M 3.28125 0 "/><path transform="translate(406.647 326.1432)" d="M 4.03125 0 L 7.625 0 C 8.28125 0 8.75 -0.328125 8.75 -0.984375 C 8.75 -1.59375 8.28125 -1.921875 7.765625 -2.25 C 7.15625 -2.671875 6.5 -3.046875 6.5 -4.03125 L 6.5 -28.78125 L 17.875 -0.796875 C 18.0625 -0.28125 18.4375 0 18.953125 0 L 19.515625 0 C 20.03125 0 20.359375 -0.28125 20.59375 -0.796875 L 32.109375 -28.828125 L 32.109375 -3.609375 C 32.109375 -2.953125 31.640625 -2.578125 31.171875 -2.296875 C 30.703125 -1.96875 30.28125 -1.6875 30.28125 -0.984375 C 30.28125 -0.328125 30.703125 0 31.359375 0 L 35.890625 0 C 36.546875 0 37.015625 -0.328125 37.015625 -0.984375 C 37.015625 -1.6875 36.546875 -1.96875 36.078125 -2.296875 C 35.609375 -2.578125 35.140625 -2.953125 35.140625 -3.609375 L 35.140625 -28.21875 C 35.140625 -28.921875 35.609375 -29.25 36.078125 -29.53125 C 36.546875 -29.859375 37.015625 -30.1875 37.015625 -30.84375 C 37.015625 -31.5 36.546875 -31.828125 35.890625 -31.828125 L 32.25 -31.828125 C 31.640625 -31.828125 31.359375 -31.59375 31.125 -31.03125 L 19.84375 -3.703125 L 8.796875 -31.03125 C 8.5625 -31.59375 8.234375 -31.828125 7.625 -31.828125 L 4.03125 -31.828125 C 3.375 -31.828125 2.90625 -31.5 2.90625 -30.84375 C 2.90625 -30.1875 3.328125 -29.859375 3.796875 -29.53125 C 4.265625 -29.203125 4.71875 -28.875 4.71875 -28.171875 L 4.71875 -3.65625 C 4.71875 -2.953125 4.3125 -2.625 3.796875 -2.296875 C 3.328125 -1.96875 2.90625 -1.640625 2.90625 -0.984375 C 2.90625 -0.328125 3.375 0 4.03125 0 Z M 4.03125 0 "/><path transform="translate(446.5674 326.1432)" d="M 10.953125 0.46875 C 14.453125 0.46875 17.6875 -1.265625 19.75 -3.984375 L 19.75 -2.203125 C 19.75 -0.609375 20.78125 0.46875 22.515625 0.46875 C 23.625 0.46875 24.515625 0.046875 24.515625 -0.65625 C 24.515625 -1.21875 24.140625 -1.5 23.71875 -1.734375 C 23.171875 -2.109375 22.65625 -2.484375 22.65625 -3.421875 L 22.65625 -22.28125 C 22.65625 -23.265625 22.09375 -23.859375 21.203125 -23.859375 L 18.90625 -23.859375 C 18.296875 -23.859375 17.921875 -23.4375 17.921875 -22.890625 C 17.921875 -22.328125 18.296875 -22.046875 18.71875 -21.71875 C 19.234375 -21.390625 19.75 -21.015625 19.75 -20.125 L 19.75 -6.3125 C 18.109375 -3.421875 15.0625 -1.546875 11.9375 -1.546875 C 8.65625 -1.546875 6.453125 -3.65625 6.453125 -6.875 L 6.453125 -22.234375 C 6.453125 -23.171875 5.84375 -23.859375 5 -23.859375 L 2.71875 -23.859375 C 2.109375 -23.859375 1.6875 -23.4375 1.6875 -22.890625 C 1.6875 -22.328125 2.109375 -22.046875 2.53125 -21.71875 C 3 -21.390625 3.5625 -21.015625 3.5625 -20.125 L 3.5625 -6.640625 C 3.5625 -2.296875 6.546875 0.46875 10.953125 0.46875 Z M 10.953125 0.46875 "/><path transform="translate(473.1498 326.1432)" d="M 3.28125 0 L 7.8125 0 C 8.375 0 8.796875 -0.328125 8.796875 -0.890625 C 8.796875 -1.453125 8.375 -1.734375 7.90625 -2.015625 C 7.390625 -2.25 6.875 -2.578125 6.875 -3.28125 L 6.875 -16.375 C 8.046875 -19.796875 9.78125 -21.25 11.703125 -21.25 C 12.453125 -21.25 12.875 -21.0625 13.390625 -20.734375 C 13.765625 -20.5 14.265625 -20.3125 14.875 -20.3125 C 16.140625 -20.3125 16.9375 -21.109375 16.9375 -22.1875 C 16.9375 -23.4375 15.8125 -24.328125 13.859375 -24.328125 C 11.140625 -24.328125 8.515625 -22.65625 6.875 -19.515625 L 6.875 -22.28125 C 6.875 -23.265625 6.3125 -23.859375 5.421875 -23.859375 L 3.140625 -23.859375 C 2.53125 -23.859375 2.109375 -23.4375 2.109375 -22.890625 C 2.109375 -22.328125 2.53125 -22.046875 2.953125 -21.71875 C 3.421875 -21.390625 3.984375 -21.015625 3.984375 -20.125 L 3.984375 -3.28125 C 3.984375 -2.578125 3.515625 -2.25 3.046875 -1.96875 C 2.625 -1.734375 2.25 -1.453125 2.25 -0.890625 C 2.25 -0.328125 2.671875 0 3.28125 0 Z M 3.28125 0 "/><path transform="translate(489.7638 326.1432)" d="M 10.25 0.46875 C 13.765625 0.46875 16.75 -0.796875 18.578125 -2.90625 L 18.578125 -2.203125 C 18.578125 -0.609375 19.609375 0.46875 21.34375 0.46875 C 22.46875 0.46875 23.3125 0.046875 23.3125 -0.703125 C 23.3125 -1.171875 23.078125 -1.453125 22.515625 -1.734375 C 22 -2.109375 21.484375 -2.484375 21.484375 -3.421875 L 21.484375 -15.90625 C 21.484375 -21.390625 17.640625 -24.328125 11.9375 -24.328125 C 5.9375 -24.328125 2.8125 -21.0625 2.8125 -18.671875 C 2.8125 -17.59375 3.46875 -16.9375 4.5 -16.9375 C 5.84375 -16.9375 6.171875 -17.78125 6.546875 -19.09375 C 7.015625 -20.78125 7.71875 -22.796875 11.609375 -22.796875 C 16 -22.796875 18.578125 -20.21875 18.578125 -16.046875 L 18.578125 -13.859375 C 8 -13.8125 1.921875 -11.375 1.921875 -6.03125 C 1.921875 -2.109375 5.234375 0.46875 10.25 0.46875 Z M 4.8125 -6.453125 C 4.8125 -10.015625 8.84375 -12.125 14.828125 -12.125 C 16.328125 -12.125 17.453125 -11.984375 18.578125 -11.65625 L 18.578125 -4.8125 C 17.03125 -2.71875 14.265625 -1.40625 11.328125 -1.40625 C 7.71875 -1.40625 4.8125 -3.375 4.8125 -6.453125 Z M 4.8125 -6.453125 "/><path transform="translate(514.7082 326.1432)" d="M 3.28125 0 L 7.625 0 C 8.234375 0 8.609375 -0.328125 8.609375 -0.890625 C 8.609375 -1.453125 8.234375 -1.734375 7.8125 -1.96875 C 7.34375 -2.25 6.875 -2.578125 6.875 -3.28125 L 6.875 -31.171875 C 6.875 -32.15625 6.3125 -32.75 5.421875 -32.75 L 3.140625 -32.75 C 2.53125 -32.75 2.109375 -32.34375 2.109375 -31.78125 C 2.109375 -31.21875 2.53125 -30.9375 2.953125 -30.609375 C 3.421875 -30.28125 3.984375 -29.90625 3.984375 -29.015625 L 3.984375 -3.28125 C 3.984375 -2.578125 3.515625 -2.25 3.046875 -1.96875 C 2.625 -1.734375 2.25 -1.453125 2.25 -0.890625 C 2.25 -0.328125 2.671875 0 3.28125 0 Z M 3.28125 0 "/><path transform="translate(525.4254 326.1432)" d="M 12.078125 0.46875 C 17.640625 0.46875 21.8125 -1.96875 21.8125 -6.5 C 21.8125 -11.1875 17.3125 -12.3125 13.015625 -13.25 C 9.171875 -14.078125 5.5625 -14.96875 5.5625 -18.34375 C 5.5625 -21.0625 8 -22.890625 11.9375 -22.890625 C 16.046875 -22.890625 16.84375 -20.921875 17.453125 -19.328125 C 17.875 -18.296875 18.25 -17.453125 19.421875 -17.453125 C 20.265625 -17.453125 20.875 -17.875 20.875 -19 C 20.875 -22.234375 16.890625 -24.328125 12.078125 -24.328125 C 6.359375 -24.328125 2.8125 -21.859375 2.8125 -17.59375 C 2.8125 -12.828125 7.34375 -11.796875 11.65625 -10.859375 C 15.484375 -10.015625 19.046875 -9.21875 19.046875 -5.890625 C 19.046875 -2.953125 16.28125 -0.984375 12.171875 -0.984375 C 7.53125 -0.984375 6.640625 -3.1875 5.9375 -5 C 5.515625 -6.21875 5.140625 -7.203125 3.796875 -7.203125 C 2.765625 -7.203125 2.109375 -6.546875 2.109375 -5.46875 C 2.109375 -2.8125 5.890625 0.46875 12.078125 0.46875 Z M 12.078125 0.46875 "/></g></svg></span></a>
     <form class="search" role="search">
       <label for="q" class="sr">Search wallpaper and murals</label>
@@ -2151,7 +2301,7 @@ header{position:relative}
     <div class="icons">
       <div class="nt-wrap"><button type="button" class="icob nt-btn" id="ntBtn" aria-label="Notifications" aria-expanded="false" aria-controls="ntPop"><svg class="ico"><use href="#i-bell"/></svg><span class="nt-count" id="ntBadge" hidden>0</span></button>
         <div class="nt-pop" id="ntPop" hidden role="dialog" aria-label="Notifications"><div class="nt-h"><b>Notifications</b><button type="button" id="ntRead">Mark all as read</button></div><div class="nt-list" id="ntList"></div><a class="nt-all" href="#account-notifications">See all in my account</a></div></div>
-      <a class="icob" href="#account" aria-label="My account"><svg class="ico"><use href="#i-user"/></svg></a>
+      <a class="icob acc-desk" href="#account" aria-label="My account"><svg class="ico"><use href="#i-user"/></svg></a>
       <a class="icob" href="#account-saved" aria-label="Saved designs"><svg class="ico"><use href="#i-heart"/></svg></a>
       <a class="icob" href="#cart" aria-label="Cart"><svg class="ico"><use href="#i-cart"/></svg><span class="badge" hidden>0</span></a>
     </div>
@@ -2175,6 +2325,11 @@ header{position:relative}
     </div>
   </div>
 </header>
+<div class="mm-bg" id="mmBg" hidden></div>
+<aside class="mob-menu" id="mobMenu" hidden aria-label="Menu">
+  <div class="mm-h"><b>Menu</b><button type="button" id="mmClose" aria-label="Close menu">✕</button></div>
+  <nav class="mm-body" id="mmBody"></nav>
+</aside>
 
 <main>
 <div id="view-home">
@@ -2727,6 +2882,7 @@ header{position:relative}
         </header>
         <div class="ct-msgs" id="ctMsgs" aria-live="polite"></div>
         <form class="ct-req" id="ctReq">
+          <button type="button" class="ct-req-x" id="ctReqX" aria-label="Close the form and just write a message">✕</button>
           <b class="ct-req-h">What should <span id="ctReqName">the designer</span> change?</b>
         <div class="qchips" role="group" aria-label="Quick requests">
           <button type="button" data-t="Please remove ">Remove something</button>
@@ -2741,7 +2897,9 @@ header{position:relative}
         <textarea id="chMsg" rows="2" placeholder="E.g. remove the hippo, warmer sky"></textarea>
           <div class="ct-req-foot"><button class="btn btn-wine" type="submit">Send request</button><div class="ch-ok" id="chOk" aria-live="polite"></div></div>
         </form>
+        <button type="button" class="ct-formback" id="ctFormBack" hidden>Use the change form instead</button>
         <form class="ct-compose" id="ctCompose">
+          <label class="ct-att" title="Add photos"><input type="file" id="ctFiles" accept="image/*" multiple><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5 12.6 19.9a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8"/></svg><span class="sr">Add photos</span></label>
           <label for="ctInput" class="sr">Write a message</label>
           <textarea id="ctInput" rows="1" placeholder="Write a message…"></textarea>
           <button class="btn btn-wine" type="submit">Send</button>
@@ -2904,14 +3062,41 @@ header{position:relative}
 </div>
 
 <div id="view-pro" hidden>
-  <section class="sell-hero pro"><div class="pg"><span class="k">Artisan Pro · for design professionals</span><h1>For the people who design the room.</h1><p>A free program for interior designers, architects and decorators. Professional pricing, free samples and a specialist who knows your projects.</p><a class="btn btn-wine" href="#pro-apply">Apply now</a><small>Free to join. No minimum order.</small></div></section>
-  <section class="pg sec">
-    <div class="pg-head"><span class="k">Member benefits</span><h2>What you get.</h2></div>
-    <div class="benefits"><div><b>20% off every order</b><span>Applied automatically in the cart.</span></div><div><b>Free samples</b><span>Any design and finish, at no cost.</span></div><div><b>Priority production</b><span>Your orders go to the front of the print queue.</span></div><div><b>A dedicated specialist</b><span>Sizing, panel layouts, finishes, timelines.</span></div><div><b>Project quotes</b><span>Multi-room and commercial jobs in one place.</span></div><div><b>Client projects</b><span>Save designs per client and share a wall preview.</span></div></div>
-    <ol class="steps"><li><b>Apply</b><span>About three minutes.</span></li><li><b>Get approved</b><span>Usually within 1–2 business days.</span></li><li><b>Order at your price</b><span>Sign in and your price applies automatically.</span></li></ol>
-    <div class="faq" id="proFaq"></div>
+  <section class="pro-hero">
+    <img src="img/cover-commercial.webp" alt="A designer mural in a restaurant">
+    <div class="pro-hero-in pg"><span class="k">Artisan Pro · for design professionals</span><h1>For the people who <span>design the room.</span></h1>
+      <p>Interior designers, architects and hospitality teams get trade pricing, free samples and one specialist for every project.</p>
+      <div class="sl-cta"><a class="btn btn-wine" href="#pro-apply">Apply now</a><a class="btn sl-ghost" href="#pro-how">How it works</a></div>
+      <small>Free to join · no minimum order</small></div>
+  </section>
+
+  <section class="pg pro-strip" aria-label="Member benefits at a glance">
+    <div><b>20%</b><span>off every order</span></div><div><b>Free</b><span>samples, any finish</span></div><div><b>1</b><span>dedicated specialist</span></div><div><b>Priority</b><span>production</span></div>
+  </section>
+
+  <section class="pg sec pro-wrap">
+    <div class="pro-ben">
+      <div><span class="pb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12l-8 8-8-8V4h8z M8 8h.01"/></svg></span><b>Trade pricing</b><p>20% off every order, applied automatically when you're signed in.</p></div>
+      <div><span class="pb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16"/></svg></span><b>Free samples</b><p>Any design on any material, sent to you or straight to your client.</p></div>
+      <div><span class="pb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4 M12 17v4 M3 12h4 M17 12h4 M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg></span><b>Priority production</b><p>Your orders go to the front of the print queue.</p></div>
+      <div><span class="pb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span><b>A dedicated specialist</b><p>Sizing, panel layouts, finishes and timelines, one person who knows your projects.</p></div>
+      <div><span class="pb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16 M4 12h16 M4 18h10"/></svg></span><b>Project quotes</b><p>Multi-room and commercial jobs priced together, with Class A fire-rated materials.</p></div>
+      <div><span class="pb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v13H3z M8 7V4h8v3"/></svg></span><b>Client projects</b><p>Save designs per client, share a wall preview, ship to any job site.</p></div>
+    </div>
+
+    <div class="pro-spaces">
+      <a href="#room-hotel"><img src="img/cover-restaurant.webp" alt="" loading="lazy"><span>Hotels &amp; restaurants</span></a>
+      <a href="#room-office"><img src="img/cover-office.webp" alt="" loading="lazy"><span>Offices</span></a>
+      <a href="#room-living"><img src="img/cover-living-room.webp" alt="" loading="lazy"><span>Residential projects</span></a>
+    </div>
+
+    <div class="pro-how" id="pro-how"><span class="k">How it works</span><h2 class="sl-h">Three steps to trade pricing</h2>
+      <ol class="pro-steps"><li><b>Apply</b><span>Tell us about your business. About three minutes.</span></li><li><b>Get approved</b><span>We confirm by email, usually within 1–2 business days.</span></li><li><b>Order at your price</b><span>Sign in and your discount applies to every order and sample.</span></li></ol></div>
+
+    <div class="pro-bottom">
+      <div class="pro-faqw"><h2 class="sl-h">Questions</h2><div class="faq" id="proFaq"></div></div>
     <form class="apply-form" id="proForm" novalidate>
-      <h2 id="pro-apply-h">Apply to Artisan Pro</h2>
+      <div class="pro-fh"><span class="k">Free to join</span><h2 id="pro-apply-h">Apply to Artisan Pro</h2><p>About three minutes. We confirm by email, usually within 1–2 business days.</p></div>
       <div class="af-grid">
         <label class="rqf"><span>Your name</span><input id="pfName" autocomplete="name"></label>
         <label class="rqf"><span>Business name</span><input id="pfBiz" autocomplete="organization"></label>
@@ -2923,9 +3108,9 @@ header{position:relative}
       <button class="btn btn-wine big" type="submit">Send application</button>
       <p class="rq-ok" id="pfOk" aria-live="polite"></p>
     </form>
+    </div>
   </section>
 </div>
-
 <div id="view-myreq" hidden>
   <div class="pg crumbs-row"><nav class="crumbs" aria-label="Breadcrumb"><a href="#home">Home</a><span>/</span><a href="#account">My account</a><span>/</span><b>My requests</b></nav></div>
   <section class="pg"><div class="pg-head"><span class="k">Requests &amp; projects</span><h1>My design requests</h1><p>Every change request and custom design, with prices and where it stands.</p></div>
@@ -3516,7 +3701,7 @@ header{position:relative}
     $('chMsg').value = ''; $('chOk').textContent = ''; $('chPhotos').value = '';
     syncReq(slug);
   }
-  function syncReq(slug) { const st = chatState(slug); $('ctReq').hidden = !!st.sent; $('ctCompose').hidden = !st.sent; $('ctReqName').textContent = designerOf(bySlug[slug]).name.split(' ')[0]; }
+  function syncReq(slug) { const st = chatState(slug), chat = st.sent || st.skipForm; $('ctReq').hidden = !!chat; $('ctCompose').hidden = !chat; $('ctFormBack').hidden = !!st.sent || !st.skipForm; $('ctReqName').textContent = designerOf(bySlug[slug]).name.split(' ')[0]; }
   function chatState(slug) { return (CHATS[slug] ||= { msgs: [], stage: 0, timers: [] }); }
   function renderChat(slug) {
     const st = chatState(slug), d = bySlug[slug], x = designerOf(d), label = d.colorways ? `${d.name} · ${d.colorways.find(c => c.slug === slug).name}` : d.name;
@@ -3527,12 +3712,18 @@ header{position:relative}
     $('ctMsgs').innerHTML = st.msgs.map(m => m.html).join('') + (st.typing ? '<div class="typing" aria-label="typing"><i></i><i></i><i></i></div>' : '');
     $('ctMsgs').scrollTop = $('ctMsgs').scrollHeight;
     $('ctMsgs').querySelectorAll('[data-act]').forEach(b => b.onclick = () => offerAct(slug, b.dataset.act));
+    $('ctMsgs').querySelectorAll('.paybox').forEach(payCalc);
   }
   const add = (slug, html) => { chatState(slug).msgs.push({ html }); if (location.hash === '#chat-' + slug) renderChat(slug); };
   const later = (slug, ms, fn) => { const st = chatState(slug); st.timers.push(setTimeout(fn, ms)); };
+  // ticks like WhatsApp: ✓ sent → ✓✓ delivered (grey) → ✓✓ read (blue) when the designer opens it, then "typing…"
+  const markMine = (slug, cls) => { const st = chatState(slug); st.msgs.forEach(m => { if (m.html.includes('class="msg me')) m.html = m.html.replace(/class="msg me(?: dlv| read)*"/, `class="msg me ${cls}"`); }); if (location.hash === '#chat-' + slug) renderChat(slug); };
   function designerSays(slug, text, ms = 1600) {
-    const st = chatState(slug); later(slug, 500, () => { st.typing = true; if (location.hash === '#chat-' + slug) renderChat(slug); });
-    later(slug, 500 + ms, () => { st.typing = false; add(slug, `<div class="msg"><div class="bub">${text}</div><time>${nowT()}</time></div>`); });
+    const st = chatState(slug);
+    later(slug, 700, () => markMine(slug, 'dlv'));
+    later(slug, 1500, () => markMine(slug, 'read'));
+    later(slug, 1900, () => { st.typing = true; if (location.hash === '#chat-' + slug) renderChat(slug); });
+    later(slug, 1900 + ms, () => { st.typing = false; add(slug, `<div class="msg"><div class="bub">${text}</div><time>${nowT()}</time></div>`); });
   }
   function startChat(p, skipCard) {
     const slug = p.cw, d = p.d, x = designerOf(d), st = chatState(slug), first = x.name.split(' ')[0];
@@ -3545,13 +3736,42 @@ header{position:relative}
     designerSays(slug, `Hi, I'm ${first}! Thanks for sending the details. ${p.w && p.h ? `A ${esc(p.w)} × ${esc(p.h)} ft wall works well for this one.` : 'When you have your wall size, add it here.'} I can do that change. Give me a minute to price it.`, 1800);
     later(slug, 4600, () => { add(slug, `<div class="msg"><div class="offer"><span class="ot">Price offer</span><span class="op">$${x.adapt}.00</span><p>Design work for your change, ready in 2 days. You approve a proof before anything is printed. Printing is priced separately by your wall size.</p><div class="ob"><button class="btn btn-wine btn-sm" data-act="approve">Approve price</button><button class="btn btn-sm optline" data-act="decline">Decline</button></div></div><time>${nowT()}</time></div>`); });
   }
+
+  // chat payment box: live total for design + print, then straight to checkout as one order
+  function payCalc(box) {
+    const w = +box.querySelector('[data-f=w]').value || 0, h = +box.querySelector('[data-f=h]').value || 0;
+    const mat = PAPERS.find(p => p.id === (box.querySelector('[data-m][aria-pressed=true]') || {}).dataset?.m) || PAPERS[0];
+    const st = chatState(box.dataset.pay), sq = Math.round(w * h), print = Math.round(sq * mat.rate * 100) / 100, ok = w >= 2 && h >= 2;
+    box.querySelector('[data-o=pl]').textContent = ok ? `Printing · ${sq} sq ft on ${mat.name} × ${money(mat.rate)}` : 'Printing';
+    box.querySelector('[data-o=pp]').textContent = ok ? money(print) : 'Enter your wall';
+    box.querySelector('[data-o=tot]').textContent = money(st.fee + (ok ? print : 0));
+    const go = box.querySelector('.pb-go'); go.disabled = !ok; go.textContent = ok ? `Pay ${money(st.fee + print)}` : 'Enter your wall size';
+    return { w, h, sq, mat, print, ok };
+  }
+  document.addEventListener('input', (e) => { const box = e.target.closest('.paybox'); if (box) payCalc(box); });
+  document.addEventListener('click', (e) => {
+    const box = e.target.closest('.paybox'); if (!box) return;
+    const m = e.target.closest('[data-m]');
+    if (m) { box.querySelectorAll('[data-m]').forEach(b => b.setAttribute('aria-pressed', String(b === m))); payCalc(box); return; }
+    if (e.target.closest('.pb-go')) { const slug = box.dataset.pay, st = chatState(slug), x = designerOf(bySlug[slug]), r = payCalc(box); if (!r.ok) return;
+      CART = CART.filter(i => i.chat !== slug);
+      addToCart({ slug, chat: slug, name: `Custom design by ${x.name} + print`, desc: `Design work ${money(st.fee)} · ${r.w} × ${r.h} ft on ${r.mat.name} ${money(r.print)}`, price: Math.round((st.fee + r.print) * 100) / 100 });
+      location.hash = 'checkout'; }
+  });
   function offerAct(slug, act) {
     const st = chatState(slug), x = designerOf(bySlug[slug]);
     st.msgs.forEach(m => { m.html = m.html.replace(/<div class="ob">.*?<\/div>/s, act === 'approve' ? '<div class="ob"><b>✓ Approved</b></div>' : '<div class="ob"><b>Declined</b></div>'); });
     if (act === 'approve') {
       st.stage = 3;
-      add(slug, `<div class="sysmsg">Price approved. Next: enter your wall size and pay the design and the print together.</div>`);
-      add(slug, `<div class="msg"><div class="offer"><span class="ot">Next step</span><p>Pick your wall size and paper. ${x.name.split(' ')[0]} starts as soon as you pay.</p><div class="ob2"><a class="btn btn-wine btn-sm" href="#size-${slug}">Wall size &amp; payment</a></div></div></div>`);
+      // one payment for the design work and the printing, right here in the chat
+      const all = st.msgs.map(m => m.html).join(' '), fee = +((all.match(/class="op">\$([\d.,]+)/g) || []).pop() || '').replace(/[^\d.]/g, '') || x.adapt;
+      const wm = all.match(/(\d+(?:\.\d+)?) × (\d+(?:\.\d+)?) ft/); st.fee = fee;
+      add(slug, `<div class="sysmsg">Price approved. One payment covers the design work and the printing.</div>`);
+      add(slug, `<div class="msg"><div class="offer paybox" data-pay="${slug}"><span class="ot">Design + print · one payment</span>
+        <div class="pb-wall"><label><span>Wall width</span><input type="number" min="2" max="60" step="0.5" value="${wm ? wm[1] : ''}" data-f="w" inputmode="decimal"><em>ft</em></label><label><span>Height</span><input type="number" min="2" max="20" step="0.5" value="${wm ? wm[2] : ''}" data-f="h" inputmode="decimal"><em>ft</em></label></div>
+        <div class="pb-mat">${PAPERS.map((p, k) => `<button type="button" data-m="${p.id}" aria-pressed="${k === 0}">${p.name}<small>${money(p.rate)}</small></button>`).join('')}</div>
+        <div class="pb-rows"><div><span>Design work · ${esc(x.name)}</span><b>${money(fee)}</b></div><div><span data-o="pl">Printing</span><b data-o="pp">Enter your wall</b></div><div class="tot"><span>Total</span><b data-o="tot">${money(fee)}</b></div></div>
+        <button type="button" class="btn btn-wine pb-go" disabled>Enter your wall size</button><small class="pb-note">You approve a proof before anything is printed.</small></div></div>`);
     } else { st.stage = 1; add(slug, `<div class="sysmsg">You declined this price. ${x.name} can send a new one.</div>`); designerSays(slug, 'No problem! Tell me what would work for you and I can adjust it.'); }
     renderChat(slug);
   }
@@ -3579,6 +3799,17 @@ header{position:relative}
     add(slug, `<div class="msg me"><div class="bub">${esc(guard(v))}</div><time>${nowT()}</time></div>`); $('ctInput').value = '';
     designerSays(slug, 'Got it, I’ll include that in the proof.');
   });
+
+  $('ctReqX').onclick = () => { const slug = location.hash.replace('#chat-', ''); chatState(slug).skipForm = true; syncReq(slug); $('ctInput').focus(); };
+  $('ctFormBack').onclick = () => { const slug = location.hash.replace('#chat-', ''); chatState(slug).skipForm = false; syncReq(slug); };
+  $('ctFiles').onchange = (e) => {
+    const slug = location.hash.replace('#chat-', ''), fs = [...e.target.files].slice(0, 6); if (!fs.length) return;
+    Promise.all(fs.map(f => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); }))).then(srcs => {
+      add(slug, `<div class="msg me"><div class="bub pics pics-${Math.min(srcs.length, 4)}">${srcs.map(u => `<img src="${u}" alt="Photo you sent">`).join('')}</div><time>${nowT()}</time></div>`);
+      designerSays(slug, srcs.length > 1 ? 'Thanks for the photos, that helps a lot!' : 'Thanks for the photo, that helps a lot!', 1400);
+    });
+    e.target.value = '';
+  };
   $('ctInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('ctCompose').requestSubmit(); } });
 
 
@@ -3660,6 +3891,19 @@ header{position:relative}
     document.querySelectorAll('.mr-on').forEach(el => { const w = el.clientWidth || 300; el.style.backgroundSize = `${w * 2.24 / 12}px auto, ${w}px auto`; });
     if (focus) { const el = $('mat-' + focus); if (el) requestAnimationFrame(() => { el.scrollIntoView({ block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600); }); }
   }
+
+  /* ---------- phone & tablet menu (US Tiles style: menu + account left, logo centre, search underneath) ---------- */
+  function renderMobMenu() {
+    const groups = MEGA.filter(m => m[0] !== 'colour' && m[0] !== 'color').map(([k, n, f]) => `<details><summary>${n}</summary><div class="mm-sub">${f().map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div></details>`).join('');
+    const colors = `<details><summary>Color</summary><div class="mm-sub mm-colors">${Object.entries(COLORS).map(([k, [n, hex]]) => `<a href="#color-${k}"><i style="background:${hex}"></i>${n}</a>`).join('')}</div></details>`;
+    $('mmBody').innerHTML = `<div class="mm-group"><span class="mm-k">Shop</span>${groups}${colors}<a href="#new">New arrivals</a><a href="#materials">Our materials</a></div>
+      <div class="mm-group"><span class="mm-k">Made for you</span><a href="#own">Your own image</a><a href="#request">Post a request</a><a href="#changes">Changes to a design</a><a href="#designers-all">Designers</a></div>
+      <div class="mm-group"><span class="mm-k">More</span><a href="#pro">Artisan Pro</a><a href="#sell">Sell your art</a><a href="#account">My account</a><a href="#account-messages">Messages</a></div>`;
+  }
+  const mmOpen = (o) => { $('mobMenu').hidden = $('mmBg').hidden = !o; $('menuBtn').setAttribute('aria-expanded', String(o)); document.body.style.overflow = o ? 'hidden' : ''; if (o) { renderMobMenu(); $('mmClose').focus(); } };
+  $('menuBtn').onclick = () => mmOpen(true); $('mmClose').onclick = () => mmOpen(false); $('mmBg').onclick = () => mmOpen(false);
+  $('mobMenu').addEventListener('click', (e) => { if (e.target.closest('a')) mmOpen(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('mobMenu').hidden) mmOpen(false); });
   /* ---------- home rows ---------- */
   const trends = $('trends'); trends.replaceChildren(promo('d/palm-leaves-shadow-close.webp', 'Browse more', 'Trending designs', 'See more', '#shop'));
   ['animal-kingdom', 'vine-charcoal', 'in-harmony', 'swaying-palm-leaves'].forEach(s => trends.append(card(bySlug[s], s)));
@@ -3944,7 +4188,7 @@ header{position:relative}
     zEl.value = toSlider(Z.s, L); $('zPct').textContent = Math.round(Z.s * 100) + '%';
     $('zoom2').value = zEl.value; $('zPct2').textContent = Math.round(Z.s * 100) + '%';
     $('qOrig').setAttribute('aria-pressed', String(Math.abs(Z.s - 1) < 0.005)); $('qFit').setAttribute('aria-pressed', String(d.kind !== 'repeat' && Math.abs(Z.s - L.need) < 0.005));
-    $('bhSizeN').textContent = d.kind === 'repeat' ? '2' : '3'; $('bhPaperN').textContent = d.kind === 'repeat' ? '3' : '4';
+    $('bhSizeN').textContent = '2'; $('bhPaperN').textContent = '3';
     // sharpness
     const pctBar = Math.max(0, Math.min(100, ((dpi - 100) / (250 - 100)) * 60 + (dpi >= 250 ? 40 : dpi >= 200 ? 25 : 0)));
     $('dpiBar').style.left = Math.max(2, Math.min(98, ((dpi - 75) / (250 - 75)) * 100)) + '%';
@@ -3968,7 +4212,8 @@ header{position:relative}
       if (!lastBig && !Z.enlarge) openBigModal(needDpi, tooBig);
     }
     lastBig = bigger;
-    if (isVec) { $('dpiTxt').textContent = 'Vector file · sharp at any size'; $('sharp').className = 'sharp'; }
+    if (isVec) { $('dpiTxt').textContent = 'Vector file · sharp at any size'; $('sharp').className = 'sharp'; $('dpiBar').style.left = '96%'; }
+    if (!isVec && dpi < MIN_DPI) blocked = true;
     $('szAdd').classList.toggle('disabled', blocked);
     $('szAdd').setAttribute('aria-disabled', String(blocked));
     // panels + price
@@ -3990,11 +4235,11 @@ header{position:relative}
     $('szName').textContent = label; $('szBy').textContent = `by ${d.by} · ${d.kind === 'repeat' ? 'Repeat' : 'Mural'}`;
     $('szThumb').src = `d/${Z.cw}-close.webp`; $('szBack').href = $('szChange').href = `#design-${Z.cw}`; $('szBack').textContent = label;
     $('szChat').href = $('optAsk').href = `#chat-${Z.cw}`; lastBig = false;
-    $('fitBlock').hidden = d.kind === 'repeat';
+    $('fitBlock').hidden = true; Z.fit = 'fill';
     $('qFit').hidden = d.kind === 'repeat';
     const img = new Image();
     img.onload = () => { Z.ar = img.naturalWidth / img.naturalHeight; Z.s = d.kind === 'repeat' ? 1 : limits().need;
-      if (PRESET && PRESET.slug === Z.cw) { $('szW').value = PRESET.w; $('szH').value = PRESET.h; Z.s = PRESET.s; Z.px = PRESET.px; Z.py = PRESET.py; Z.offN = [PRESET.oxn || 0, PRESET.oyn || 0]; Z.fit = PRESET.fit || 'fill'; document.querySelectorAll('#fitBlock .seg button').forEach(x => x.setAttribute('aria-checked', String(x.dataset.fit === Z.fit))); if (PRESET.paper) { const pk = PAPERS.findIndex(q => q.id === PRESET.paper); if (pk >= 0) { Z.paper = PAPERS[pk]; [...$('szPaper').children].forEach((x, k2) => x.setAttribute('aria-checked', String(k2 === pk))); } } Z.editId = PRESET.editId ?? null; $('szAdd').textContent = Z.editId != null ? 'Update cart' : 'Add to cart'; if (d.kind !== 'repeat' && limits().need > 1.001) Z.enlarge = true; PRESET = null; }
+      if (PRESET && PRESET.slug === Z.cw) { $('szW').value = PRESET.w; $('szH').value = PRESET.h; Z.s = PRESET.s; Z.px = PRESET.px; Z.py = PRESET.py; Z.offN = [PRESET.oxn || 0, PRESET.oyn || 0]; Z.fit = 'fill'; document.querySelectorAll('#fitBlock .seg button').forEach(x => x.setAttribute('aria-checked', String(x.dataset.fit === Z.fit))); if (PRESET.paper) { const pk = PAPERS.findIndex(q => q.id === PRESET.paper); if (pk >= 0) { Z.paper = PAPERS[pk]; [...$('szPaper').children].forEach((x, k2) => x.setAttribute('aria-checked', String(k2 === pk))); } } Z.editId = PRESET.editId ?? null; $('szAdd').textContent = Z.editId != null ? 'Update cart' : 'Add to cart'; if (d.kind !== 'repeat' && limits().need > 1.001) Z.enlarge = true; PRESET = null; }
       renderSize(); };
     img.src = d.kind === 'repeat' ? `d/${Z.cw}-tile.webp` : `d/${Z.cw}-full.webp`;
   }
