@@ -2273,6 +2273,10 @@ header{position:relative}
   .qrow svg{width:20px;height:20px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 }
 @media (min-width:761px) and (max-width:1000px){.hero{height:clamp(380px,58vw,540px)!important}}
+/* cards: room photo first, plain wallpaper on hover */
+article.card .im{position:relative;display:block}
+article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .35s ease;pointer-events:none}
+@media (hover:hover){article.card.flat-on .im-flat{opacity:1}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -3504,17 +3508,21 @@ header{position:relative}
   }
   /* ---------- shared card ---------- */
   function card(d, cw = d.slug) {
-    let vs = ['full', 'room1', 'room2', 'room3'].map(v => `d/${cw}-${v}.webp`);
+    let vs = ['room1', 'full', 'room2', 'room3'].map(v => `d/${cw}-${v}.webp`);
     const a = document.createElement('article'); a.className = 'card';
     a.innerHTML = `<a class="im" href="#design-${cw}"><img src="${vs[0]}" alt="${d.name}" loading="lazy"></a><button class="fav" aria-pressed="false" aria-label="Save ${d.name}">${heart}</button>
       <div class="thumbs" role="group" aria-label="${d.name} pictures">${vs.map((v, k) => `<button aria-pressed="${k === 0}" aria-label="Picture ${k + 1}"><img src="${v}" alt="" loading="lazy"></button>`).join('')}<a class="more" href="#design-${cw}" aria-label="Open ${d.name}"><svg class="ico"><use href="#i-next"/></svg></a></div>
       <h3><a href="#design-${cw}">${d.name}</a></h3>${d.colorways ? `<div class="cways" role="group" aria-label="${d.colorways.length} colorways">${d.colorways.map(c => `<button aria-pressed="${c.slug === cw}" aria-label="${c.name}" title="${c.name}" data-s="${c.slug}" style="background-image:url(d/${c.slug}-close.webp)"></button>`).join('')}<span>${d.colorways.length} colorways · <b>${d.colorways.find(c => c.slug === cw).name}</b></span></div>` : ''}<div class="meta"><span><a href="#designer-${slugify(d.by)}">${d.by}</a> · ${d.kind === 'repeat' ? 'Repeat' : 'Mural'}</span><span>${(() => { const lo = Math.min(...PAPERS.map(p => p.rate)), hi = Math.max(...PAPERS.map(p => p.rate)); return lo === hi ? `${money(lo)} / sq ft` : `${money(lo)}–${money(hi).slice(1)} / sq ft`; })()}</span></div><label class="cmpchk"><input type="checkbox" data-c="${d.slug}" ${CMP.includes(d.slug) ? 'checked' : ''}> Compare</label>`;
     const main = a.querySelector('.im img');
+    // hover the picture: the room photo turns into the plain wallpaper, and back when the mouse leaves
+    const flat = new Image(); a.querySelector('.im').insertAdjacentHTML('beforeend', `<img class="im-flat" src="" alt="" aria-hidden="true">`);
+    const fl = a.querySelector('.im-flat'); a.querySelector('.im').addEventListener('mouseenter', () => { if (!fl.src.endsWith('-full.webp') || !fl.getAttribute('src')) fl.src = vs[1]; fl.src = vs[1]; a.classList.add('flat-on'); });
+    a.querySelector('.im').addEventListener('mouseleave', () => a.classList.remove('flat-on'));
     a.querySelectorAll('.thumbs button').forEach((b, k) => b.onclick = () => { main.src = vs[k]; a.querySelectorAll('.thumbs button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
     a.querySelector('.fav').onclick = e => { const b = e.currentTarget; b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); };
     a.querySelector('.cmpchk input').onchange = (e) => toggleCmp(d.slug, e.target);
     a.querySelectorAll('.cways button').forEach(b => b.onclick = () => {
-      const s = b.dataset.s; vs = ['full', 'room1', 'room2', 'room3'].map(v => `d/${s}-${v}.webp`);
+      const s = b.dataset.s; vs = ['room1', 'full', 'room2', 'room3'].map(v => `d/${s}-${v}.webp`);
       main.src = vs[0]; a.querySelectorAll('.thumbs button img').forEach((im, k) => im.src = vs[k]);
       a.querySelectorAll('.thumbs button').forEach((x, k) => x.setAttribute('aria-pressed', k === 0));
       a.querySelectorAll('a[href^="#design-"]').forEach(l => l.href = '#design-' + s);
