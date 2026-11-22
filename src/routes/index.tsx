@@ -1,277 +1,281 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { ArrowRight, ArrowUpRight, MessageCircle, Ruler, Truck } from "lucide-react";
-import heroAsset from "@/assets/hero-mural.webp.asset.json";
-import roomBefore from "@/assets/showcase-before.jpg";
-import fern from "@/assets/design-fern.jpg";
-import mist from "@/assets/design-mist.jpg";
-import arches from "@/assets/design-arches.jpg";
-import cranes from "@/assets/design-cranes.jpg";
-import dots from "@/assets/design-dots.jpg";
-import waves from "@/assets/design-waves.jpg";
-import { RoomShowcase } from "@/components/room-showcase";
-import { DesignerInvitation } from "@/components/designer-invitation";
-import { Button } from "@/components/ui/button";
-import { DesignCard } from "@/components/design-card";
-import { HomeSearch } from "@/components/home-search";
-import { PRICE_PER_SQFT, liveDesigns, money, registerShop, categories as allCategories } from "@/lib/catalog";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { allDesigners, liveDesigns, registerShop, type Design } from "@/lib/catalog";
 import { ensureShop } from "@/lib/shop";
 import { loadSite } from "@/lib/site-settings";
-import { staticPic, pic, CARD_W } from "@/lib/pics";
-const heroPic = staticPic(heroAsset.url, [720, 1080, 1440])!;
+import { pic } from "@/lib/pics";
+import { StorefrontSprite, Ico, Mark } from "@/components/storefront/icons";
+import { StoreCard } from "@/components/storefront/card";
 
 export const Route = createFileRoute("/")({
   head: () => ({
-    links: [{ rel: "preload", as: "image", href: heroPic.src, imageSrcSet: heroPic.srcSet, imageSizes: "(min-width: 1024px) 58vw, 100vw", fetchPriority: "high" }],
     meta: [
-      { title: "Artisan Mural | Original wallpaper, made for your wall" },
-      {
-        name: "description",
-        content:
-          "Original murals and patterns by independent artists. Find your design, see it in your room, and make it yours.",
-      },
-      { property: "og:title", content: "Artisan Mural | Original wallpaper, made for your wall" },
-      { property: "og:description", content: "Original murals and patterns by independent artists. Find your design, see it in your room, and make it yours." },
+      { title: "Artisan Murals | Original wallpaper, printed for your wall" },
+      { name: "description", content: "Murals and wallpaper drawn by independent artists, printed to the exact size of your wall." },
+      { property: "og:title", content: "Artisan Murals | Original wallpaper, printed for your wall" },
+      { property: "og:description", content: "Murals and wallpaper drawn by independent artists, printed to the exact size of your wall." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:image", content: heroAsset.url },
-      { name: "twitter:image", content: heroAsset.url },
     ],
   }),
   loader: async ({ context }) => { const [shop, site] = await Promise.all([ensureShop(context.queryClient), loadSite()]); return { shop, site }; },
-  component: Index,
+  component: Home,
 });
 
-const categories = [
-  { label: "Botanical", filter: "Botanical", image: fern },
-  { label: "Landscapes", filter: "Landscape", image: mist },
-  { label: "Geometric", filter: "Geometric", image: arches },
-  { label: "Floral", filter: "Floral", image: cranes },
-  { label: "Quiet neutrals", filter: "Minimal", image: waves },
-  { label: "Kids", filter: "Kids & nursery", image: dots },
+const COVER = (n: string) => `/p/img/cover-${n}.webp`;
+/** Where each wallpaper sample lies on the table in the first banner (same layout as the preview). */
+const SAMPLE_SPOTS = [
+  "left:47%;top:-6%;width:17%;height:44%;transform:rotate(-2deg)", "left:66%;top:6%;width:19%;height:36%;transform:rotate(3deg)",
+  "left:86%;top:-4%;width:16%;height:30%;transform:rotate(-4deg)", "left:37%;top:40%;width:20%;height:42%;transform:rotate(-5deg)",
+  "left:58%;top:47%;width:22%;height:30%;transform:rotate(1deg)", "left:81%;top:37%;width:15%;height:34%;transform:rotate(-2deg)",
+  "left:68%;top:79%;width:18%;height:27%;transform:rotate(4deg)", "left:88%;top:74%;width:16%;height:32%;transform:rotate(-6deg)",
 ];
-function Index() {
+const css = (s: string): React.CSSProperties => Object.fromEntries(s.split(";").filter(Boolean).map((kv) => { const [k, v] = kv.split(":"); return [k!.trim().replace(/-([a-z])/g, (_, c) => c.toUpperCase()), v!.trim()]; }));
+
+/** The same designs all day, new ones tomorrow. */
+function daily<T>(list: T[], salt = 0): T[] {
+  let seed = (Math.floor(Date.now() / 864e5) + salt) * 2654435761 % 4294967296;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j]!, a[i]!]; } return a;
+}
+const room = (d?: Design, k = 0) => (d ? pic(d, d.mockups?.[k] ?? d.mockups?.[0] ?? d.image)?.src ?? d.image : undefined);
+const flatPic = (d: Design) => pic(d, d.image, [720, 1080])?.src ?? d.image;
+const has = (d: Design, words: string[]) => [...d.categories, ...d.room, ...(d.tags ?? [])].some((c) => words.some((w) => String(c).toLowerCase().includes(w)));
+
+function Hero({ live, home }: { live: Design[]; home: any }) {
+  const samples = useMemo(() => daily(live.filter((d) => d.image)).slice(0, 8), [live]);
+  const featured = useMemo(() => daily(live.filter((d) => d.mockups?.length), 7)[0], [live]);
+  const h = home.hero ?? {};
+  const slides = [
+    { k: h.kicker || "Original designs by independent artists", t: h.title || "Every wall. Your story.", p: h.subtitle || "Murals and wallpaper drawn by independent artists, printed to the exact size of your wall." },
+    { k: featured ? `Today's featured design · ${featured.title}` : "Today's featured design", t: "One scene, wall to wall.", p: "Printed to the exact size of your wall and split into numbered panels, ready to hang." },
+    { k: "Don't love a detail?", t: "Our designers will change it.", p: "Remove an animal, change a color, make it bigger. Chat with the designer before you order, free on every mural." },
+  ];
+  const [i, setI] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (paused || (typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+    timer.current = window.setTimeout(() => setI((x) => (x + 1) % 3), 6500);
+    return () => window.clearTimeout(timer.current);
+  }, [i, paused]);
+  const s = slides[i]!;
+  const tagA = samples[4], tagB = samples[0];
+  return (
+    <section className="hero" aria-roledescription="carousel" aria-label="Featured">
+      <div className={"slide" + (i === 0 ? " on" : "")}>
+        <div className="flat">
+          {samples.map((d, k) => (
+            <Link key={d.slug} className="s" to="/design/$slug" params={{ slug: d.slug }} style={css(SAMPLE_SPOTS[k]!)} aria-label={`Open ${d.title}`} title={d.title}>
+              <i className="sk" style={{ backgroundImage: `url(${flatPic(d)})`, backgroundSize: "260%", backgroundPosition: `${(k * 37) % 100}% ${(k * 53) % 100}%` }} />
+              <span className="s-lab">{d.title}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></span>
+            </Link>
+          ))}
+          <div className="dish" aria-hidden="true" style={{ left: "80%", top: "22%", width: "11.5vw", height: "11.5vw", maxWidth: 150, maxHeight: 150 }} />
+          <div className="vase" aria-hidden="true" style={{ left: "28%", top: "-5%", width: "9vw", height: "9vw", maxWidth: 120, maxHeight: 120 }} />
+          {tagA && <div className="tag" aria-hidden="true" style={{ left: "59%", top: "83%", transform: "rotate(-3deg)" }}>{tagA.sku ? `No. ${tagA.sku.replace(/\D/g, "").slice(-3)}` : "No. 01"}<b>{tagA.title}</b></div>}
+          {tagB && <div className="tag" aria-hidden="true" style={{ left: "51%", top: "34%", transform: "rotate(2deg)" }}>{tagB.sku ? `No. ${tagB.sku.replace(/\D/g, "").slice(-3)}` : "No. 02"}<b>{tagB.title}</b></div>}
+        </div>
+        <div className="fade" />
+      </div>
+      <div className={"slide" + (i === 1 ? " on" : "")}>
+        {featured
+          ? <Link className="slide-link" to="/design/$slug" params={{ slug: featured.slug }}><img src={room(featured, 1)} alt={`${featured.title} in a room`} loading="lazy" /></Link>
+          : <Link className="slide-link" to="/browse"><img src={COVER("living-room")} alt="" loading="lazy" /></Link>}
+        <div className="fade" />
+      </div>
+      <div className={"slide" + (i === 2 ? " on" : "")}>
+        <Link className="slide-link s3split" to="/custom-request" aria-label="See how changes work">
+          <span className="s3a"><img src="/p/img/forest-before.webp" alt="A forest mural, original" /><em>Original</em></span>
+          <span className="s3b"><img src="/p/img/forest-after.webp" alt="The same mural with the dark tree removed by the designer" loading="lazy" /><em>Tree removed for you</em></span>
+        </Link>
+        <div className="fade" />
+      </div>
+      <div className="hero-copy">
+        <div className="k">{s.k}</div>
+        <h1>{s.t}</h1>
+        <p>{s.p}</p>
+        <div className="ctas"><Link className="btn btn-white" to="/browse">Browse designs</Link><Link className="btn btn-line" to="/browse" search={{ kind: "mural" }}>Shop murals</Link></div>
+      </div>
+      <div className="hero-ui">
+        <span className="count"><b>{String(i + 1).padStart(2, "0")}</b> <span>/</span> 03</span>
+        <div className="bars" role="tablist" aria-label="Choose slide">
+          {[0, 1, 2].map((k) => <button key={k} type="button" className={k === i ? "on" : ""} role="tab" aria-selected={k === i} aria-label={`Slide ${k + 1}`} onClick={() => setI(k)}><i /></button>)}
+        </div>
+        <div className="arrows">
+          <button type="button" aria-label={paused ? "Play slideshow" : "Pause slideshow"} onClick={() => setPaused((p) => !p)}>
+            <svg className="ico" viewBox="0 0 24 24">{paused ? <path d="M8 5l11 7-11 7z" /> : <path d="M9 6v12M15 6v12" />}</svg>
+          </button>
+          <button type="button" aria-label="Previous slide" onClick={() => setI((x) => (x + 2) % 3)}><Ico id="i-left" /></button>
+          <button type="button" aria-label="Next slide" onClick={() => setI((x) => (x + 1) % 3)}><Ico id="i-right" /></button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Tile({ to, search, img, title, sub, className = "tile" }: { to: string; search?: Record<string, string> | undefined; img?: string | undefined; title: string; sub?: string | undefined; className?: string }) {
+  return (
+    <Link className={className} to={to} search={() => search ?? {}}>
+      {img && <img src={img} alt="" loading="lazy" />}
+      <span className="lab"><strong>{title}</strong>{sub && <small>{sub}</small>}</span>
+    </Link>
+  );
+}
+
+function Signup() {
+  const [email, setEmail] = useState("");
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  return (
+    <section className="sec pg signup">
+      <div className="head"><Mark /><h2 className="caps">Email Signup</h2></div>
+      <p>Be the first to see new murals, artist collections and sample sales.</p>
+      <form noValidate onSubmit={async (e) => {
+        e.preventDefault();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setMsg("Please enter a valid email address."); return; }
+        setBusy(true); setMsg("");
+        try {
+          const r = await fetch("/backend/pro/first-order", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: email.trim(), source: "home", page: "/" }) });
+          const d = await r.json().catch(() => ({}));
+          setMsg(r.ok ? (d.code ? `Thanks! Your welcome code is ${d.code} (${d.pct}% off your first order). We emailed it to you too.` : "Thanks! You're on the list.") : (d.error || "Something went wrong. Please try again."));
+          if (r.ok) setEmail("");
+        } catch { setMsg("Something went wrong. Please try again."); }
+        setBusy(false);
+      }}>
+        <label htmlFor="em"><span className="sr">Email address</span><input id="em" type="email" placeholder="Enter your email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+        <button className="btn btn-wine" type="submit" disabled={busy}>{busy ? "Signing up…" : "Sign up"}</button>
+      </form>
+      <div className="msg" aria-live="polite">{msg}</div>
+    </section>
+  );
+}
+
+function Home() {
   const { shop, site } = Route.useLoaderData();
   registerShop(shop);
-  const home = site?.homepage ?? {};
-  const hero = home.hero ?? {};
+  const home = (site as any)?.homepage ?? {};
   const on = (k: string) => home.sections?.[k] !== false;
   const live = liveDesigns(shop);
-  useEffect(() => {
-    const els = document.querySelectorAll<HTMLElement>("[data-reveal]");
-    const io = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); } }), { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
-  const used = new Set<string>();
-  const spareImages = [...live.map((d) => d.image), fern, mist, arches, cranes, dots, waves];
-  const roll = allCategories.map((label) => {
-    const inCategory = live.filter((d) => d.categories.includes(label));
-    const image =
-      inCategory.find((d) => !used.has(d.image))?.image ??
-      spareImages.find((u) => !used.has(u)) ??
-      inCategory[0]?.image ??
-      fern;
-    used.add(image);
-    const d = live.find((x) => x.image === image);
-    return { label, image: (d ? pic(d, image, [320]) : staticPic(image, [320]))?.src ?? image };
-  });
-  const pick = (home.featuredSlugs?.length ? home.featuredSlugs : ["cranes-at-dusk", "fernhouse", "deco-arches", "long-mist"]) as string[];
-  const featured = pick.flatMap((slug) => live.filter((d) => d.slug === slug)).slice(0, 8);
+  const roomed = live.filter((d) => d.mockups?.length);
+  const withRoom = roomed.length >= 6 ? roomed : live; // until designs have room pictures, use the wallpaper itself
+  const find = (fn: (d: Design) => boolean, salt = 0) => daily(withRoom.filter(fn), salt)[0] ?? daily(withRoom, salt)[0];
+  const looks = [
+    { title: "Murals", sub: "Scenic & panoramic", search: { kind: "mural" }, d: find((d) => d.kind === "mural", 1) },
+    { title: "Botanical", sub: "Palms, leaves & ferns", search: { category: "Botanical" }, d: find((d) => has(d, ["botanical", "leaf", "palm", "fern"]), 2) },
+    { title: "Floral", sub: "Blooms & bouquets", search: { category: "Floral" }, d: find((d) => has(d, ["floral", "flower"]), 3) },
+    { title: "Animals", sub: "Dogs, birds & wildlife", search: { theme: "Animals & birds" }, d: find((d) => has(d, ["animal", "bird", "dog"]), 4) },
+    { title: "Geometric", sub: "Shapes & lines", search: { category: "Geometric" }, d: find((d) => has(d, ["geometric", "line"]), 5) },
+    { title: "Minimal", sub: "Quiet & calm", search: { category: "Minimal" }, d: find((d) => has(d, ["minimal", "neutral"]), 6) },
+  ];
+  const moods = [
+    { title: "Black & white", search: { color: "black" }, d: find((d) => has(d, ["black", "white", "line"]), 8) },
+    { title: "Moody", search: { category: "Abstract" }, d: find((d) => has(d, ["moody", "dark", "abstract"]), 9) },
+    { title: "Tropical", search: { theme: "Tropical" }, d: find((d) => has(d, ["tropical", "jungle"]), 10) },
+    { title: "Kids & nursery", search: { room: "Kids & nursery" }, d: find((d) => has(d, ["kid", "nursery"]), 11) },
+  ];
+  const trends = [...live].sort((a, b) => (b.orders ?? 0) - (a.orders ?? 0)).slice(0, 10);
+  const arrivals = [...(shop.designs?.length ? shop.designs : live)].reverse().filter((d) => live.includes(d) || live.some((x) => x.slug === d.slug)).slice(0, 10);
+  const designers = allDesigners().map((x) => ({ x, d: withRoom.find((d) => d.designer === x.slug) ?? live.find((d) => d.designer === x.slug) })).filter((r) => r.d).slice(0, 2);
+  const split = find((d) => d.kind === "mural", 12);
+  const big = daily(live, 13)[0];
   return (
-    <>
-      <DesignerInvitation />
-      <section className="wallpaper-blue grid lg:grid-cols-[.38fr_.62fr]">
-        <div data-reveal="left" className="is-in order-2 flex flex-col justify-center px-6 py-10 lg:order-1 lg:px-12 lg:py-16">
-          <p className="text-[10px] uppercase tracking-[.2em] text-primary">Original art. Made to measure.</p>
-          <h1 className="mt-5 max-w-md text-4xl leading-[1.08] sm:text-5xl">
-            {hero.title ? hero.title : <>Beautiful walls,<br />made for you.</>}
-          </h1>
-          <p className="mt-5 max-w-xs text-sm leading-6 text-muted-foreground">
-            {hero.subtitle || "Find your design. See it in your room. Made to fit your wall."}
-          </p>
-          <div className="mt-7 flex flex-wrap items-center gap-x-7 gap-y-5">
-            <Button asChild size="lg" className="h-12 rounded-none px-6">
-              <Link to={(hero.ctaLink || "/browse") as any}>
-                {hero.ctaText || "Explore designs"}
-                <ArrowUpRight className="ml-3 size-4" />
-              </Link>
-            </Button>
-            <Link
-              to="/design/$slug/preview"
-              params={{ slug: "long-mist" }}
-              search={{ view: "room" }}
-              className="border-b border-primary/40 pb-1 text-sm text-primary"
-            >
-              See it in your room
-            </Link>
+    <div className="am">
+      <StorefrontSprite />
+      <div className="pg">
+        {on("hero") && <Hero live={live} home={home} />}
+        <nav className="qrow" aria-label="Quick links">
+          <Link to="/browse"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z" /></svg></span>All designs</Link>
+          <Link to="/custom-request"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z M4 15l5-4 4 3 3-2 4 3 M15 9.5h.01" /></svg></span>Your own image</Link>
+          <Link to="/custom-request"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></span>Post a request</Link>
+          <Link to="/designers"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21c0-4 3-6 7-6s7 2 7 6 M17 11a3 3 0 1 0 0-6 M22 21c0-3-2-5-5-5.5" /></svg></span>Designers</Link>
+        </nav>
+      </div>
+
+      {on("look") && withRoom.length > 0 && (
+        <div className="pg sec">
+          <section className="g-cat" aria-label="Shop by look">
+            {looks.map((l) => <Tile key={l.title} to="/browse" search={l.search} img={room(l.d)} title={l.title} sub={l.sub} />)}
+          </section>
+        </div>
+      )}
+
+      {on("rooms") && (
+        <section className="sec pg">
+          <div className="head"><Mark /><h2>Wallpaper for Every Room</h2></div>
+          <div className="g-app">
+            <Tile className="tile w7" to="/browse" search={{ room: "Living room" }} img={COVER("living-room")} title="Living room" />
+            <Tile className="tile w5" to="/browse" search={{ room: "Bedroom" }} img={COVER("bedroom")} title="Bedroom" />
+            <Tile className="tile w4" to="/browse" search={{ room: "Kitchen" }} img={COVER("bathroom")} title="Kitchen & bath" />
+            <Tile className="tile w8" to="/browse" search={{ room: "Commercial" }} img={COVER("restaurant")} title="Hotels & restaurants" />
           </div>
-        </div>
-        <img
-          {...(() => { const hp = hero.image ? staticPic(hero.image, [720, 1080, 1440])! : heroPic; return { src: hp.src, srcSet: hp.srcSet, sizes: hp.srcSet ? "(min-width: 1024px) 58vw, 100vw" : undefined }; })()}
-          alt="Botanical mural in a sunlit living room"
-          fetchPriority="high"
-          decoding="async"
-          width={1440}
-          height={900}
-          className="order-1 h-auto w-full object-cover lg:order-2 lg:h-[560px] lg:object-[62%_center]"
-        />
-      </section>
-      <HomeSearch designs={live} />
-      <section aria-label="Made-to-measure wallpaper" className="border-b border-border">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-4 gap-y-4 px-5 py-6 text-xs sm:grid-cols-4 sm:px-8">
-          <span className="flex items-center gap-2">
-            <Ruler className="size-4 shrink-0 text-primary" />
-            Made to your measurements
-          </span>
-          <span className="flex items-center gap-2">
-            <MessageCircle className="size-4 shrink-0 text-primary" />
-            Work with the original artist
-          </span>
-          <span className="flex items-center gap-2">
-            <Truck className="size-4 shrink-0 text-primary" />
-            Printed &amp; shipped by us
-          </span>
-          <span className="sm:text-right">
-            From <strong className="font-medium">{money(site?.general?.pricePerSqft || PRICE_PER_SQFT)}</strong> / sq ft
-          </span>
-        </div>
-      </section>
-      {roll.length > 2 && <section aria-label="Wallpaper categories" className="roll-strip overflow-hidden border-b border-border bg-background py-6">
-        <div className="roll-track">{[...roll, ...roll].map((c, i) => <Link key={`${c.label}-${i}`} to="/browse" search={{ category: c.label }} aria-hidden={i >= roll.length} tabIndex={i >= roll.length ? -1 : undefined} className="group relative block h-40 w-32 shrink-0 overflow-hidden rounded-t-full shadow-paper sm:h-52 sm:w-40">
-          <img src={c.image} alt={`${c.label} wallpaper`} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
-          <span className="absolute inset-x-0 bottom-0 bg-background/85 px-2 py-1.5 text-center text-[11px] backdrop-blur">{c.label}</span>
-        </Link>)}</div>
-      </section>}
-      {on("featured") && featured.length > 0 && <section data-reveal className="collection-backdrop"><div className="relative mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
-        <div className="flex items-end justify-between gap-5">
-          <div>
-            <p className="text-[10px] uppercase tracking-[.2em] text-muted-foreground">The considered collection</p>
-            <h2 className="mt-3 text-3xl sm:text-4xl">Art that feels at home.</h2>
-          </div>
-          <Link to="/browse" className="flex shrink-0 items-center gap-3 pb-1 text-xs">
-            All designs
-            <ArrowRight className="size-4" />
-          </Link>
-        </div>
-        <div className="mt-9 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
-          {featured.map((d, i) => <DesignCard key={d.slug} design={d} eager={i < 2} />)}
-        </div>
-        <p className="mt-5 text-[10px] text-muted-foreground">Original artwork. Each design is sized to your wall.</p>
-      </div></section>}
-      {on("rooms") && <div id="room-preview" data-reveal="zoom" className="border-y border-border bg-secondary/30">
-        <RoomShowcase />
-      </div>}
-      {on("showcase") && <section data-reveal className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
-        <p className="text-[10px] uppercase tracking-[.2em] text-muted-foreground">Follow your feeling</p>
-        <h2 className="mt-3 text-3xl sm:text-4xl">Find your kind of beautiful.</h2>
-        <div className="mt-9 grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-6 lg:gap-x-5">
-          {categories.map((c) => (
-            <Link key={c.label} to="/browse" search={{ category: c.filter }} className="group block">
-              <div className="aspect-[4/5] overflow-hidden">
-                <img
-                  src={staticPic(c.image, CARD_W)?.src ?? c.image}
-                  srcSet={staticPic(c.image, CARD_W)?.srcSet}
-                  sizes="(min-width: 1024px) 16vw, (min-width: 640px) 33vw, 50vw"
-                  alt={`${c.label} wallpaper detail`}
-                  loading="lazy"
-                  decoding="async"
-                  width={1280}
-                  height={1024}
-                  className="h-full w-full object-cover transition-transform duration-700 motion-safe:group-hover:scale-105"
-                  style={c.label === "Quiet neutrals" ? { filter: "saturate(.15) brightness(1.12)" } : undefined}
-                />
-              </div>
-              <div className="mt-4 flex items-center justify-between gap-2">
-                <h3 className="text-lg">{c.label}</h3>
-                <ArrowUpRight className="size-3.5 text-muted-foreground" />
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>}
-      {on("designers") && <section data-reveal className="wallpaper-blue">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[.9fr_1.1fr] lg:gap-16 lg:py-20">
-          <div>
-            <p className="text-[10px] uppercase tracking-[.2em] text-muted-foreground">The artist behind the wall</p>
-            <h2 className="mt-4 text-4xl sm:text-5xl">Meet Yuki Arai.</h2>
-            <p className="mt-4 font-display text-xl leading-relaxed">Ink, gold leaf, and a lot of empty space.</p>
-            <p className="mt-5 max-w-sm text-sm leading-7 text-muted-foreground">
-              Discover the artist behind Cranes at Dusk. Explore the collection, find your favorite color, or start a
-              conversation about your own wall.
-            </p>
-            <Button asChild className="mt-7 h-12 rounded-none px-6">
-              <Link to="/designers/$slug" params={{ slug: "yuki-arai" }}>
-                Meet the artist
-                <ArrowUpRight className="ml-3 size-4" />
-              </Link>
-            </Button>
-          </div>
-          <div className="relative pb-7 pl-9 sm:pb-10 sm:pl-14">
-            <img
-              src={staticPic(roomBefore, [720, 1080])!.src}
-              srcSet={staticPic(roomBefore, [720, 1080])!.srcSet}
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              alt="Furnished room inspiration"
-              loading="lazy"
-              decoding="async"
-              width={1280}
-              height={1024}
-              className="aspect-[3/2] w-full object-cover"
-            />
-            <div className="absolute bottom-0 left-0 w-[32%] border-[6px] border-background shadow-sm">
-              <img
-                src={staticPic(cranes, [320, 480])!.src}
-                alt="Cranes at Dusk artwork detail"
-                loading="lazy"
-                decoding="async"
-                width={1280}
-                height={1024}
-                className="aspect-[3/4] w-full object-cover"
-              />
+          <nav className="room-strip" aria-label="More rooms">
+            <Link to="/browse" search={{ room: "Dining room" }}>Dining</Link><Link to="/browse" search={{ room: "Kitchen" }}>Kitchen</Link>
+            <Link to="/browse" search={{ room: "Kids & nursery" }}>Kids &amp; nursery</Link><Link to="/browse" search={{ room: "Office & study" }}>Office</Link>
+            <Link to="/browse" search={{ room: "Hallway & stairs" }}>Hallway</Link><Link className="all" to="/browse">See all rooms <span aria-hidden="true">→</span></Link>
+          </nav>
+        </section>
+      )}
+
+      {on("transform") && (
+        <section className="sec pg">
+          <div className="split">
+            <div>
+              <h2>Transform<br />your walls.</h2>
+              <p>Get inspired by the newest work from our artists. Pick a mural or a repeating pattern, choose the paper, and we print it to fit your wall to the inch.</p>
+              <Link className="btn btn-wine" to="/browse">Browse all designs</Link>
             </div>
-            <p className="mt-3 text-right text-[10px] text-muted-foreground">Artwork detail / room inspiration</p>
+            <div className="ph"><img src={split ? room(split, 2) : COVER("living-room")} alt={split ? `${split.title} in a room` : ""} loading="lazy" /></div>
           </div>
-        </div>
-      </section>}
-      {on("howItWorks") && <section id="how-it-works" data-reveal className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
-        <div className="text-center">
-          <p className="text-[10px] uppercase tracking-[.2em] text-muted-foreground">
-            From inspiration to installation
-          </p>
-          <h2 className="mt-3 text-3xl sm:text-4xl">A wall that's entirely yours.</h2>
-        </div>
-        <div className="mt-12 grid gap-9 sm:grid-cols-3 sm:gap-12">
-          {[
-            ["01", "Choose your art", "Find an original mural or pattern that feels like you."],
-            ["02", "See it in your space", "Preview the design in your room and enter your wall measurements."],
-            ["03", "Made for your wall", "We print to order and ship your wallpaper, ready for its new home."],
-          ].map(([n, title, text]) => (
-            <div key={n} className="border-t border-border pt-5">
-              <span className="text-[10px] tracking-[.16em] text-primary">{n}</span>
-              <h3 className="mt-4 text-2xl">{title}</h3>
-              <p className="mt-3 max-w-xs text-sm leading-6 text-muted-foreground">{text}</p>
-            </div>
-          ))}
-        </div>
-      </section>}
-      {on("sell") && <section className="border-t border-border bg-primary text-primary-foreground">
-        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 px-5 py-12 sm:px-8 md:flex-row md:items-center">
-          <div>
-            <p className="text-[10px] uppercase tracking-[.2em] text-primary-foreground/70">A personal touch</p>
-            <h2 className="mt-3 text-3xl sm:text-4xl">Something a little more you?</h2>
-            <p className="mt-3 text-sm text-primary-foreground/80">
-              A new color, an unusual wall, a design all your own.
-            </p>
+          {withRoom.length > 0 && <div className="g-look">{moods.map((m) => <Tile key={m.title} to="/browse" search={m.search} img={room(m.d)} title={m.title} />)}</div>}
+        </section>
+      )}
+
+      {on("duo") && (
+        <section className="pg">
+          <div className="duo">
+            <Link to="/pro"><span className="ic"><Ico id="i-spark" /></span><span><b>Artisan Pro for designers &amp; decorators</b><small>Trade pricing, free samples, a dedicated specialist</small></span><em>Apply</em></Link>
+            <Link to="/sell"><span className="ic"><Ico id="i-brush" /></span><span><b>Are you an artist? Sell your designs</b><small>We print and ship; you earn on every sale</small></span><em>Apply</em></Link>
           </div>
-          <Button asChild variant="secondary" size="lg" className="h-12 rounded-none px-6">
-            <Link to="/custom-request">
-              Start a custom design
-              <ArrowUpRight className="ml-3 size-4" />
-            </Link>
-          </Button>
-        </div>
-      </section>}
-    </>
+        </section>
+      )}
+
+      {on("trends") && trends.length > 0 && (
+        <section className="sec pg">
+          <div className="head"><Mark /><h2>Discover Today's Trends</h2></div>
+          <div className="g-prod">{trends.map((d) => <StoreCard key={d.slug} d={d} />)}</div>
+        </section>
+      )}
+
+      {on("new") && arrivals.length > 0 && (
+        <section className="sec pg" id="new">
+          <div className="head"><Mark /><h2 className="caps">New Arrivals Weekly</h2></div>
+          <div className="g-prod">{arrivals.map((d) => <StoreCard key={d.slug} d={d} />)}</div>
+        </section>
+      )}
+
+      {on("designers") && (
+        <section className="sec pg" id="designers">
+          <div className="head"><Mark /><h2>Meet Our Designers</h2></div>
+          <div className="g-des">
+            <Tile className="tile big" to="/designers" img={big ? flatPic(big) : COVER("hotel")} title="All designers" />
+            {designers.map(({ x, d }) => <Link key={x.slug} className="tile" to="/designers/$slug" params={{ slug: x.slug }}><img src={room(d)} alt="" loading="lazy" /><span className="lab"><strong>{x.name.toUpperCase()}</strong><small>{[x.tagline, x.location].filter(Boolean).join(" · ")}</small></span></Link>)}
+          </div>
+        </section>
+      )}
+
+      {on("changes") && (
+        <section className="pg sec chg-band" aria-label="Changes on any design">
+          <div className="cb-in">
+            <img src="/p/img/forest-after.webp" alt="" loading="lazy" />
+            <div className="cb-txt"><span className="k">Made-to-order changes</span><b>Love it, but want one thing changed?</b><p>Our designers can change any design for your wall. Free to ask.</p></div>
+            <ol className="cb-steps"><li>Pick a design</li><li>Tell the designer</li><li>Approve the proof</li></ol>
+            <Link className="btn btn-wine" to="/custom-request">How it works</Link>
+          </div>
+        </section>
+      )}
+
+      {on("signup") && <Signup />}
+    </div>
   );
 }
