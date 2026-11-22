@@ -2477,6 +2477,16 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 .duo-top{margin-top:clamp(14px,2vw,22px)}
 .qrow{grid-template-columns:repeat(5,1fr)!important}
 @media (max-width:640px){.duo-top{display:none}.qrow a{font-size:10.5px!important;padding:8px 2px!important}.qrow span{width:40px!important;height:40px!important}}
+/* Pro / Sell: same style as the changes band (display font, picture, clear button) */
+.duo2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.d2{display:grid;grid-template-columns:120px minmax(0,1fr) auto;align-items:center;gap:16px 20px;background:var(--soft);border-radius:14px;padding:12px 18px 12px 12px;color:var(--ink);text-decoration:none;transition:background .2s}
+.d2:hover{background:#EDE6DA}
+.d2 img{width:120px;height:88px;object-fit:cover;border-radius:10px}
+.d2-txt{display:grid;gap:2px;min-width:0}
+.d2-txt b{font:400 clamp(20px,1.8vw,26px)/1.15 var(--f-display)}
+.d2-txt small{font-size:13px;color:var(--ink-2)}
+.d2 .btn{border-radius:10px;white-space:nowrap}
+@media (max-width:1000px){.duo2{grid-template-columns:1fr}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -2606,10 +2616,10 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 
 
   </div>
-  <section class="pg duo-top" id="designers-banner">
-    <div class="duo">
-      <a href="#pro"><span class="ic"><svg class="ico"><use href="#i-spark"/></svg></span><span><b>Artisan Pro for designers &amp; decorators</b><small>20% off every order, free samples, a dedicated specialist</small></span><em>Apply</em></a>
-      <a href="#sell"><span class="ic"><svg class="ico"><use href="#i-brush"/></svg></span><span><b>Are you an artist? Sell your designs</b><small>We print and ship; you earn 10–15% of every sale</small></span><em>Apply</em></a>
+  <section class="pg duo-top" id="designers-banner" aria-label="Artisan Pro and selling your art">
+    <div class="duo2">
+      <a class="d2" href="#pro"><img src="img/cover-hotel.webp" alt="" loading="lazy"><span class="d2-txt"><span class="k">For design professionals</span><b>Artisan Pro</b><small>Trade pricing, free samples and one specialist for every project.</small></span><span class="btn btn-wine">Apply</span></a>
+      <a class="d2" href="#sell"><img src="d/in-harmony-full.webp" alt="" loading="lazy"><span class="d2-txt"><span class="k">For artists</span><b>Sell your designs</b><small>We print and ship to order. You earn on every sale.</small></span><span class="btn btn-wine">Apply</span></a>
     </div>
   </section>
 
