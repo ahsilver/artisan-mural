@@ -2484,3 +2484,16 @@
 .am .sz-tabs{display:grid;grid-template-columns:1fr 1fr;max-width:420px}
 .am .sz-stage .hint{margin-top:10px}
 .am .chips.papers .chip small{display:block;font-size:11px;opacity:.75}
+/* cart: exact-crop picture of each wall */
+.am .ci-big{grid-template-columns:200px minmax(0,1fr) auto;align-items:start}
+.am .ci-crop-pic{border-radius:10px;overflow:hidden;background:var(--soft)}
+.am .ci-body{display:grid;gap:4px;min-width:0}
+.am .ci-name{border:0;border-bottom:1px dashed var(--line);background:none;font:600 12px/1.4 var(--f-body);color:var(--ink-2);padding:2px 0;width:min(220px,100%)}
+.am .ci-act{display:flex;flex-wrap:wrap;gap:14px;margin-top:6px}
+.am .ci-act a,.am .ci-act button{border:0;background:none;padding:0;font-size:12.5px;text-decoration:underline;color:var(--ink);cursor:pointer}
+.am .cart-sum .btn{width:100%;margin-top:10px}
+@media (max-width:640px){.am .ci-big{grid-template-columns:110px minmax(0,1fr)}.am .ci-big>strong{grid-column:2}}
+.am .ci.ci-big{grid-template-columns:220px minmax(0,1fr) auto!important;align-items:start;padding:14px}
+.am .ci.ci-big img{width:auto;aspect-ratio:auto;object-fit:initial}
+.am .ci.ci-big .ci-act{flex-direction:row;align-items:center;justify-content:flex-start}
+@media (max-width:640px){.am .ci.ci-big{grid-template-columns:110px minmax(0,1fr)!important}.am .ci.ci-big>strong{grid-column:2}}
