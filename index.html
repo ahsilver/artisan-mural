@@ -2445,6 +2445,18 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 .up-gdf iframe{display:block;width:100%;height:360px;border:0}
 .up-gdf small{display:block;padding:10px 14px;font-size:12px;color:var(--ink-2);border-top:1px solid var(--line)}
 @media (max-width:640px){.up-src3{grid-template-columns:1fr}.up-box{min-height:0}}
+.up-crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px}.up-crumbs span{color:var(--ink-2)}
+.up-crumb{border:0;background:none;padding:0;font:inherit;color:var(--ink);text-decoration:underline;cursor:pointer}
+.up-gdl{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;padding:14px;max-height:460px;overflow:auto}
+.up-gdt{display:grid;gap:6px;border:0;background:none;padding:0;cursor:pointer;text-align:left;color:var(--ink)}
+.up-gdt .th{position:relative;display:grid;place-items:center;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--soft);border:2px solid transparent}
+.up-gdt img{width:100%;height:100%;object-fit:cover}
+.up-gdt em{position:absolute;left:6px;bottom:6px;font:600 11px/1 var(--f-body);font-style:normal;background:rgba(255,255,255,.95);padding:5px 8px;border-radius:999px}
+.up-gdt.on .th{border-color:#201D1D}.up-gdt.on em{background:#201D1D;color:#fff}
+.up-gdt.fold .th svg{width:44px;height:44px;fill:#CFC4B2;stroke:none}
+.up-gdt small{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.up-gdt:hover .th{border-color:#CFC4B2}
+.up-gdl-msg{padding:16px;margin:0;font-size:13px;color:var(--ink-2)}.up-gdl-msg.err{color:#B03A2E}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -4890,6 +4902,44 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
     $('upNext').onclick = () => { const e = check(); if (e) return upErr(e); UP.step++; upRender(); window.scrollTo({ top: $('stMain').getBoundingClientRect().top + scrollY - 140, behavior: 'smooth' }); };
   }
 
+  /* Google Drive folder: read through the site's server, show pictures as tiles, open sub-folders here */
+  const DRIVE_API = 'https://artisan-mural.pages.dev/backend/public/drive-folder?id=';
+  const isPic = (f) => /^image\//.test(f.type) || /\.(jpe?g|png|webp|tiff?|psd|pdf|svg|gif|heic)$/i.test(f.name) || f.type === 'application/pdf';
+  async function upOpenFolder(id, name, reset) {
+    UP.dl = UP.dl || { stack: [] }; if (reset) UP.dl.stack = [];
+    const at = UP.dl.stack.findIndex(s => s.id === id); if (at >= 0) UP.dl.stack = UP.dl.stack.slice(0, at + 1); else UP.dl.stack.push({ id, name: name || 'Folder' });
+    UP.dl.busy = true; UP.dl.err = ''; UP.dl.files = null; upRender();
+    try {
+      const r = await fetch(DRIVE_API + encodeURIComponent(id)); const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'not shared');
+      if (UP.dl.stack.length === 1 && d.name) UP.dl.stack[0].name = d.name;
+      UP.dl.files = d.files;
+    } catch (e) { UP.dl.err = /not shared|didn't share/i.test(e.message) ? e.message : 'offline'; }
+    UP.dl.busy = false; upRender();
+  }
+  function upDriveGrid() {
+    const dl = UP.dl || {}; if (!UP.driveFolder) return '';
+    const crumbs = (dl.stack || []).map((s, i, a) => i < a.length - 1 ? `<button type="button" class="up-crumb" data-fid="${s.id}">${upEsc(s.name)}</button><span>›</span>` : `<b>${upEsc(s.name)}</b>`).join('');
+    let body;
+    if (dl.busy) body = '<p class="up-gdl-msg">Opening your folder…</p>';
+    else if (dl.err === 'offline') body = `<iframe src="https://drive.google.com/embeddedfolderview?id=${UP.driveFolder}#grid" title="Files in your Google Drive folder" loading="lazy"></iframe><p class="up-gdl-msg">The picker isn't live yet, so this is Google's own view of your folder. To add a picture, open it in Drive, copy its link and paste it above.</p>`;
+    else if (dl.err) body = `<p class="up-gdl-msg err">${upEsc(dl.err)}</p>`;
+    else if (dl.files && !dl.files.length) body = '<p class="up-gdl-msg">This folder is empty.</p>';
+    else if (dl.files) body = `<div class="up-gdl">${dl.files.map(f => f.folder
+      ? `<button type="button" class="up-gdt fold" data-fid="${f.id}" data-fname="${upEsc(f.name)}"><span class="th"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg></span><small>${upEsc(f.name)}</small></button>`
+      : isPic(f) ? `<button type="button" class="up-gdt${UP.files.some(x => x.driveId === f.id) ? ' on' : ''}" data-add="${f.id}" data-fname="${upEsc(f.name)}" aria-pressed="${UP.files.some(x => x.driveId === f.id)}"><span class="th"><img src="https://drive.google.com/thumbnail?id=${f.id}&sz=w400" alt="" loading="lazy"><em>${UP.files.some(x => x.driveId === f.id) ? '✓ Added' : '+ Add'}</em></span><small>${upEsc(f.name)}</small></button>` : '').join('')}</div>`;
+    return `<div class="up-gdf"><div class="up-gdf-h"><div class="up-crumbs">${crumbs}</div><a href="https://drive.google.com/drive/folders/${(dl.stack || []).slice(-1)[0]?.id || UP.driveFolder}" target="_blank" rel="noopener">Open in Drive ↗</a></div>${body}</div>`;
+  }
+  function upWireGrid() {
+    document.querySelectorAll('.up-gdf [data-fid]').forEach(b => b.onclick = () => upOpenFolder(b.dataset.fid, b.dataset.fname));
+    document.querySelectorAll('.up-gdf [data-add]').forEach(b => b.onclick = () => {
+      const id = b.dataset.add, i = UP.files.findIndex(x => x.driveId === id);
+      if (i >= 0) { UP.files.splice(i, 1); if (!UP.files.some(x => x.role === 'main')) { const n = UP.files.find(x => x.role); if (n) n.role = 'main'; } upRender(); return; }
+      const src = `https://drive.google.com/thumbnail?id=${id}&sz=w1600`, nm = b.dataset.fname;
+      UP.files.push({ file: nm, driveId: id, drive: true, src, check: src, px: 0, py: 0, vector: /\.(pdf|svg|ai|eps)$/i.test(nm), role: UP.files.some(x => x.role === 'main') ? 'color' : 'main', cw: prettyName(nm) });
+      upRender();
+    });
+  }
   /* step 1: artwork from a Drive folder or your computer */
   function upStep0() {
     const tiles = UP.files.map((f, i) => `<div class="up-file ${f.role ? 'on ' + f.role : ''}">
@@ -4908,7 +4958,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
           <b>From Google Drive</b><small>Paste a link to a Drive file or folder.<br>Share it as "Anyone with the link" first.</small>
           <div class="up-row"><input id="upLink" placeholder="Paste a Google Drive link" value="${upEsc(UP.link || '')}" aria-label="Google Drive file or folder link"><button type="button" class="btn btn-wine btn-sm" id="upShow">Add</button></div></div>
       </div>
-      ${UP.driveFolder ? `<div class="up-gdf"><div class="up-gdf-h"><b>Your Google Drive folder</b><a href="https://drive.google.com/drive/folders/${UP.driveFolder}" target="_blank" rel="noopener">Open in Drive ↗</a></div><iframe src="https://drive.google.com/embeddedfolderview?id=${UP.driveFolder}#grid" title="Files in your Google Drive folder" loading="lazy"></iframe><small>These are the real files in the folder you pasted. To use one, open it in Drive, copy its link (Share → Copy link) and paste it above. On the live site the files show here as pictures you tap to pick.</small></div>` : ''}
+      ${upDriveGrid()}
       <p class="up-status" id="upStatus" aria-live="polite">${UP.files.length ? `${UP.files.length} files · tap a picture to use it. The first one you pick is the main picture, the next ones are colorways.` : ''}</p>
       <div class="up-files">${tiles}</div>
       ${upNav('Next: details')}`;
@@ -4919,7 +4969,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
       const folder = l.match(/drive\.google\.com\/drive\/(?:u\/\d+\/)?folders\/([\w-]{10,})/), file = l.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]{10,})/) || l.match(/docs\.google\.com\/\w+\/d\/([\w-]{10,})/);
       if (!folder && !file) return upErr('That isn\'t a Google Drive link. It should look like drive.google.com/file/d/… or drive.google.com/drive/folders/…');
       upErr('');
-      if (folder) { UP.driveFolder = folder[1]; UP.link = ''; upRender(); return; }
+      if (folder) { UP.driveFolder = folder[1]; UP.link = ''; upOpenFolder(folder[1], 'Your folder', true); return; }
       const id = file[1]; if (UP.files.some(f => f.driveId === id)) return upErr('That file is already added.');
       $('upStatus').textContent = 'Getting the file from Google Drive…'; $('upShow').disabled = true;
       const im = new Image();
@@ -4927,6 +4977,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
       im.onerror = () => { $('upShow').disabled = false; $('upStatus').textContent = ''; upErr('Google Drive didn\'t share this file. In Drive, set sharing to "Anyone with the link", then paste it again.'); };
       im.src = `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;
     };
+    upWireGrid();
     $('upShow').onclick = show; $('upLink').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); show(); } };
     $('upLink').onpaste = () => setTimeout(show, 50);
     const dz = $('upDrop'); ['dragenter', 'dragover'].forEach(t => dz.addEventListener(t, (e) => { e.preventDefault(); dz.classList.add('over'); })); ['dragleave', 'drop'].forEach(t => dz.addEventListener(t, () => dz.classList.remove('over'))); dz.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length) $('upFiles').onchange({ target: { files: e.dataTransfer.files, set value(v) {} } }); });
