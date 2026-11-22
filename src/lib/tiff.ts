@@ -113,11 +113,17 @@ export async function tiffPreview(read: Reader, maxSide = 2000, onProgress?: (f:
   const processRow = async (j: number, raw: Uint8Array) => {
     const y = rowOf(j); const strip = Math.floor(y / info.rps);
     const { data, rowLen } = await decodeStrip(info, raw, strip);
-    const r0 = (y - strip * info.rps) * rowLen;
+    // average every row of this strip that falls inside the output pixel (no extra reading), so fine texture doesn't turn into streaks
+    const s0 = strip * info.rps, rowsInStrip = Math.min(info.rps, info.height - s0);
+    const ya = Math.max(s0, j * step), yb = Math.min(s0 + rowsInStrip, (j + 1) * step);
+    const rows: number[] = []; const rStep = Math.max(1, Math.ceil((yb - ya) / 6));
+    for (let yy = ya; yy < yb; yy += rStep) rows.push((yy - s0) * rowLen);
+    if (!rows.length) rows.push((y - s0) * rowLen);
+    const n = Math.min(step, 6);
     for (let x = 0; x < ow; x++) {
-      let R = 0, G = 0, B = 0; const n = Math.min(step, 4);
-      for (let q = 0; q < n; q++) { const sx = x * step + Math.floor((q * step) / n); toRgb(info, data, r0 + sx * info.spp, tmp, 0); R += tmp[0]; G += tmp[1]; B += tmp[2]; }
-      const o = (j * ow + x) * 4; img.data[o] = R / n; img.data[o + 1] = G / n; img.data[o + 2] = B / n; img.data[o + 3] = 255;
+      let R = 0, G = 0, B = 0, c = 0;
+      for (const r0 of rows) for (let q = 0; q < n; q++) { const sx = x * step + Math.floor(((q + 0.5) * step) / n); toRgb(info, data, r0 + sx * info.spp, tmp, 0); R += tmp[0]; G += tmp[1]; B += tmp[2]; c++; }
+      const o = (j * ow + x) * 4; img.data[o] = R / c; img.data[o + 1] = G / c; img.data[o + 2] = B / c; img.data[o + 3] = 255;
     }
     done++; if (onProgress && done % 20 === 0) onProgress(done / oh);
   };
