@@ -4906,7 +4906,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
   }
 
   /* Google Drive folder: read through the site's server, show pictures as tiles, open sub-folders here */
-  const DRIVE_API = 'https://artisan-mural.pages.dev/backend/public/drive-folder?id=';
+  const DRIVE_API = 'https://artisan-drive.ahlsholdingsllc.workers.dev/?id=';
   const isPic = (f) => /^image\//.test(f.type) || /\.(jpe?g|png|webp|tiff?|psd|pdf|svg|gif|heic)$/i.test(f.name) || f.type === 'application/pdf';
   async function upOpenFolder(id, name, reset) {
     UP.dl = UP.dl || { stack: [] }; if (reset) UP.dl.stack = [];
@@ -4925,7 +4925,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
     const crumbs = (dl.stack || []).map((s, i, a) => i < a.length - 1 ? `<button type="button" class="up-crumb" data-fid="${s.id}">${upEsc(s.name)}</button><span>›</span>` : `<b>${upEsc(s.name)}</b>`).join('');
     let body;
     if (dl.busy) body = '<p class="up-gdl-msg">Opening your folder…</p>';
-    else if (dl.err === 'offline') body = `<iframe src="https://drive.google.com/embeddedfolderview?id=${UP.driveFolder}#grid" title="Files in your Google Drive folder" loading="lazy"></iframe><p class="up-gdl-msg">The picker isn't live yet, so this is Google's own view of your folder. To add a picture, open it in Drive, copy its link and paste it above.</p>`;
+    else if (dl.err === 'offline') body = `<iframe src="https://drive.google.com/embeddedfolderview?id=${UP.driveFolder}#grid" title="Files in your Google Drive folder" loading="lazy"></iframe><p class="up-gdl-msg">Couldn't reach the folder reader from here, so this is Google's own view of your folder. To add a picture, open it in Drive, copy its link and paste it above.</p>`;
     else if (dl.err) body = `<p class="up-gdl-msg err">${upEsc(dl.err)}</p>`;
     else if (dl.files && !dl.files.length) body = '<p class="up-gdl-msg">This folder is empty.</p>';
     else if (dl.files) body = `<div class="up-gdl">${dl.files.map(f => f.folder
