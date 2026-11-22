@@ -2422,6 +2422,29 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
   #boMain .tbl td:first-child{grid-column:1;grid-row:1 / span 6}
   #boMain .bo-files{white-space:normal;display:flex;flex-wrap:wrap;gap:6px}#boMain .bo-files>*+*{margin-left:0}
 }
+/* designer upload: computer upload first, Drive only for very large files */
+.up-src2{display:grid;gap:10px}
+.up-drop{position:relative;display:grid;justify-items:center;gap:8px;text-align:center;padding:28px 18px;border:2px dashed #CFC4B2;border-radius:14px;background:var(--soft);cursor:pointer;transition:border-color .2s,background .2s}
+.up-drop.over,.up-drop:hover{border-color:#201D1D;background:#F1ECE3}
+.up-drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.up-drop svg{width:34px;height:34px;fill:none;stroke:#201D1D;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.up-drop b{font:400 20px/1.2 var(--f-display)}.up-drop small{font-size:12.5px;color:var(--ink-2);max-width:46ch}
+.up-drop .btn{pointer-events:none}
+.up-drive2{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--paper)}
+.up-drive2 summary{cursor:pointer;font-size:13px;font-weight:600}
+.up-drive2 small{display:block;margin:8px 0;font-size:12px;color:var(--ink-2)}
+/* designer upload: computer and Google Drive side by side */
+.up-src3{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.up-box{position:relative;display:grid;justify-items:center;align-content:center;gap:8px;text-align:center;padding:24px 16px;border:2px dashed #CFC4B2;border-radius:14px;background:var(--soft);min-height:220px;box-sizing:border-box}
+.up-box>svg{width:32px;height:32px;fill:none;stroke:#201D1D;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.up-box b{font:400 19px/1.2 var(--f-display)}.up-box small{font-size:12.5px;color:var(--ink-2)}
+.up-gd{border-style:solid;border-color:var(--line);background:var(--paper)}
+.up-gd .up-row{width:100%;max-width:380px}.up-gd .up-row input{border-radius:6px}
+.up-gdf{margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.up-gdf-h{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px}.up-gdf-h a{font-size:12.5px;color:var(--ink)}
+.up-gdf iframe{display:block;width:100%;height:360px;border:0}
+.up-gdf small{display:block;padding:10px 14px;font-size:12px;color:var(--ink-2);border-top:1px solid var(--line)}
+@media (max-width:640px){.up-src3{grid-template-columns:1fr}.up-box{min-height:0}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -4872,15 +4895,20 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
     const tiles = UP.files.map((f, i) => `<div class="up-file ${f.role ? 'on ' + f.role : ''}">
         <button type="button" class="up-th" data-i="${i}" aria-pressed="${!!f.role}" aria-label="Use ${upEsc(f.file)}"><img src="${f.src}" alt="">${f.role ? `<em>${f.role === 'main' ? 'Main' : 'Colorway'}</em>` : ''}</button>
         <small title="${upEsc(f.file)}">${upEsc(f.file)}</small>
-        <small class="mut">${f.vector ? 'Vector file' : `${f.px.toLocaleString()} × ${f.py.toLocaleString()} px`}</small>
+        <small class="mut">${f.drive ? 'Full size is copied when you submit' : f.vector ? 'Vector file' : `${f.px.toLocaleString()} × ${f.py.toLocaleString()} px`}</small>
         ${f.role ? `<input class="up-cwn" data-i="${i}" value="${upEsc(f.cw)}" maxlength="40" aria-label="Colorway name" placeholder="Colorway name">
         <select class="up-role" data-i="${i}" aria-label="Use as"><option value="main" ${f.role === 'main' ? 'selected' : ''}>Main picture</option><option value="color" ${f.role === 'color' ? 'selected' : ''}>Another colorway</option><option value="">Not used</option></select>` : ''}
       </div>`).join('');
-    return `<div class="up-src">
-        <div class="up-drive"><b>Google Drive folder</b><small>Share the folder as "Anyone with the link", then paste it. We copy the full-size originals; nothing is shrunk.</small>
-          <div class="up-row"><input id="upLink" placeholder="https://drive.google.com/drive/folders/…" value="${upEsc(UP.link || '')}" aria-label="Google Drive folder link"><button type="button" class="btn btn-wine btn-sm" id="upShow">Show files</button></div></div>
-        <label class="up-local"><input type="file" id="upFiles" multiple accept="image/*,.tif,.tiff,.psd,.pdf,.svg,.ai,.eps"><b>+ From my computer</b><small>JPG, PNG, TIFF, PSD, PDF or vector</small></label>
+    return `<div class="up-src3">
+        <label class="up-box up-drop" id="upDrop"><input type="file" id="upFiles" multiple accept="image/*,.tif,.tiff,.psd,.pdf,.svg,.ai,.eps">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4 M7 9l5-5 5 5 M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+          <b>From my computer</b><small>Drag files here or tap to choose.<br>JPG, PNG, TIFF, PSD, PDF or vector.</small>
+          <span class="btn btn-wine btn-sm">Choose files</span></label>
+        <div class="up-box up-gd"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8l6 11-4 7H6l-4-7z M8 3l8 14 M16 3 8 17 M2 14h20"/></svg>
+          <b>From Google Drive</b><small>Paste a link to a Drive file or folder.<br>Share it as "Anyone with the link" first.</small>
+          <div class="up-row"><input id="upLink" placeholder="Paste a Google Drive link" value="${upEsc(UP.link || '')}" aria-label="Google Drive file or folder link"><button type="button" class="btn btn-wine btn-sm" id="upShow">Add</button></div></div>
       </div>
+      ${UP.driveFolder ? `<div class="up-gdf"><div class="up-gdf-h"><b>Your Google Drive folder</b><a href="https://drive.google.com/drive/folders/${UP.driveFolder}" target="_blank" rel="noopener">Open in Drive ↗</a></div><iframe src="https://drive.google.com/embeddedfolderview?id=${UP.driveFolder}#grid" title="Files in your Google Drive folder" loading="lazy"></iframe><small>These are the real files in the folder you pasted. To use one, open it in Drive, copy its link (Share → Copy link) and paste it above. On the live site the files show here as pictures you tap to pick.</small></div>` : ''}
       <p class="up-status" id="upStatus" aria-live="polite">${UP.files.length ? `${UP.files.length} files · tap a picture to use it. The first one you pick is the main picture, the next ones are colorways.` : ''}</p>
       <div class="up-files">${tiles}</div>
       ${upNav('Next: details')}`;
@@ -4888,20 +4916,20 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
   function upWire0() {
     const show = () => {
       const l = $('upLink').value.trim(); UP.link = l;
-      if (!/drive\.google\.com\/(drive\/(u\/\d\/)?folders\/|open\?id=|file\/d\/)/.test(l)) return upErr('Paste a Google Drive folder link (drive.google.com/drive/folders/…).');
-      upErr(''); $('upStatus').textContent = 'Reading the folder…'; $('upShow').disabled = true;
-      setTimeout(() => {
-        const have = new Set(UP.files.map(f => f.file));
-        DESIGNS.flatMap(d => d.colorways ? d.colorways.map(c => ({ d, slug: c.slug, cw: c.name })) : [{ d, slug: d.slug, cw: d.name }]).forEach(({ d, slug, cw }) => {
-          const file = slug.replace(/-/g, '_') + (VECTOR[d.slug] ? ".pdf" : ".tif"); if (have.has(file)) return;
-          const inches = d.kind === 'repeat' ? d.repeatIn : DESIGN_FT[slug] * 12, ar = 1.73;
-          UP.files.push({ file, src: `d/${slug}-full.webp`, px: Math.round(inches * 250), py: Math.round(inches * 250 / ar), vector: !!VECTOR[slug] || !!VECTOR[d.slug], role: '', cw, slug, check: d.kind === 'repeat' ? `d/${slug}-tile.webp` : `d/${slug}-full.webp` });
-        });
-        upRender();
-      }, 700);
+      const folder = l.match(/drive\.google\.com\/drive\/(?:u\/\d+\/)?folders\/([\w-]{10,})/), file = l.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]{10,})/) || l.match(/docs\.google\.com\/\w+\/d\/([\w-]{10,})/);
+      if (!folder && !file) return upErr('That isn\'t a Google Drive link. It should look like drive.google.com/file/d/… or drive.google.com/drive/folders/…');
+      upErr('');
+      if (folder) { UP.driveFolder = folder[1]; UP.link = ''; upRender(); return; }
+      const id = file[1]; if (UP.files.some(f => f.driveId === id)) return upErr('That file is already added.');
+      $('upStatus').textContent = 'Getting the file from Google Drive…'; $('upShow').disabled = true;
+      const im = new Image();
+      im.onload = () => { UP.files.push({ file: 'Google Drive file', driveId: id, drive: true, src: im.src, check: im.src, px: 0, py: 0, vector: false, role: UP.files.some(x => x.role === 'main') ? 'color' : 'main', cw: 'Colorway ' + (UP.files.length + 1) }); UP.link = ''; upRender(); };
+      im.onerror = () => { $('upShow').disabled = false; $('upStatus').textContent = ''; upErr('Google Drive didn\'t share this file. In Drive, set sharing to "Anyone with the link", then paste it again.'); };
+      im.src = `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;
     };
     $('upShow').onclick = show; $('upLink').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); show(); } };
     $('upLink').onpaste = () => setTimeout(show, 50);
+    const dz = $('upDrop'); ['dragenter', 'dragover'].forEach(t => dz.addEventListener(t, (e) => { e.preventDefault(); dz.classList.add('over'); })); ['dragleave', 'drop'].forEach(t => dz.addEventListener(t, () => dz.classList.remove('over'))); dz.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length) $('upFiles').onchange({ target: { files: e.dataTransfer.files, set value(v) {} } }); });
     $('upFiles').onchange = (e) => {
       [...e.target.files].slice(0, 12).forEach(f => {
         const vector = /\.(pdf|svg|ai|eps)$/i.test(f.name), rec = { file: f.name, src: '', px: 0, py: 0, vector, role: UP.files.some(x => x.role === 'main') ? 'color' : 'main', cw: prettyName(f.name) };
@@ -4985,7 +5013,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
     // sizes filled in automatically from the file at 250 DPI (the designer can still change them)
     if (!UP.wFt && m.px) UP.wFt = Math.round(m.px / 250 / 12 * 2) / 2;
     if (!UP.tileIn && m.px) UP.tileIn = Math.round(m.px / 250);
-    if (!m.vector && !m.det && !m.detBusy) { m.detBusy = true; detectRepeat(m.check || m.src).then(r => { m.det = r; if (!UP.typeSet) { UP.type = r.type; UP.half = r.half; } if (UP.step === 1) upRender(); }).catch(() => { m.det = { type: '?' }; }); }
+    if (!m.vector && !m.drive && !m.det && !m.detBusy) { m.detBusy = true; detectRepeat(m.check || m.src).then(r => { m.det = r; if (!UP.typeSet) { UP.type = r.type; UP.half = r.half; } if (UP.step === 1) upRender(); }).catch(() => { m.det = { type: '?' }; }); }
     const det = m.det, detTxt = m.vector ? '' : !det ? '<span class="up-det-badge">Checking the edges of your file…</span>' : det.type === '?' ? '' : `<span class="up-det-badge ${UP.type === det.type ? 'ok' : 'warn'}">Detected from your file: <b>${{ mural: 'Mural · the edges don\'t join', side: 'Repeat sideways', all: 'Repeat all sides' + (det.half ? ' · half-drop' : ' · straight') }[det.type]}</b>${UP.type !== det.type ? ' · <button type="button" id="upUseDet">Use this</button>' : ''}</span>`;
     const d = upDpi(), tH = UP.tileIn ? Math.round(UP.tileIn / ar) : '';
     const hFt = UP.wFt ? Math.round(UP.wFt / ar * 10) / 10 : '';
@@ -5080,7 +5108,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
   function upWire2() {
     const m = upMain(); UP.seam = null;
     if ($('upSeam')) {
-      if (m.vector) { $('upSeam').textContent = 'Vector · checked by the studio'; $('upSeam').className = 'pill wait'; UP.seam = 'ok'; }
+      if (m.vector || m.drive) { $('upSeam').textContent = m.drive ? 'Checked when the full file is copied' : 'Vector · checked by the studio'; $('upSeam').className = 'pill wait'; UP.seam = 'ok'; }
       else seamPreview(m.check || m.src, UP.type === 'side' ? 'horizontal' : UP.half ? 'halfdrop' : 'both', UP.tx, UP.type === 'side' ? 0 : UP.ty).then(r => {
         if (!$('upSeam')) return; UP.seam = r.verdict; $('upSeamImg').src = r.img;
         const pill = { ok: ['ok', 'Joins match ✓'], borderline: ['wait', 'Check the joins'], bad: ['bad', "Not a seamless repeat"] }[r.verdict];
