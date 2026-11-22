@@ -448,26 +448,30 @@ export function isHidden(slug: string): boolean {
 }
 
 /** Every design currently live in the shop (sample catalog + approved uploads, minus removed ones). */
+/** The old site's built-in sample designs and designers are switched off: the shop shows only real designs from the database. */
+const SHOW_SAMPLES = false;
+const sampleDesigns = (): Design[] => (SHOW_SAMPLES ? designs : []);
+const sampleDesigners = (): Designer[] => (SHOW_SAMPLES ? designers : []);
 export function liveDesigns(shop?: ShopData): Design[] {
   const hidden = shop ? new Set(shop.hidden) : hiddenSlugs;
-  return [...designs.map((d) => withThumbs(staticOverrides.get(d.slug) ?? d, shop?.thumbs ?? thumbMap)), ...(shop ? shop.designs : [...extraDesigns.values()])].filter((d) => !hidden.has(d.slug));
+  return [...sampleDesigns().map((d) => withThumbs(staticOverrides.get(d.slug) ?? d, shop?.thumbs ?? thumbMap)), ...(shop ? shop.designs : [...extraDesigns.values()])].filter((d) => !hidden.has(d.slug));
 }
 
 /** Sample designers plus approved designers from the backend. */
 export function allDesigners(): Designer[] {
-  return [...designers, ...extraDesigners.values()].map(withRating);
+  return [...sampleDesigners(), ...extraDesigners.values()].map(withRating);
 }
 
 export function designerBySlug(slug: string): Designer | undefined {
-  const d = designers.find((x) => x.slug === slug) ?? extraDesigners.get(slug);
+  const d = sampleDesigners().find((x) => x.slug === slug) ?? extraDesigners.get(slug);
   return d && withRating(d);
 }
 
 export function designBySlug(slug: string): Design | undefined {
-  const d = staticOverrides.get(slug) ?? designs.find((d) => d.slug === slug) ?? extraDesigns.get(slug);
+  const d = staticOverrides.get(slug) ?? sampleDesigns().find((d) => d.slug === slug) ?? extraDesigns.get(slug);
   return d && withThumbs(d);
 }
 
 export function designsByDesigner(slug: string): Design[] {
-  return [...designs.map((d) => withThumbs(staticOverrides.get(d.slug) ?? d)), ...extraDesigns.values()].filter((d) => d.designer === slug && !hiddenSlugs.has(d.slug));
+  return [...sampleDesigns().map((d) => withThumbs(staticOverrides.get(d.slug) ?? d)), ...extraDesigns.values()].filter((d) => d.designer === slug && !hiddenSlugs.has(d.slug));
 }
