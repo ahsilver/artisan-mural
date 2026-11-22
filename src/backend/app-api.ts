@@ -168,6 +168,27 @@ export async function handleApp(req: Request, env: Env, who: Who, origin: string
   const body: any = m === "GET" || m === "HEAD" || rawBody ? {} : await req.json().catch(() => ({}));
   try {
     // ---------- public ----------
+    if (p === "public/drive-folder" && m === "GET") {
+      // Read-only list of a Google Drive folder shared as "Anyone with the link" (names, types, sub-folders).
+      // Nothing is stored and no account is used; private folders simply return nothing.
+      const id = url.searchParams.get("id") ?? "";
+      if (!/^[a-zA-Z0-9_-]{10,100}$/.test(id)) return bad("That isn't a Google Drive folder link.");
+      const dec = (x: string) => x.replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+      const r = await fetch(`https://drive.google.com/embeddedfolderview?id=${id}`, { headers: { "accept-language": "en-US,en" } });
+      if (!r.ok) return bad("Google Drive didn't share this folder. In Drive, set sharing to 'Anyone with the link', then try again.", 404);
+      const html = (await r.text()).slice(0, 3_000_000);
+      const name = dec(html.match(/<title>([^<]*)<\/title>/)?.[1] ?? "");
+      const files: any[] = [];
+      const re = /<div class="flip-entry" id="entry-([a-zA-Z0-9_-]{10,})"[\s\S]*?<div class="flip-entry-title">([^<]*)<\/div>/g; let x: any;
+      while ((x = re.exec(html)) && files.length < 500) {
+        const seg = x[0], folder = /\/drive\/folders\//.test(seg) || /vnd\.google-apps\.folder/.test(seg);
+        const type = folder ? "folder" : (seg.match(/\/type\/([a-z0-9.+-]+\/[a-z0-9.+-]+)/i)?.[1] ?? "");
+        files.push({ id: x[1], name: dec(x[2]), folder, type });
+      }
+      if (!files.length && !name) return bad("Google Drive didn't share this folder. In Drive, set sharing to 'Anyone with the link', then try again.", 404);
+      files.sort((a, b) => (a.folder === b.folder ? a.name.localeCompare(b.name, undefined, { numeric: true }) : a.folder ? -1 : 1));
+      return j({ id, name, files }, 200, { "cache-control": "public, max-age=60" });
+    }
     if (p === "public/settings") {
       const s = await getSettings(env);
       const out: any = {};
