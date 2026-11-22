@@ -26,9 +26,11 @@ sql, files = [], []  # files: (storage key inside the bucket, local path)
 for d in cat['DESIGNERS']:
     u = uid('designer', d['slug'])
     sql.append(f"INSERT OR IGNORE INTO auth_users (id, email, password_hash) VALUES ({q(u)}, {q(d['slug'] + '@designers.artisanmurals.invalid')}, 'disabled');")
-    sql.append(f"INSERT OR REPLACE INTO designer_accounts (slug, user_id) VALUES ({q(d['slug'])}, {q(u)});")
     sql.append(f"INSERT OR REPLACE INTO designer_profiles (user_id, full_name, studio_name, country, bio, styles, status, trusted, tagline, response_label, turnaround_days) VALUES "
                f"({q(u)}, {q(d['name'])}, {q(d['name'])}, {q(d.get('place', ''))}, {q(d.get('about', ''))}, {q(json.dumps(d.get('tags', [])))}, 'approved', 1, {q(d.get('line', ''))}, {q('Replies ' + d.get('responds', 'within a day'))}, {d.get('days') or 'NULL'});")
+    # the database gives every approved designer an automatic "studio-…" address; set the real one after the profile
+    sql.append(f"DELETE FROM designer_accounts WHERE user_id = {q(u)} OR slug = {q(d['slug'])};")
+    sql.append(f"INSERT INTO designer_accounts (slug, user_id) VALUES ({q(d['slug'])}, {q(u)});")
 
 by_name = {d['name']: d for d in cat['DESIGNERS']}
 for d in cat['DESIGNS']:

@@ -426,6 +426,10 @@ const staticOverrides = new Map<string, Design>();
 
 const thumbMap = new Map<string, ThumbSet>();
 const withThumbs = (d: Design, map: Map<string, ThumbSet> | Record<string, ThumbSet> = thumbMap): Design => { const t = map instanceof Map ? map.get(d.slug) : map[d.slug]; return t && !d.thumbs ? { ...d, thumbs: t } : d; };
+/** The old site's built-in sample designs and designers are switched off: the shop shows only real designs from the database. */
+const SHOW_SAMPLES = false;
+const sampleDesigns = (): Design[] => (SHOW_SAMPLES ? designs : []);
+const sampleDesigners = (): Designer[] => (SHOW_SAMPLES ? designers : []);
 export function registerShop(shop: ShopData) {
   setTaxonomy(shop.taxonomy);
   if (shop.thumbs) { thumbMap.clear(); Object.entries(shop.thumbs).forEach(([k, v]) => thumbMap.set(k, v)); }
@@ -433,7 +437,7 @@ export function registerShop(shop: ShopData) {
   materials.splice(0, materials.length, ...resolvedMaterials(shop.materialSettings));
   extraDesigns.clear(); extraDesigners.clear();
   shop.designs.forEach((d) => extraDesigns.set(d.slug, d));
-  shop.designers.forEach((d) => { if (!designers.some((x) => x.slug === d.slug)) extraDesigners.set(d.slug, d); });
+  shop.designers.forEach((d) => { if (!sampleDesigners().some((x) => x.slug === d.slug)) extraDesigners.set(d.slug, d); });
   hiddenSlugs = new Set(shop.hidden);
   if (shop.ratings) { ratingMap.clear(); shop.ratings.forEach((r) => ratingMap.set(r.slug, r)); }
   if (shop.designRatings) { designRatingMap.clear(); shop.designRatings.forEach((r) => designRatingMap.set(r.slug, r)); }
@@ -448,10 +452,6 @@ export function isHidden(slug: string): boolean {
 }
 
 /** Every design currently live in the shop (sample catalog + approved uploads, minus removed ones). */
-/** The old site's built-in sample designs and designers are switched off: the shop shows only real designs from the database. */
-const SHOW_SAMPLES = false;
-const sampleDesigns = (): Design[] => (SHOW_SAMPLES ? designs : []);
-const sampleDesigners = (): Designer[] => (SHOW_SAMPLES ? designers : []);
 export function liveDesigns(shop?: ShopData): Design[] {
   const hidden = shop ? new Set(shop.hidden) : hiddenSlugs;
   return [...sampleDesigns().map((d) => withThumbs(staticOverrides.get(d.slug) ?? d, shop?.thumbs ?? thumbMap)), ...(shop ? shop.designs : [...extraDesigns.values()])].filter((d) => !hidden.has(d.slug));

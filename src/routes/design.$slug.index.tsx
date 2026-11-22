@@ -2,11 +2,13 @@ import { MatchFixed } from "@/components/designer/match-info";
 import {
 ensureShop } from "@/lib/shop";
 import { getShopDesign } from "@/lib/shop.functions";
-import { isHidden, liveDesigns, swatchStyle, offeredFinishes, recommendedOf } from "@/lib/catalog";
+import { isHidden, liveDesigns, registerShop, swatchStyle, offeredFinishes, recommendedOf, unitPrice } from "@/lib/catalog";
+import { StorefrontSprite, Ico } from "@/components/storefront/icons";
+import { StoreCard } from "@/components/storefront/card";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Check, ArrowUpRight, Camera, Star, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { wallSearchSchema, repeatWords, repeatStyle } from "@/lib/wall-selection";
 
 import { DesignCard } from "@/components/design-card";
@@ -42,8 +44,8 @@ export const Route = createFileRoute("/design/$slug/")({
     if (!design || !designer) throw notFound();
     const collection = (shop.collections ?? []).find(c => c.designs.includes(params.slug)) ?? null;
     // related designs are picked here (not while drawing) so the server and the browser show the same cards
-    const related = liveDesigns(full).filter((d) => d.slug !== params.slug).slice(0, 3);
-    return { design, designer, collection, related, finishes: offeredFinishes(design, resolvedMaterials(shop.materialSettings)) };
+    const related = liveDesigns(full).filter((d) => d.slug !== params.slug).slice(0, 4);
+    return { shop: full, design, designer, collection, related, finishes: offeredFinishes(design, resolvedMaterials(shop.materialSettings)) };
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
@@ -71,118 +73,148 @@ export const Route = createFileRoute("/design/$slug/")({
 });
 
 function DesignDetail() {
-  const { design: baseDesign, designer, collection, related, finishes } = Route.useLoaderData();
+  const { shop, design: baseDesign, designer, collection, related, finishes } = Route.useLoaderData();
+  registerShop(shop);
   const search = Route.useSearch();
   const [color, setColor] = useState(search.color ?? baseDesign.colorways?.[0]?.id);
   const design = withColorway(baseDesign, color);
   const colorway = baseDesign.colorways?.find((c) => c.id === color);
-  const [galleryIndex, setGalleryIndex] = useState(0);
-  // Room photos lead (like premium mural shops); the full artwork follows.
   const mockups = roomSources(design);
-  const [firstRoom, ...otherRooms] = mockups;
-  const sources: string[] = firstRoom ? [firstRoom, design.image, ...otherRooms] : [design.image];
-  const pics = sources.map((s) => pic(design, s, BIG_W));
-  // the card's small picture (already loaded on the shop page) shows at once while the sharp one loads
-  const previews = sources.map((s, i) => (i === 0 ? pic(design, s, [480])?.src : undefined));
-  // full-size originals open only on zoom; a made room picture has no original, so its biggest version is used
-  const gallery: string[] = sources.map((s, i) => (s === GEN_ROOM ? (pics[i]?.srcSet?.split(", ").pop()?.split(" ")[0] ?? pics[i]?.src ?? design.image) : s));
-  const artIndex = firstRoom ? 1 : 0;
-  // the designer's first recommended finish is preselected when the customer hasn't picked one
+  const sources: { src: string; label: string }[] = [
+    ...(mockups[0] ? [{ src: mockups[0], label: "In a room" }] : []),
+    { src: design.image, label: "The wallpaper" },
+    ...mockups.slice(1).map((m) => ({ src: m, label: "In a room" })),
+  ];
+  const shown = sources.map((s) => ({ ...s, pic: pic(design, s.src, BIG_W) }));
+  const [gi, setGi] = useState(0);
+  const [viewer, setViewer] = useState<number | null>(null);
   const [finish, setFinish] = useState(search.finish ?? recommendedOf(baseDesign, finishes)[0] ?? finishes[0]?.id);
-  const material = finishes.find(m => m.id === finish) ?? finishes[0];
-  const [selection, setSelection] = useState(search);
+  const material = finishes.find((m) => m.id === finish) ?? finishes[0];
   const [chatOpen, setChatOpen] = useState(false);
-  const community = useCommunity();
   const [prefill, setPrefill] = useState<RequestPrefill>({});
-  const ask = (fit?: boolean) => { setPrefill(fit ? oversizePrefill(design.title, selection, muralMaxLabel(design, selection)) : { wallSize: wallLabel(selection) }); setChatOpen(true); };
-  useEffect(() => { setSelection(search); }, [design.slug, search.width, search.height, search.unit, search.zoom, search.x, search.y, search.artRatio]);
+  const [fav, setFav] = useState(false);
+  const ask = () => { setPrefill({ wallSize: wallLabel(search) }); setChatOpen(true); };
+  const rate = unitPrice(design, material);
+  const mural = design.kind === "mural";
+  const kindHint = mural ? "One big scene, printed once and sized to your wall. Nothing repeats." : "A pattern that repeats side to side and up and down, so it covers any wall size.";
+  const repeat = repeatWords(design);
+  useEffect(() => {
+    if (viewer == null) return;
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") setViewer(null); if (e.key === "ArrowLeft") setViewer((v) => ((v ?? 0) + shown.length - 1) % shown.length); if (e.key === "ArrowRight") setViewer((v) => ((v ?? 0) + 1) % shown.length); };
+    document.body.style.overflow = "hidden"; addEventListener("keydown", k);
+    return () => { document.body.style.overflow = ""; removeEventListener("keydown", k); };
+  }, [viewer, shown.length]);
+  const specs: [string, React.ReactNode][] = [
+    ["Item #", design.sku ?? "—"],
+    ["Type", mural ? "Mural · one scene" : `Repeating pattern · ${repeat.label}`],
+    ["Designer", <Link to="/designers/$slug" params={{ slug: designer.slug }}>{designer.name}</Link>],
+    ["Printed", "To your exact wall size, in numbered panels"],
+    ["Price", `${money(rate)} / sq ft${material ? ` · ${material.name}` : ""}`],
+  ];
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-8 sm:py-6 lg:px-12">
-      <nav className="text-xs text-muted-foreground">
-        <Link to="/browse" className="hover:text-foreground">
-          All designs
-        </Link>{" "}
-        / <span className="text-foreground">{design.title}</span>
-      </nav>
-
-      <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-8 sm:mt-6 sm:gap-10 lg:grid-cols-[1.35fr_1fr] lg:gap-16">
-        {/* Artwork */}
-        <div className="min-w-0 lg:sticky lg:top-24 lg:self-start">
-          <div className="-mx-4 min-w-0 overflow-hidden sm:-mx-8 lg:mx-0">
-            <ProductCarousel slides={gallery} pics={pics} previews={previews} artIndex={artIndex} title={design.title} repeating={design.kind === 'repeating'} overlay={
-              <Button asChild variant="outline" className="h-9 text-[13px]"><Link to="/design/$slug/preview" params={{ slug: design.slug }} search={{ ...selection, color, finish, view: "room" }}><Camera />See it in your room</Link></Button>
-            } />
-          </div>
-          <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground"><span data-testid="repeat-type-short">{repeatWords(design).label}</span><Link to="/designers/$slug" params={{ slug: designer.slug }} className="flex items-center gap-1">By {designer.name}<ArrowUpRight className="h-3 w-3" /></Link></div>
-          <section aria-label="About this design" className="mt-4 hidden border-t border-border pt-4 sm:mt-5 sm:pt-5 lg:block">
-            <p className="text-eyebrow text-muted-foreground">{design.categories.join(" / ")}</p>
-            <p className="mt-3 text-sm font-medium">{design.kind === "mural" ? "Made-to-measure wallpaper mural" : "Made-to-measure repeating wallpaper"}</p>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{design.description}</p>{design.tags && design.tags.length > 0 && <p className="mt-3 flex flex-wrap gap-1.5">{design.tags.slice(0, 10).map((tg) => <Link key={tg} to="/browse" search={{ q: tg } as any} className="rounded-full border border-border px-2.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground">{tg}</Link>)}</p>}
-          </section>
-        </div>
-
-        {/* Details & fit */}
-        <div className="lg:self-start">
-          <p className="text-eyebrow text-muted-foreground">{design.kind === "mural" ? "Mural · one-of-a-kind scene" : repeatStyle(design) === "horizontal" ? "Pattern · repeats sideways only" : "Pattern · repeats in every direction"}</p>
-          <h1 className="mt-2 text-3xl leading-tight sm:text-5xl">{design.title}</h1>{design.sku && <p className="mt-2 text-xs text-muted-foreground">SKU {design.sku}</p>}
-          <p className="mt-2 text-sm" data-testid="repeat-type"><span className="font-medium">{repeatWords(design).label}.</span> <span className="text-muted-foreground">{repeatWords(design).detail}</span></p>
-          <MatchFixed design={design as any} className="mt-2" />
-          <p className="mt-2 text-sm text-muted-foreground">An original by <Link to="/designers/$slug" params={{ slug: designer.slug }} className="font-medium text-foreground underline-offset-4 hover:underline">{designer.name}</Link></p>
-          {collection && <p className="mt-1 text-xs text-muted-foreground" data-testid="collection-line">Part of the <Link to="/collections/$id" params={{ id: collection.id }} className="font-medium text-foreground underline-offset-4 hover:underline">{collection.title}</Link> collection · <Link to="/collections/$id" params={{ id: collection.id }} className="text-primary underline underline-offset-4">See the full collection</Link></p>}
-          <div className="mt-3 flex flex-wrap items-baseline gap-2"><p className="text-xl font-semibold">{money(designRate(design))} / sq ft</p><DesignRating slug={baseDesign.slug} fetchIfMissing link /><span className="text-xs text-muted-foreground">{money(designRate(design) * 10.7639)} / m²</span></div>
+    <div className="am">
+      <StorefrontSprite />
+      <section className="pbanner pg" aria-label="Design">
+        <div className="pb-in">
+          <img src={pic(design, design.image, BIG_W)?.src ?? design.image} alt="" />
+          <div className="pb-copy"><h1>{baseDesign.title}</h1>{design.description && <p>{design.description}</p>}</div>
           {baseDesign.colorways && baseDesign.colorways.length > 1 && (
-            <div className="mt-4" data-testid="color-picker">
-              <p className="text-sm"><span className="text-muted-foreground">Color:</span> <span className="font-medium">{colorway?.name}</span> <span className="text-xs text-muted-foreground">· {baseDesign.colorways.length} colors</span></p>
-              <div className="mt-2 flex flex-wrap gap-3" role="radiogroup" aria-label="Colors">
-                {baseDesign.colorways.map((c) => (
-                  <button key={c.id} type="button" role="radio" aria-checked={c.id === color} aria-label={c.name} title={c.name} onClick={() => { setColor(c.id); setGalleryIndex(0); }} className="flex w-16 flex-col items-center gap-1 text-[11px] leading-tight">
-                    <span className={`block h-12 w-12 rounded-full p-[3px] transition ${c.id === color ? "ring-2 ring-foreground ring-offset-1 ring-offset-background" : "ring-1 ring-border hover:ring-foreground/50"}`}><span className="block h-full w-full rounded-full border border-black/10" style={swatchStyle(c)} /></span>
-                    <span className={`max-w-16 truncate ${c.id === color ? "font-medium text-foreground" : "text-muted-foreground"}`}>{c.name}</span>
-                  </button>
-                ))}
+            <div className="pb-dots" role="group" aria-label="Colorways">
+              {baseDesign.colorways.map((c) => <button key={c.id} type="button" aria-pressed={c.id === color} aria-label={c.name} title={c.name} style={swatchStyle(c)} onClick={() => setColor(c.id)} />)}
+            </div>
+          )}
+        </div>
+      </section>
+      <div className="pg crumbs-row">
+        <nav className="crumbs" aria-label="Breadcrumb">
+          <Link to="/">Home</Link><span>/</span><Link to="/browse" search={{ kind: design.kind }}>{mural ? "Murals" : "Repeating patterns"}</Link><span>/</span><b>{baseDesign.title}</b>
+          {design.sku && <><span>/</span><span>Item # {design.sku}</span></>}<span>·</span><span>Ships in 5–7 days</span>
+        </nav>
+      </div>
+      <section className="pd pg">
+        <div className="gal">
+          <div className="gal-main">
+            {shown[gi] && <img src={shown[gi]!.pic?.src ?? shown[gi]!.src} srcSet={shown[gi]!.pic?.srcSet} sizes="(min-width: 1000px) 58vw, 100vw" alt={`${baseDesign.title}: ${shown[gi]!.label}`} />}
+            <span className="gal-tag">{shown[gi]?.label}</span>
+            <button type="button" className="gal-full" aria-label="See all pictures full size" onClick={() => setViewer(gi)}>⤢ Full size</button>
+          </div>
+          <div className="gal-thumbs" role="group" aria-label="Pictures">
+            {shown.map((s, k) => <button key={k} type="button" aria-pressed={k === gi} aria-label={`${s.label} ${k + 1}`} onClick={() => setGi(k)}><img src={pic(design, s.src, [320])?.src ?? s.src} alt="" loading="lazy" /><small>{s.label}</small></button>)}
+          </div>
+        </div>
+        <div className="buy">
+          <h2 className="title">{baseDesign.title}</h2>
+          <div className="by">by <Link to="/designers/$slug" params={{ slug: designer.slug }}>{designer.name}</Link>{designer.reviews > 0 && <> <span className="stars" aria-label={`${designer.rating} out of 5`}>★★★★★</span> <span className="muted">{designer.rating} · {designer.reviews} reviews</span></>}</div>
+          {collection && <div className="coll-note">Part of the <Link to="/collections/$id" params={{ id: collection.id }}>{collection.title}</Link> collection</div>}
+          {baseDesign.colorways && baseDesign.colorways.length > 1 && (
+            <div className="opt">
+              <div className="lbl">Colorway <span className="mat-name">{colorway?.name}</span></div>
+              <div className="cw" role="group" aria-label="Colorway">
+                {baseDesign.colorways.map((c) => <button key={c.id} type="button" aria-pressed={c.id === color} aria-label={c.name} title={c.name} onClick={() => setColor(c.id)}><span className="sq" style={swatchStyle(c)} />{c.name}</button>)}
               </div>
             </div>
           )}
-          <div className="mt-4"><AskDesignerButton onClick={() => ask()} /><RequestChange design={design} designer={designer} open={chatOpen} onOpenChange={setChatOpen} prefill={prefill} trigger={false} />
-            {community.productLineEnabled && <p className="mt-2.5 max-w-md text-xs leading-relaxed text-muted-foreground" data-testid="designer-line">Want this design changed a little — colors, scale, a tree moved? <button type="button" onClick={() => ask()} className="text-foreground underline underline-offset-4">Work with a designer</button></p>}</div>
-
-<div className="mt-4" />
-          {collection && <div className="mb-5 flex gap-4 rounded-lg bg-accent/60 p-4 sm:p-5">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background text-primary"><Layers className="h-5 w-5" /></span>
-            <div className="min-w-0">
-              <p className="text-sm font-medium">More from this artist · {collection.title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">This design is part of a collection, grouped by the designer by theme, scale or color.</p>
-              <Button asChild size="sm" variant="outline" className="mt-3"><Link to="/collections/$id" params={{ id: collection.id }}>View collection</Link></Button>
+          <div className="opt">
+            <div className="lbl">Type</div>
+            <div className="kind-row"><span className="chip on">{mural ? "Mural" : "Repeating pattern"}</span><button type="button" className="qtip" aria-label="What does this mean?" title={kindHint}>?</button><span className="qbox" role="tooltip">{kindHint}</span></div>
+          </div>
+          {finishes.length > 0 && (
+            <div className="opt">
+              <div className="lbl">Material <span className="mat-name">{material?.name}</span></div>
+              <div className="chips" role="radiogroup" aria-label="Material">
+                {finishes.map((m) => <button key={m.id} type="button" role="radio" aria-checked={m.id === material?.id} className={"chip" + (m.id === material?.id ? " on" : "")} onClick={() => setFinish(m.id)}>{m.name}<small>{money(unitPrice(design, m))}</small></button>)}
+              </div>
+              {material?.blurb && <p className="mat-blurb">{material.blurb}</p>}
             </div>
-          </div>}
-          {material && <WallCalculator design={design} color={color} designer={designer} selection={selection} onSelectionChange={setSelection} material={material} materialOptions={finishes} onMaterialChange={setFinish} onContact={ask} />}
-
-          <section aria-label="About this design" className="mt-6 border-t border-border pt-5 lg:hidden">
-            <p className="text-eyebrow text-muted-foreground">{design.categories.join(" / ")}</p>
-            <p className="mt-3 text-sm font-medium">{design.kind === "mural" ? "Made-to-measure wallpaper mural" : "Made-to-measure repeating wallpaper"}</p>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{design.description}</p>{design.tags && design.tags.length > 0 && <p className="mt-3 flex flex-wrap gap-1.5">{design.tags.slice(0, 10).map((tg) => <Link key={tg} to="/browse" search={{ q: tg } as any} className="rounded-full border border-border px-2.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground">{tg}</Link>)}</p>}
-          </section>
-          <div className="my-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">{["Printed to your size", "Choice of textured finishes", "Free design chat"].map(text => <span key={text} className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" />{text}</span>)}</div>
-
-          <div className="mt-5 flex items-center gap-2 text-xs text-muted-foreground"><Star className="h-3.5 w-3.5 text-primary" />Built for you — every order is printed fresh, to your wall.</div>
-        </div>
-      </div>
-
-      {design.story && <section aria-label="The story behind the design" className="mt-12 border-t border-border pt-8 sm:mt-14 sm:pt-10">
-        <div className="mx-auto max-w-2xl"><p className="text-eyebrow text-clay">The story behind the design</p><h2 className="mt-2 text-2xl sm:text-3xl">How {design.title} came to be</h2><p className="mt-4 text-base leading-relaxed text-muted-foreground">{design.story}</p><p className="mt-4 text-sm">— {designer.name}</p></div>
-      </section>}
-
-      <div className="mx-auto max-w-3xl"><Reviews kind="design" target={baseDesign.slug} title={design.title} /></div>
-
-      <section className="mt-14 border-t border-border pt-8 sm:mt-16 sm:pt-10">
-        <h2 className="text-2xl">You may also like</h2>
-        <div className="mt-6 grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-          {related.map((d) => (
-            <DesignCard key={d.slug} design={d} />
-          ))}
+          )}
+          <div className="pcta">
+            <div className="price-line"><b>{money(rate)}</b> / sq ft {material && <span className="pl-paper">· {material.name}</span>}</div>
+            <Link className="btn btn-wine big" to="/design/$slug/preview" params={{ slug: design.slug }} search={{ ...search, color, finish }}>Customize size &amp; order</Link>
+            <div className="row">
+              <Link className="btn optline" to="/design/$slug/preview" params={{ slug: design.slug }} search={{ ...search, color, finish, view: "room" }}>See it in my room</Link>
+              <button type="button" className={"btn optline fav-btn"} aria-pressed={fav} onClick={() => setFav(!fav)}><Ico id="i-heart" /> {fav ? "Saved" : "Save"}</button>
+            </div>
+          </div>
+          <div className="change">
+            <div className="ch-head">
+              <span className="av">{designer.initials}</span>
+              <div><b>Want something changed?</b><small>Free to ask · {designer.name} {designer.responseLabel ? lowerFirst(designer.responseLabel) : "replies within a day"}</small></div>
+            </div>
+            <button type="button" className="btn btn-wine" onClick={ask}>Chat with the designer</button>
+            <RequestChange design={design} designer={designer} open={chatOpen} onOpenChange={setChatOpen} prefill={prefill} trigger={false} />
+          </div>
         </div>
       </section>
+      <section className="tabs-wrap pg">
+        <div className="about-d">
+          <div className="ad-main">
+            <span className="k">About this design</span>
+            {design.description && <p className="ad-lead">{design.description}</p>}
+            {design.tags && design.tags.length > 0 && <div className="tagrow">{design.tags.slice(0, 10).map((t) => <Link key={t} to="/browse" search={{ q: t }}>{t}</Link>)}</div>}
+            {design.story && <figure className="ad-story"><span className="ad-h">The story behind it</span><blockquote>{design.story}</blockquote><figcaption className="by-mini">— {designer.name}</figcaption></figure>}
+          </div>
+          <aside className="ad-specs"><span className="ad-h">Details</span><dl className="specs">{specs.map(([k, v]) => <Fragment key={k}><dt>{k}</dt><dd>{v}</dd></Fragment>)}</dl></aside>
+        </div>
+      </section>
+      {related.length > 0 && (
+        <section className="sec pg">
+          <div className="also-head"><h2>You may also like</h2></div>
+          <div className="g-prod also">{related.map((d) => <StoreCard key={d.slug} d={d} />)}</div>
+        </section>
+      )}
+      {viewer != null && shown[viewer] && (
+        <div className="gv" role="dialog" aria-modal="true" aria-label={`${baseDesign.title} pictures`} onClick={(e) => { if (e.target === e.currentTarget) setViewer(null); }}>
+          <div className="gv-top"><b>{baseDesign.title}</b><span>{shown[viewer]!.label} · {viewer + 1} / {shown.length}</span><button type="button" className="gv-x" aria-label="Close" onClick={() => setViewer(null)}>✕</button></div>
+          <div className="gv-stage" onClick={(e) => { if (e.target === e.currentTarget) setViewer(null); }}>
+            <button type="button" className="gv-a l" aria-label="Previous picture" onClick={() => setViewer((viewer + shown.length - 1) % shown.length)}>‹</button>
+            <img src={shown[viewer]!.src} alt={shown[viewer]!.label} />
+            <button type="button" className="gv-a r" aria-label="Next picture" onClick={() => setViewer((viewer + 1) % shown.length)}>›</button>
+          </div>
+          <div className="gv-thumbs">{shown.map((s, k) => <button key={k} type="button" aria-pressed={k === viewer} aria-label={`${s.label} ${k + 1}`} onClick={() => setViewer(k)}><img src={pic(design, s.src, [320])?.src ?? s.src} alt="" /></button>)}</div>
+        </div>
+      )}
     </div>
   );
 }
+const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
