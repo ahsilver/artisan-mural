@@ -45,8 +45,8 @@ for d in cat['DESIGNS']:
     rooms = sorted({ROOM[r] for r in d.get('rooms', []) if r in ROOM})
     tags = sorted({TAGS[s] for s in d.get('styles', []) if s in TAGS})
     repeat = 'none' if mural else ('halfdrop' if 'half' in d.get('match', '').lower() else 'both')
-    sql.append(f"INSERT OR REPLACE INTO artwork_uploads (id, owner_id, title, kind, categories, made_for, width_cm, height_cm, max_print_width_cm, repeat_style, review_status, status, sku, story, description, tags, submitted_at) VALUES "
-               f"({q(up)}, {q(owner)}, {q(d['name'])}, {q('mural' if mural else 'repeat')}, {q(json.dumps(cats))}, {q(json.dumps(rooms))}, {width_cm}, {height_cm}, {width_cm if mural else 'NULL'}, {q(repeat)}, 'approved', 'live', {q(d.get('sku'))}, {q(d.get('ov'))}, {q(d.get('line'))}, {q(json.dumps(tags))}, strftime('%Y-%m-%dT%H:%M:%fZ','now'));")
+    sql.append(f"INSERT OR REPLACE INTO artwork_uploads (id, owner_id, title, kind, categories, made_for, width_cm, height_cm, max_print_width_cm, repeat_style, review_status, status, sku, story, description, tags, palette, submitted_at) VALUES "
+               f"({q(up)}, {q(owner)}, {q(d['name'])}, {q('mural' if mural else 'repeat')}, {q(json.dumps(cats))}, {q(json.dumps(rooms))}, {width_cm}, {height_cm}, {width_cm if mural else 'NULL'}, {q(repeat)}, 'approved', 'live', {q(d.get('sku'))}, {q(d.get('ov'))}, {q(d.get('line'))}, {q(json.dumps(tags))}, {q(', '.join(d.get('colors', [])))}, strftime('%Y-%m-%dT%H:%M:%fZ','now'));")
     for pos, c in enumerate(colorways):
         cid = uid('colorway', d['slug'], c['slug'])
         kind = 'full' if mural or not os.path.exists(os.path.join(HERE, 'images', c['slug'] + '-tile.webp')) else 'tile'

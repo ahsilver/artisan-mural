@@ -2474,3 +2474,9 @@
 .am .d2 .btn{border-radius:10px;white-space:nowrap}
 @media (max-width:1000px){.am .duo2{grid-template-columns:1fr}}
 @media (max-width:640px){.am .duo-top{display:none}.am .qrow a{font-size:10.5px!important;padding:8px 2px!important}.am .qrow span{width:40px!important;height:40px!important}}
+
+/* shop: pop-up sits under its filter button; sort menu */
+.am .fbar{position:relative}
+.am .fbar .fpop{position:absolute;z-index:30}
+.am .fsort select{height:38px;border:1px solid var(--line);border-radius:999px;background:var(--paper);padding:0 30px 0 14px;font:600 12.5px/1 var(--f-body);color:var(--ink);cursor:pointer}
+.am .fdrawer{z-index:95}.am .fdrawer-bg{z-index:94}
