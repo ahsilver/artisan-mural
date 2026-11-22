@@ -1,0 +1,473 @@
+{
+ "DESIGNS": [
+  {
+   "kind": "mural",
+   "slug": "animal-kingdom",
+   "name": "Animal Kingdom",
+   "by": "Linden Studio",
+   "ini": "LS",
+   "sku": "AM-1042",
+   "rooms": [
+    "kids",
+    "playroom",
+    "living"
+   ],
+   "styles": [
+    "tropical",
+    "animals",
+    "jungle"
+   ],
+   "colors": [
+    "green",
+    "white"
+   ],
+   "line": "Elephants, giraffes and zebras gather under fan palms. A full jungle scene for one wall.",
+   "ov": "A hand-painted jungle with elephants, a giraffe, zebras, a tiger and a hippo under tall fan palms, on a soft white sky. The scene is printed once across your wall, so nothing repeats and no animal is cut in half at a seam."
+  },
+  {
+   "kind": "mural",
+   "slug": "sumatra-classic",
+   "name": "Sumatra Classic",
+   "by": "Linden Studio",
+   "ini": "LS",
+   "sku": "AM-1051",
+   "rooms": [
+    "dining",
+    "living",
+    "bedroom"
+   ],
+   "styles": [
+    "tropical",
+    "animals",
+    "jungle"
+   ],
+   "colors": [
+    "green",
+    "beige"
+   ],
+   "line": "A misty jungle in sage and cream, with elephant, giraffe and leopard.",
+   "ov": "A softer, vintage take on the jungle scene in sage greens and warm cream, with a faded engraving texture. Calm enough for a bedroom, detailed enough for a dining room feature wall."
+  },
+  {
+   "kind": "mural",
+   "slug": "in-harmony",
+   "name": "In Harmony",
+   "by": "Nora Lind",
+   "ini": "NL",
+   "sku": "AM-1077",
+   "rooms": [
+    "kids",
+    "living",
+    "playroom"
+   ],
+   "styles": [
+    "line-art",
+    "tropical",
+    "animals"
+   ],
+   "colors": [
+    "white",
+    "black"
+   ],
+   "line": "Fine line art palms with toucans, parrots and monkeys in color.",
+   "ov": "Black ink drawings of banana leaves and palms, with only the birds and monkeys in color. Light and airy on a white ground, so it suits smaller rooms."
+  },
+  {
+   "kind": "mural",
+   "slug": "calendula",
+   "name": "Calendula",
+   "by": "Nora Lind",
+   "ini": "NL",
+   "sku": "AM-1063",
+   "rooms": [
+    "bedroom",
+    "living",
+    "office"
+   ],
+   "styles": [
+    "floral",
+    "black-white",
+    "moody"
+   ],
+   "colors": [
+    "grey",
+    "white"
+   ],
+   "line": "One flower, close up, in soft black and white.",
+   "ov": "A macro photograph of a calendula flower in soft greys. Large enough that the petals become shapes; best on one wall behind a bed or sofa."
+  },
+  {
+   "kind": "mural",
+   "slug": "wild-bouquet",
+   "name": "Wild Bouquet",
+   "by": "Yuki Arai",
+   "ini": "YA",
+   "sku": "AM-1088",
+   "rooms": [
+    "living",
+    "dining",
+    "entry"
+   ],
+   "styles": [
+    "botanical",
+    "black-white",
+    "tropical"
+   ],
+   "colors": [
+    "grey",
+    "white"
+   ],
+   "line": "Banana and calathea leaves in black, white and grey.",
+   "ov": "Oversized tropical leaves in greyscale on a plaster-white ground. Graphic and quiet at the same time."
+  },
+  {
+   "kind": "mural",
+   "slug": "swaying-palm-leaves",
+   "name": "Swaying Palm Leaves",
+   "by": "Tomás Reyes",
+   "ini": "TR",
+   "sku": "AM-1093",
+   "rooms": [
+    "bedroom",
+    "living",
+    "bathroom"
+   ],
+   "styles": [
+    "botanical",
+    "tropical",
+    "minimal"
+   ],
+   "colors": [
+    "beige",
+    "white"
+   ],
+   "line": "Sepia palm fronds rising from the floor line.",
+   "ov": "Feathery palm leaves in warm sepia that rise from the bottom of the wall and fade into the sky. Leaves the top half calm."
+  },
+  {
+   "kind": "mural",
+   "slug": "palm-leaves-shadow",
+   "name": "Palm Leaves Shadow",
+   "by": "Tomás Reyes",
+   "ini": "TR",
+   "sku": "AM-1096",
+   "rooms": [
+    "bedroom",
+    "office",
+    "entry"
+   ],
+   "styles": [
+    "shadows",
+    "moody",
+    "botanical"
+   ],
+   "colors": [
+    "black",
+    "grey"
+   ],
+   "line": "The shadow of a palm on a dark plaster wall.",
+   "ov": "Afternoon light falling through palm leaves onto a charcoal plaster wall. Moody, warm and very simple."
+  },
+  {
+   "kind": "mural",
+   "slug": "shadow-leaf",
+   "name": "Shadow Leaf",
+   "by": "Tomás Reyes",
+   "ini": "TR",
+   "sku": "AM-1097",
+   "rooms": [
+    "living",
+    "dining",
+    "hotel"
+   ],
+   "styles": [
+    "shadows",
+    "minimal",
+    "botanical"
+   ],
+   "colors": [
+    "white",
+    "grey"
+   ],
+   "line": "Soft palm shadows on a white wall.",
+   "ov": "The light version of our shadow murals: soft grey palm shadows on white. Feels like a sunny room all day."
+  },
+  {
+   "kind": "mural",
+   "slug": "ombre-smokey",
+   "name": "Ombre Smokey",
+   "by": "Maren Holt",
+   "ini": "MH",
+   "sku": "AM-1110",
+   "rooms": [
+    "office",
+    "dining",
+    "hotel"
+   ],
+   "styles": [
+    "ombre",
+    "moody",
+    "minimal"
+   ],
+   "colors": [
+    "blue",
+    "beige"
+   ],
+   "line": "A fade from warm sand to deep night blue.",
+   "ov": "A smooth gradient from sand at the top to deep navy at the floor. Makes ceilings feel higher."
+  },
+  {
+   "kind": "mural",
+   "slug": "luxury-henley",
+   "name": "Luxury Henley",
+   "by": "Maren Holt",
+   "ini": "MH",
+   "sku": "AM-1112",
+   "rooms": [
+    "bedroom",
+    "dining",
+    "living"
+   ],
+   "styles": [
+    "ombre",
+    "moody",
+    "minimal"
+   ],
+   "colors": [
+    "grey",
+    "blue"
+   ],
+   "line": "A fade from pale grey to charcoal.",
+   "ov": "A soft grey-to-charcoal ombre with a fine paper texture. Works in offices, hallways and hotel corridors."
+  },
+  {
+   "slug": "jumbo-dog-sketch",
+   "name": "Jumbo Dog Sketch",
+   "by": "Inès Okafor",
+   "ini": "IO",
+   "sku": "AM-1120",
+   "kind": "repeat",
+   "repeatIn": 50,
+   "match": "Straight match",
+   "rooms": [
+    "kids",
+    "playroom",
+    "entry"
+   ],
+   "styles": [
+    "animals",
+    "line-art"
+   ],
+   "colors": [
+    "green",
+    "beige"
+   ],
+   "line": "Big, loose dog sketches in army green on ivory beige.",
+   "ov": "Dozens of dogs drawn in a quick, loose line in army green and blush on ivory. A repeating pattern, so it covers any size of wall with no visible joins."
+  },
+  {
+   "slug": "my-favorite-dogs",
+   "name": "My Favorite Dogs",
+   "by": "Inès Okafor",
+   "ini": "IO",
+   "sku": "AM-1124",
+   "kind": "repeat",
+   "repeatIn": 60,
+   "match": "Straight match",
+   "rooms": [
+    "kids",
+    "playroom",
+    "entry"
+   ],
+   "styles": [
+    "animals"
+   ],
+   "colors": [
+    "red",
+    "grey"
+   ],
+   "line": "Dachshunds, setters and Dalmatians on warm grey.",
+   "ov": "Painted dogs of every breed, scattered on a warm grey ground. A repeating pattern for playrooms, mudrooms and dog lovers."
+  },
+  {
+   "slug": "vine-charcoal",
+   "name": "Vine",
+   "by": "Maren Holt",
+   "ini": "MH",
+   "sku": "EH-036",
+   "kind": "repeat",
+   "repeatIn": 54,
+   "match": "Straight match",
+   "rooms": [
+    "bedroom",
+    "living",
+    "kitchen",
+    "dining"
+   ],
+   "styles": [
+    "line-art",
+    "minimal",
+    "black-white",
+    "botanical"
+   ],
+   "colors": [
+    "white",
+    "black",
+    "beige"
+   ],
+   "line": "Fine vines and brushed leaves. Two colorways.",
+   "ov": "Thin trailing vines with brush-stroke leaves. Comes in Charcoal (black leaves on white) and Oatmeal (white leaves on warm beige). Chat with the designer for any other color.",
+   "colorways": [
+    {
+     "slug": "vine-charcoal",
+     "name": "Charcoal"
+    },
+    {
+     "slug": "vine-oatmeal",
+     "name": "Oatmeal"
+    }
+   ]
+  }
+ ],
+ "DESIGNERS": [
+  {
+   "name": "Linden Studio",
+   "ini": "LS",
+   "color": "#5E7A55",
+   "place": "Toronto, Canada",
+   "since": 2018,
+   "line": "Painterly jungles and wildlife scenes",
+   "about": "We paint big scenes the old way: layer by layer, animal by animal. Every mural is a single picture made to cover a whole wall without a repeat.",
+   "tags": [
+    "Murals",
+    "Jungle",
+    "Animals",
+    "Painterly"
+   ],
+   "responds": "within an hour",
+   "days": 5,
+   "newFrom": 480,
+   "adapt": 65,
+   "rating": 4.9,
+   "reviews": 23,
+   "slug": "linden-studio"
+  },
+  {
+   "name": "Nora Lind",
+   "ini": "NL",
+   "color": "#3F4F63",
+   "place": "Lisbon, Portugal",
+   "since": 2020,
+   "line": "Fine line art and quiet florals",
+   "about": "I start with ink on paper and keep most of it white. My murals are for people who want the wall to breathe.",
+   "tags": [
+    "Line art",
+    "Florals",
+    "Black & white"
+   ],
+   "responds": "within a few hours",
+   "days": 6,
+   "newFrom": 420,
+   "adapt": 55,
+   "rating": 4.8,
+   "reviews": 14,
+   "slug": "nora-lind"
+  },
+  {
+   "name": "Yuki Arai",
+   "ini": "YA",
+   "color": "#2B1A1F",
+   "place": "Kyoto, Japan",
+   "since": 2016,
+   "line": "Ink, gold leaf, and a lot of empty space",
+   "about": "Large leaves, soft greys, nothing extra. I like walls you can look at for a long time.",
+   "tags": [
+    "Botanical",
+    "Black & white",
+    "Minimal"
+   ],
+   "responds": "within a day",
+   "days": 7,
+   "newFrom": 560,
+   "adapt": 75,
+   "rating": 5,
+   "reviews": 9,
+   "slug": "yuki-arai"
+  },
+  {
+   "name": "Tomás Reyes",
+   "ini": "TR",
+   "color": "#9C7A45",
+   "place": "Valparaíso, Chile",
+   "since": 2019,
+   "line": "Palms, light and shadow, painted wall by wall",
+   "about": "Most of my work is about afternoon light through leaves. Calm murals for bedrooms, hotels and slow mornings.",
+   "tags": [
+    "Shadows",
+    "Botanical",
+    "Murals"
+   ],
+   "responds": "within an hour",
+   "days": 4,
+   "newFrom": 450,
+   "adapt": 60,
+   "rating": 4.9,
+   "reviews": 31,
+   "slug": "tomas-reyes"
+  },
+  {
+   "name": "Maren Holt",
+   "ini": "MH",
+   "color": "#5B2130",
+   "place": "Copenhagen, Denmark",
+   "since": 2017,
+   "line": "Gradients and fine repeats, drawn by hand",
+   "about": "I make the quiet ones: fades that make ceilings feel higher, and fine vines that look like they grew there.",
+   "tags": [
+    "Ombre",
+    "Repeats",
+    "Minimal"
+   ],
+   "responds": "within a few hours",
+   "days": 5,
+   "newFrom": 380,
+   "adapt": 50,
+   "rating": 4.7,
+   "reviews": 18,
+   "slug": "maren-holt"
+  },
+  {
+   "name": "Inès Okafor",
+   "ini": "IO",
+   "color": "#D2654F",
+   "place": "Lagos, Nigeria",
+   "since": 2021,
+   "line": "Bold, happy repeats for kids and dog people",
+   "about": "Dogs, mostly. Big loose drawings and painted breeds, made into patterns that run across any wall.",
+   "tags": [
+    "Repeats",
+    "Animals",
+    "Kids"
+   ],
+   "responds": "within an hour",
+   "days": 4,
+   "newFrom": 350,
+   "adapt": 45,
+   "rating": 4.9,
+   "reviews": 27,
+   "slug": "ines-okafor"
+  }
+ ],
+ "DESIGN_FT": {
+  "animal-kingdom": 20,
+  "sumatra-classic": 18,
+  "in-harmony": 16,
+  "calendula": 14,
+  "wild-bouquet": 18,
+  "swaying-palm-leaves": 16,
+  "palm-leaves-shadow": 12,
+  "shadow-leaf": 11,
+  "ombre-smokey": 15,
+  "luxury-henley": 15
+ }
+}
