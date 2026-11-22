@@ -2487,6 +2487,13 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 .d2-txt small{font-size:13px;color:var(--ink-2)}
 .d2 .btn{border-radius:10px;white-space:nowrap}
 @media (max-width:1000px){.duo2{grid-template-columns:1fr}}
+.up-selbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12.5px}
+.up-selbar small{color:var(--ink-2)}
+.up-selacts{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.up-gdt.on .th{border-color:#201D1D;box-shadow:0 0 0 2px #201D1D inset}.up-gdt.on em{background:#201D1D;color:#fff}
+.up-gdt.used:not(.on) em{background:var(--sand,#D3C3A2)}
+.up-queue{display:grid;gap:2px;margin:0 0 14px;padding:12px 14px;border-radius:10px;background:var(--soft);border:1px solid var(--line);font-size:13px}
+.up-queue span{color:var(--ink)}.up-queue small{color:var(--ink-2)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -4921,7 +4928,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
     const box = $('upBox'); if (!box) return;
     $('upSteps').innerHTML = UP_STEPS.map((n, i) => `<button type="button" data-s="${i}" class="${i === UP.step ? 'on' : i < UP.step ? 'done' : ''}" ${i > UP.step ? 'disabled' : ''}>${i < UP.step ? '✓' : i + 1}<span>${n}</span></button>`).join('');
     $('upSteps').querySelectorAll('button').forEach(b => b.onclick = () => { UP.step = +b.dataset.s; upRender(); });
-    box.innerHTML = [upStep0, upStep1, upStep2, upStep3][UP.step]();
+    box.innerHTML = upQueueBar() + [upStep0, upStep1, upStep2, upStep3][UP.step]();
     ({ 0: upWire0, 1: upWire1, 2: upWire2, 3: upWire3 })[UP.step]();
   }
   function upNav(nextLabel, extra = '') {
@@ -5383,22 +5390,35 @@ async function tiffCrop(read, box, sink, onProgress) {
     else if (dl.files && !dl.files.length) body = '<p class="up-gdl-msg">This folder is empty.</p>';
     else if (dl.files) body = `<div class="up-gdl">${dl.files.map(f => f.folder
       ? `<button type="button" class="up-gdt fold" data-fid="${f.id}" data-fname="${upEsc(f.name)}"><span class="th">${folderCover(f.id) ? `<img src="${upEsc(folderCover(f.id))}" alt="">` : ''}<span class="fic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>${DL_CACHE[f.id] ? DL_CACHE[f.id].filter(x => !x.folder).length : ''}</span></span><small>${upEsc(f.name)}</small></button>`
-      : `<button type="button" class="up-gdt${UP.files.some(x => x.driveId === f.id) ? ' on' : ''}" data-add="${f.id}" data-fname="${upEsc(f.name)}" aria-pressed="${UP.files.some(x => x.driveId === f.id)}"><span class="th"><span class="ext">${upEsc((f.name.split('.').pop() || 'file').slice(0, 5).toUpperCase())}</span>${TIFF_THUMBS[f.id] && TIFF_THUMBS[f.id].startsWith('blob:') ? `<img src="${TIFF_THUMBS[f.id]}" alt="">` : TIFF_THUMBS[f.id] === 'busy' ? '<span class="up-mk"><span class="up-spin" aria-hidden="true"></span>Making preview…</span>' : `<img src="${f.thumb ? upEsc(f.thumb) : `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`}" alt="" loading="lazy" onerror="this.remove()">`}<em>${UP.files.some(x => x.driveId === f.id) ? '✓ Added' : '+ Add'}</em></span><small>${upEsc(f.name)}</small></button>`).join('')}</div>`;
+      : `<button type="button" class="up-gdt${UP.sel.includes(f.id) ? ' on' : ''}${UP.files.some(x => x.driveId === f.id) ? ' used' : ''}" data-add="${f.id}" data-fname="${upEsc(f.name)}" aria-pressed="${UP.sel.includes(f.id)}"><span class="th"><span class="ext">${upEsc((f.name.split('.').pop() || 'file').slice(0, 5).toUpperCase())}</span>${TIFF_THUMBS[f.id] && TIFF_THUMBS[f.id].startsWith('blob:') ? `<img src="${TIFF_THUMBS[f.id]}" alt="">` : TIFF_THUMBS[f.id] === 'busy' ? '<span class="up-mk"><span class="up-spin" aria-hidden="true"></span>Making preview…</span>' : `<img src="${f.thumb ? upEsc(f.thumb) : `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`}" alt="" loading="lazy" onerror="this.remove()">`}<em>${UP.sel.includes(f.id) ? '✓ Selected' : UP.files.some(x => x.driveId === f.id) ? 'In this design' : 'Select'}</em></span><small>${upEsc(f.name)}</small></button>`).join('')}</div>`;
     const tiffIds = Object.keys(TIFF_THUMBS), tiffDone = tiffIds.filter(k => TIFF_THUMBS[k] !== 'busy').length, tiffBusy = tiffIds.length - tiffDone;
     const prog = tiffBusy ? `<p class="up-prog" role="status"><span class="up-spin" aria-hidden="true"></span>Making pictures of your designs… <b>${tiffDone} of ${tiffIds.length + tiffWanted().length} ready</b>. Big print files take a few seconds each. You can keep choosing while they load.</p>` : '';
-    return `<div class="up-gdf"><div class="up-gdf-h"><div class="up-crumbs">${crumbs}</div><a href="https://drive.google.com/drive/folders/${(dl.stack || []).slice(-1)[0]?.id || UP.driveFolder}" target="_blank" rel="noopener">Open in Drive ↗</a></div>${prog}${body}</div>`;
+    return `<div class="up-gdf"><div class="up-gdf-h"><div class="up-crumbs">${crumbs}</div><a href="https://drive.google.com/drive/folders/${(dl.stack || []).slice(-1)[0]?.id || UP.driveFolder}" target="_blank" rel="noopener">Open in Drive ↗</a></div>${prog}${dl.files && dl.files.some(f => !f.folder) ? `<div class="up-selbar"><button type="button" class="up-link" id="upSelAll">${dl.files.filter(f => !f.folder).every(f => UP.sel.includes(f.id)) ? 'Clear selection' : `Select all in this folder (${dl.files.filter(f => !f.folder).length})`}</button>${UP.sel.length ? `<span class="up-selacts"><b>${UP.sel.length} selected</b><button type="button" class="btn btn-sm optline" id="upSelOne">${UP.sel.length > 1 ? 'One design · these are its colorways' : 'Add to this design'}</button>${UP.sel.length > 1 ? `<button type="button" class="btn btn-sm btn-wine" id="upSelMany">Make ${UP.sel.length} separate designs</button>` : ''}</span>` : '<small>Tap pictures to select them. You can select several.</small>'}</div>` : ''}${body}</div>`;
   }
+  UP.sel = []; UP.queue = [];
+  function upAddDrive(id, nm, role) { // put one Drive file into the current design (main picture or a colorway)
+    if (UP.files.some(x => x.driveId === id)) return;
+    const tt = TIFF_THUMBS[id], src = tt && tt.startsWith('blob:') ? tt : `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;
+    UP.files.push({ file: nm, driveId: id, drive: true, src, check: src, px: (TIFF_SIZE[id] || [0])[0], py: (TIFF_SIZE[id] || [0, 0])[1], vector: /\.(pdf|svg|ai|eps)$/i.test(nm), role: role || (UP.files.some(x => x.role === 'main') ? 'color' : 'main'), cw: prettyName(nm) });
+    if (/\.tiff?$/i.test(nm)) { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = true; }); driveTiffThumb(id, 2600).then(u => { UP.files.forEach(x => { if (x.driveId === id) { x.sharpening = false; if (u) { x.src = u; x.check = u; x.det = null; } } }); upRender(); }).catch(() => { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = false; }); upRender(); }); }
+  }
+  const upNameOf = (id) => ((UP.dl && UP.dl.files) || []).concat(...Object.values(DL_CACHE)).find(f => f.id === id)?.name || 'Google Drive file';
   function upWireGrid() {
     document.querySelectorAll('.up-gdf [data-fid]').forEach(b => b.onclick = () => upOpenFolder(b.dataset.fid, b.dataset.fname));
-    document.querySelectorAll('.up-gdf [data-add]').forEach(b => b.onclick = () => {
-      const id = b.dataset.add, i = UP.files.findIndex(x => x.driveId === id);
-      if (i >= 0) { UP.files.splice(i, 1); if (!UP.files.some(x => x.role === 'main')) { const n = UP.files.find(x => x.role); if (n) n.role = 'main'; } upRender(); return; }
-      const tt = TIFF_THUMBS[id], src = tt && tt.startsWith('blob:') ? tt : `https://drive.google.com/thumbnail?id=${id}&sz=w1600`, nm = b.dataset.fname;
-      UP.files.push({ file: nm, driveId: id, drive: true, src, check: src, px: (TIFF_SIZE[id] || [0])[0], py: (TIFF_SIZE[id] || [0, 0])[1], vector: /\.(pdf|svg|ai|eps)$/i.test(nm), role: UP.files.some(x => x.role === 'main') ? 'color' : 'main', cw: prettyName(nm) });
-      upRender();
-      if (/\.tiff?$/i.test(nm)) { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = true; }); upRender(); driveTiffThumb(id, 2600).then(u => { UP.files.forEach(x => { if (x.driveId === id) { x.sharpening = false; if (u) { x.src = u; x.check = u; x.det = null; } } }); upRender(); }).catch(() => { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = false; }); upRender(); }); } // sharp picture for the print preview
+    document.querySelectorAll('.up-gdf [data-add]').forEach(b => b.onclick = () => { // tap = select / unselect
+      const id = b.dataset.add, k = UP.sel.indexOf(id); if (k >= 0) UP.sel.splice(k, 1); else UP.sel.push(id); upRender();
     });
+    const all = $('upSelAll'); if (all) all.onclick = () => { const ids = ((UP.dl && UP.dl.files) || []).filter(f => !f.folder).map(f => f.id); const allOn = ids.every(x => UP.sel.includes(x)); UP.sel = allOn ? UP.sel.filter(x => !ids.includes(x)) : [...new Set(UP.sel.concat(ids))]; upRender(); };
+    const one = $('upSelOne'); if (one) one.onclick = () => { UP.sel.forEach(id => upAddDrive(id, upNameOf(id))); UP.sel = []; upRender(); };
+    const many = $('upSelMany'); if (many) many.onclick = () => {
+      const picks = UP.sel.map(id => ({ id, name: upNameOf(id) })); UP.sel = [];
+      const first = picks.shift(); UP.queue = UP.queue.concat(picks);
+      if (!UP.files.some(x => x.role)) upAddDrive(first.id, first.name, 'main'); else UP.queue.unshift(first);
+      if (!UP.name && upMain()) UP.name = prettyName(upMain().file);
+      upRender();
+    };
   }
+  const upQueueBar = () => UP.queue.length ? `<div class="up-queue" role="status"><b>${UP.queue.length} more design${UP.queue.length > 1 ? 's' : ''} waiting</b><span>${UP.queue.slice(0, 6).map(q => upEsc(prettyName(q.name))).join(' · ')}${UP.queue.length > 6 ? ' …' : ''}</span><small>Finish this one, then the next one opens with its picture already added.</small></div>` : '';
   /* step 1: artwork from a Drive folder or your computer */
   function upStep0() {
     const tiles = UP.files.map((f, i) => `<div class="up-file ${f.role ? 'on ' + f.role : ''}">
@@ -5640,7 +5660,7 @@ async function tiffCrop(read, box, sink, onProgress) {
   /* step 4: review + submit */
   function upStep3() {
     const m = upMain(), d = upDpi();
-    if (UP.sent) return `<div class="up-done"><b>Sent for review ✓</b><p class="up-sku">Item number <strong>${UP.sku}</strong>${upUsed().length > 1 ? ` · colorways ${upUsed().map((f, i) => `${UP.sku}-${String(i + 1).padStart(2, '0')}`).join(', ')}` : ''}</p><p>"${upEsc(UP.name)}" is a private draft until the studio approves it, usually within 2 business days. You'll get a notification. It's in My designs as "In review".</p><div class="up-row"><a class="btn btn-wine btn-sm" href="#studio-designs">My designs</a><button type="button" class="btn optline btn-sm" id="upAgain">Add another design</button></div></div>`;
+    if (UP.sent) return `<div class="up-done"><b>Sent for review ✓</b><p class="up-sku">Item number <strong>${UP.sku}</strong>${upUsed().length > 1 ? ` · colorways ${upUsed().map((f, i) => `${UP.sku}-${String(i + 1).padStart(2, '0')}`).join(', ')}` : ''}</p><p>"${upEsc(UP.name)}" is a private draft until the studio approves it, usually within 2 business days. You'll get a notification. It's in My designs as "In review".</p><div class="up-row"><a class="btn btn-wine btn-sm" href="#studio-designs">My designs</a>${UP.queue.length ? `<button type="button" class="btn btn-wine btn-sm" id="upNextQ">Next design: ${upEsc(prettyName(UP.queue[0].name))} (${UP.queue.length} left)</button>` : ''}<button type="button" class="btn optline btn-sm" id="upAgain">Add another design</button></div></div>`;
     const row = (k, v) => `<div class="up-sum-r"><span>${k}</span><b>${v}</b></div>`;
     return `<div class="up-sum"><img src="${m.src}" alt=""><div>
       ${row('Item number', `${nextSku()} <small>· made automatically</small>`)}${row('Name', upEsc(UP.name))}${row('Type', { mural: 'Mural · one picture', side: 'Repeat sideways', all: 'Repeat all sides · ' + (UP.half ? 'half-drop' : 'straight') }[UP.type])}
@@ -5652,6 +5672,7 @@ async function tiffCrop(read, box, sink, onProgress) {
     ${upNav('Submit for review')}`;
   }
   function upWire3() {
+    const nx = $('upNextQ'); if (nx) nx.onclick = () => { const q = UP.queue.shift(); Object.assign(UP, { kw: [], step: 0, tx: 0, ty: 0, typeSet: false, seam: null, files: [], name: prettyName(q.name), wFt: '', tileIn: '', rooms: [], styles: [], paper: '', price: '', desc: '', story: '', tags: '', sent: false, link: '' }); upAddDrive(q.id, q.name, 'main'); upRender(); scrollTo({ top: $('stMain').getBoundingClientRect().top + scrollY - 140, behavior: 'smooth' }); };
     const a = $('upAgain'); if (a) { a.onclick = () => { Object.assign(UP, { kw: [], step: 0, tx: 0, ty: 0, typeSet: false, seam: null, files: [], name: '', wFt: '', tileIn: '', rooms: [], styles: [], paper: '', price: '', desc: '', story: '', tags: '', sent: false, link: '' }); upRender(); }; return; }
     $('upBack').onclick = () => { UP.step--; upRender(); };
     $('upNext').onclick = () => { UP.sent = true; UP.sku = nextSku(); UPL_NEW.push({ sku: UP.sku, name: UP.name, src: upMain().src, kind: UP.type === 'mural' ? 'Mural' : 'Repeat' }); upRender(); };
