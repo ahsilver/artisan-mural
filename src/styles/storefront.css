@@ -2460,3 +2460,17 @@
 .am .up-prog{margin:0;padding:10px 14px;font-size:12.5px;color:var(--ink-2);background:var(--soft);border-bottom:1px solid var(--line)}.am .up-prog b{color:var(--ink)}
 .am .up-mk{display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.85);padding:6px 0}
 .am .up-sharp{position:absolute;left:6px;right:6px;bottom:6px;z-index:2;display:flex;align-items:center;justify-content:center;padding:5px 6px;border-radius:999px;background:rgba(255,255,255,.94);font-size:10.5px;color:var(--ink)}
+
+/* Pro / Sell banners in the new style, right under the banner (phones: in the quick links instead) */
+.am .duo-top{margin-top:clamp(14px,2vw,22px)}
+.am .qrow{grid-template-columns:repeat(5,1fr)!important}
+.am .duo2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.am .d2{display:grid;grid-template-columns:120px minmax(0,1fr) auto;align-items:center;gap:16px 20px;background:var(--soft);border-radius:14px;padding:12px 18px 12px 12px;color:var(--ink);text-decoration:none;transition:background .2s}
+.am .d2:hover{background:#EDE6DA}
+.am .d2 img{width:120px;height:88px;object-fit:cover;border-radius:10px}
+.am .d2-txt{display:grid;gap:2px;min-width:0}
+.am .d2-txt b{font:400 clamp(20px,1.8vw,26px)/1.15 var(--f-display)}
+.am .d2-txt small{font-size:13px;color:var(--ink-2)}
+.am .d2 .btn{border-radius:10px;white-space:nowrap}
+@media (max-width:1000px){.am .duo2{grid-template-columns:1fr}}
+@media (max-width:640px){.am .duo-top{display:none}.am .qrow a{font-size:10.5px!important;padding:8px 2px!important}.am .qrow span{width:40px!important;height:40px!important}}

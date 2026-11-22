@@ -185,12 +185,22 @@ function Home() {
       <div className="pg">
         {on("hero") && <Hero live={live} home={home} />}
         <nav className="qrow" aria-label="Quick links">
-          <Link to="/browse"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z" /></svg></span>All designs</Link>
           <Link to="/custom-request"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z M4 15l5-4 4 3 3-2 4 3 M15 9.5h.01" /></svg></span>Your own image</Link>
           <Link to="/custom-request"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></span>Post a request</Link>
           <Link to="/designers"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21c0-4 3-6 7-6s7 2 7 6 M17 11a3 3 0 1 0 0-6 M22 21c0-3-2-5-5-5.5" /></svg></span>Designers</Link>
+          <Link to="/pro"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c.6 4.6 2.4 6.4 7 7-4.6.6-6.4 2.4-7 7-.6-4.6-2.4-6.4-7-7 4.6-.6 6.4-2.4 7-7z" /></svg></span>Artisan Pro</Link>
+          <Link to="/sell"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4l6 6-8.5 8.5-6-6z M5.5 12.5 3 21l8.5-2.5" /></svg></span>Sell your art</Link>
         </nav>
       </div>
+
+      {on("duo") && (
+        <section className="pg duo-top" aria-label="Artisan Pro and selling your art">
+          <div className="duo2">
+            <Link className="d2" to="/pro"><img src={COVER("hotel")} alt="" loading="lazy" /><span className="d2-txt"><span className="k">For design professionals</span><b>Artisan Pro</b><small>Trade pricing, free samples and one specialist for every project.</small></span><span className="btn btn-wine">Apply</span></Link>
+            <Link className="d2" to="/sell"><img src={big ? flatPic(big) : COVER("living-room")} alt="" loading="lazy" /><span className="d2-txt"><span className="k">For artists</span><b>Sell your designs</b><small>We print and ship to order. You earn on every sale.</small></span><span className="btn btn-wine">Apply</span></Link>
+          </div>
+        </section>
+      )}
 
       {on("look") && withRoom.length > 0 && (
         <div className="pg sec">
@@ -231,14 +241,6 @@ function Home() {
         </section>
       )}
 
-      {on("duo") && (
-        <section className="pg">
-          <div className="duo">
-            <Link to="/pro"><span className="ic"><Ico id="i-spark" /></span><span><b>Artisan Pro for designers &amp; decorators</b><small>Trade pricing, free samples, a dedicated specialist</small></span><em>Apply</em></Link>
-            <Link to="/sell"><span className="ic"><Ico id="i-brush" /></span><span><b>Are you an artist? Sell your designs</b><small>We print and ship; you earn on every sale</small></span><em>Apply</em></Link>
-          </div>
-        </section>
-      )}
 
       {on("trends") && trends.length > 0 && (
         <section className="sec pg">
