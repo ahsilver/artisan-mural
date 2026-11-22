@@ -64,41 +64,12 @@ export type Material = {
   standard?: boolean | undefined;
 };
 
+/** The shop's four materials (as in the approved preview). Prices = base $/sq ft + priceAdj; the owner edits both in the back office. */
 export const defaultMaterials: Material[] = [
-  { id: "canvas", name: "Canvas", blurb: "A woven canvas texture with the character of an artist’s canvas.", factor: 1, priceAdj: 0.5, sampleIn: 2, texture: canvasTexture.url },
+  { id: "canvas", name: "Canvas", blurb: "A woven canvas texture with the character of an artist’s canvas.", factor: 1, priceAdj: 0.5, sampleIn: 2, texture: canvasTexture.url, standard: true },
+  { id: "linen", name: "Linen", blurb: "A finely woven linen texture for a subtle, fabric-like finish.", factor: 1, priceAdj: 0.5, sampleIn: 2, texture: linenTexture.url },
   { id: "grasscloth", name: "Grasscloth", blurb: "An organic grasscloth-style surface with a pronounced woven texture.", factor: 1, priceAdj: 1.0, sampleIn: 2, texture: grassclothTexture.url },
-  { id: "linen", name: "Linen", blurb: "A finely woven linen texture for a subtle fabric-like finish.", factor: 1, priceAdj: 0.5, sampleIn: 2, texture: linenTexture.url },
   { id: "suede", name: "Suede", blurb: "A softly embossed suede texture with a fine, understated grain.", factor: 1, priceAdj: 1.0, sampleIn: 2, texture: suedeTexture.url },
-  {
-    id: "matte-smooth",
-    name: "Matte smooth (house standard)",
-    blurb: "Low-sheen paper-weave, paste the wall. Our everyday finish.",
-    factor: 1, standard: true, priceAdj: 0,
-  },
-  {
-    id: "textured-plaster",
-    name: "Textured plaster",
-    blurb: "Fine grain that reads like hand-finished plaster. Hides wall flaws.",
-    factor: 1, priceAdj: 0.75, sampleIn: 2,
-  },
-  {
-    id: "heavy-linen",
-    name: "Heavy linen weave",
-    blurb: "Woven look with real depth. Best for murals and feature walls.",
-    factor: 1, priceAdj: 1.25, sampleIn: 2,
-  },
-  {
-    id: "peel-stick",
-    name: "Peel & stick",
-    blurb: "Removable self-adhesive. Renters, nurseries, temporary rooms.",
-    factor: 1, priceAdj: 1.0, sampleIn: 2,
-  },
-  {
-    id: "scrub-vinyl",
-    name: "Scrubbable vinyl",
-    blurb: "Wipe-clean and moisture resistant. Kitchens, bathrooms, cafés.",
-    factor: 1, priceAdj: 1.5, sampleIn: 2,
-  },
 ];
 
 export const materials: Material[] = [...defaultMaterials];
@@ -114,7 +85,8 @@ export function recommendedOf(design: { recommendedFinishes?: string[] | undefin
 }
 export function resolvedMaterials(settings: MaterialSetting[] = []): Material[] {
   const merged = new Map(defaultMaterials.map(m => [m.id, { ...m, active: true }]));
-  settings.forEach(m => merged.set(m.id, m));
+  // only the shop's own materials; saved settings change their names, texts and prices
+  settings.forEach(m => { const base = merged.get(m.id); if (base) merged.set(m.id, { ...base, ...m }); });
   return [...merged.values()].filter(m => m.active).sort((a, b) => Number(!!b.standard) - Number(!!a.standard));
 }
 
