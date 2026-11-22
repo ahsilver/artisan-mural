@@ -5142,21 +5142,31 @@ async function tiffPreview(read, maxSide = 2000, onProgress, readMany) {
         const y = rowOf(j);
         const strip = Math.floor(y / info.rps);
         const { data, rowLen } = await decodeStrip(info, raw, strip);
-        const r0 = (y - strip * info.rps) * rowLen;
+        // average every row of this strip that falls inside the output pixel (no extra reading), so fine texture doesn't turn into streaks
+        const s0 = strip * info.rps, rowsInStrip = Math.min(info.rps, info.height - s0);
+        const ya = Math.max(s0, j * step), yb = Math.min(s0 + rowsInStrip, (j + 1) * step);
+        const rows = [];
+        const rStep = Math.max(1, Math.ceil((yb - ya) / 6));
+        for (let yy = ya; yy < yb; yy += rStep)
+            rows.push((yy - s0) * rowLen);
+        if (!rows.length)
+            rows.push((y - s0) * rowLen);
+        const n = Math.min(step, 6);
         for (let x = 0; x < ow; x++) {
-            let R = 0, G = 0, B = 0;
-            const n = Math.min(step, 4);
-            for (let q = 0; q < n; q++) {
-                const sx = x * step + Math.floor((q * step) / n);
-                toRgb(info, data, r0 + sx * info.spp, tmp, 0);
-                R += tmp[0];
-                G += tmp[1];
-                B += tmp[2];
-            }
+            let R = 0, G = 0, B = 0, c = 0;
+            for (const r0 of rows)
+                for (let q = 0; q < n; q++) {
+                    const sx = x * step + Math.floor(((q + 0.5) * step) / n);
+                    toRgb(info, data, r0 + sx * info.spp, tmp, 0);
+                    R += tmp[0];
+                    G += tmp[1];
+                    B += tmp[2];
+                    c++;
+                }
             const o = (j * ow + x) * 4;
-            img.data[o] = R / n;
-            img.data[o + 1] = G / n;
-            img.data[o + 2] = B / n;
+            img.data[o] = R / c;
+            img.data[o + 1] = G / c;
+            img.data[o + 2] = B / c;
             img.data[o + 3] = 255;
         }
         done++;
@@ -5306,7 +5316,7 @@ async function tiffCrop(read, box, sink, onProgress) {
     const step = Math.max(1, Math.ceil(Math.max(info.width, info.height) / maxSide)), strips = new Set();
     for (let j = 0; j < Math.floor(info.height / step); j++) strips.add(Math.floor(Math.min(info.height - 1, j * step + Math.floor(step / 2)) / info.rps));
     let bytes = 0; for (const st of strips) bytes += info.counts[st] || 0;
-    if (bytes > 60 * 1024 * 1024) return null; // would need most of the file
+    if (bytes > (maxSide >= 2000 ? 220 : 60) * 1024 * 1024) return null; // would need most of the file
     const { blob } = await TIFF.tiffPreview(reader, maxSide, undefined, readMany);
     return URL.createObjectURL(blob);
   }
