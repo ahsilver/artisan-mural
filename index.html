@@ -2277,6 +2277,151 @@ header{position:relative}
 article.card .im{position:relative;display:block}
 article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .35s ease;pointer-events:none}
 @media (hover:hover){article.card.flat-on .im-flat{opacity:1}}
+/* chat fits the screen exactly, so the page never scrolls under the header */
+#view-chat .crumbs-row{padding-top:8px;padding-bottom:8px}
+#view-chat .chat{height:max(460px,calc(100svh - var(--hdrH,113px) - 64px))!important;margin-bottom:16px}
+@media (max-width:860px){#view-chat .chat{height:calc(100svh - var(--hdrH,108px) - 44px)!important;margin-bottom:0}#view-chat .crumbs-row{display:none}}
+/* phones: like WhatsApp — a full-screen list of chats, tap one to open it, back arrow to return */
+.ct-back{display:none}
+@media (max-width:860px){
+  #view-chat .chat{display:block!important;position:relative}
+  #view-chat .chat .inbox{display:none}
+  #view-chat .chat .ct-main{display:grid!important;height:100%}
+  #view-chat .chat.list-mode .inbox{display:flex;flex-direction:column;height:100%;overflow:auto;background:#fff}
+  #view-chat .chat.list-mode .ct-main{display:none!important}
+  #view-chat .inbox-h{padding:14px 16px 8px}
+  #ctThreads{display:block!important;overflow:visible!important}
+  #ctThreads .thread{display:grid!important;grid-template-columns:auto minmax(0,1fr) auto!important;width:auto!important;border-right:0!important;border-bottom:1px solid #F0ECE5!important;margin:0!important;border-radius:0!important;padding:12px 16px!important}
+  #ctThreads .thread small,#ctThreads .thread time{display:block!important}
+  #ctThreads .thread .av{width:46px;height:46px}
+  #ctThreads .thread b{font-size:15px}
+  .ct-back{display:grid;place-items:center;width:34px;height:34px;margin-left:-6px;border:0;background:none;cursor:pointer;color:var(--ink)}
+  .ct-back svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+}
+/* hero samples: soft wallpaper material lying on the table, not cards */
+.flat a.s{border:0!important;clip-path:none!important;box-sizing:border-box;
+  border-radius:3px 6px 3px 7px/6px 3px 7px 3px!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 3px rgba(60,40,25,.18),0 2px 3px rgba(60,42,28,.22),0 14px 26px -14px rgba(60,42,28,.45)!important;overflow:hidden}
+/* woven fabric texture over the print */
+.flat a.s::before{background:url(tex/linen-grain.webp) 0 0/130px auto repeat!important;mix-blend-mode:multiply!important;opacity:.75!important}
+/* soft drape: gentle waves of light, like heavy fabric that doesn't lie perfectly flat */
+.flat a.s::after{background:
+  linear-gradient(97deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 12%,rgba(60,40,25,.10) 24%,rgba(255,255,255,.12) 38%,rgba(255,255,255,0) 50%,rgba(60,40,25,.12) 64%,rgba(255,255,255,.10) 80%,rgba(60,40,25,.14) 100%),
+  radial-gradient(120% 70% at 50% 0%,rgba(255,255,255,.10),rgba(255,255,255,0) 60%)!important;border-radius:inherit}
+.flat a.s:nth-of-type(even)::after{background:
+  linear-gradient(8deg,rgba(60,40,25,.12) 0%,rgba(255,255,255,.12) 18%,rgba(255,255,255,0) 32%,rgba(60,40,25,.10) 48%,rgba(255,255,255,.14) 66%,rgba(60,40,25,.10) 84%,rgba(255,255,255,.08) 100%),
+  radial-gradient(90% 60% at 0% 100%,rgba(60,40,25,.10),rgba(60,40,25,0) 70%)!important}
+.flat a.s:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 3px rgba(60,40,25,.18),0 4px 6px rgba(60,42,28,.2),0 24px 36px -16px rgba(60,42,28,.5)!important}
+/* hero samples, bent: soft wavy edges and a bend in the light, like a sheet of wallpaper lying on the table */
+.flat a.s{background:none!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important;filter:drop-shadow(0 2px 2px rgba(60,42,28,.25)) drop-shadow(0 12px 14px rgba(60,42,28,.22))}
+.flat a.s::before,.flat a.s::after{content:none!important}
+.flat a.s:hover{box-shadow:none!important;filter:drop-shadow(0 3px 3px rgba(60,42,28,.25)) drop-shadow(0 20px 20px rgba(60,42,28,.28))}
+.flat .sk{position:absolute;inset:0;background-size:cover;background-position:center;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M1.5 2.5C28 0.2 66 3.8 98.6 1.2C99.8 28 97.4 66 99.2 98.4C70 99.8 32 96.8 0.8 98.9C2.6 70 0.2 32 1.5 2.5Z'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M1.5 2.5C28 0.2 66 3.8 98.6 1.2C99.8 28 97.4 66 99.2 98.4C70 99.8 32 96.8 0.8 98.9C2.6 70 0.2 32 1.5 2.5Z'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat}
+.flat a.s:nth-of-type(3n+2) .sk{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0.8 1.4C34 3.6 68 0 99.2 2.8C97.6 34 100 70 98.2 99.1C66 97 30 100 1.6 97.6C0 66 2.8 30 0.8 1.4Z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0.8 1.4C34 3.6 68 0 99.2 2.8C97.6 34 100 70 98.2 99.1C66 97 30 100 1.6 97.6C0 66 2.8 30 0.8 1.4Z'/%3E%3C/svg%3E")}
+.flat a.s:nth-of-type(3n) .sk{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M2 1C30 2.8 62 -0.2 98 2C99.6 30 97 62 99.4 97.8C64 99.6 34 96.6 1.2 99.2C2.8 64 0 34 2 1Z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M2 1C30 2.8 62 -0.2 98 2C99.6 30 97 62 99.4 97.8C64 99.6 34 96.6 1.2 99.2C2.8 64 0 34 2 1Z'/%3E%3C/svg%3E")}
+.flat .sk::before{content:"";position:absolute;inset:0;background:url(tex/linen-grain.webp) 0 0/130px auto repeat;mix-blend-mode:multiply;opacity:.75}
+.flat .sk::after{content:"";position:absolute;inset:0;background:
+  linear-gradient(100deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.05) 14%,rgba(60,40,25,.20) 30%,rgba(60,40,25,.04) 42%,rgba(255,255,255,.20) 58%,rgba(255,255,255,0) 70%,rgba(60,40,25,.16) 86%,rgba(255,255,255,.10) 100%),
+  radial-gradient(110% 60% at 50% -5%,rgba(255,255,255,.14),rgba(255,255,255,0) 60%)}
+.flat a.s:nth-of-type(even) .sk::after{background:
+  linear-gradient(12deg,rgba(60,40,25,.18) 0%,rgba(255,255,255,.18) 20%,rgba(255,255,255,0) 34%,rgba(60,40,25,.18) 50%,rgba(255,255,255,.20) 68%,rgba(60,40,25,.10) 86%,rgba(255,255,255,.12) 100%),
+  radial-gradient(90% 60% at 0% 100%,rgba(60,40,25,.14),rgba(60,40,25,0) 70%)}
+/* changes page: the chat demo button stays inside its box */
+#custom .chatdemo .cd-cta{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:calc(100% - 20px);max-width:calc(100% - 20px);white-space:normal;text-align:center;font-size:12px;min-height:42px}
+/* hero samples: a name label on each piece; on a mouse it shows on hover, on touch screens it is always visible */
+.flat .s-lab{position:absolute;left:8%;bottom:9%;z-index:2;display:inline-flex;align-items:center;gap:4px;max-width:84%;padding:6px 8px 6px 10px;border-radius:999px;background:rgba(255,255,255,.92);color:#201D1D;font:600 11px/1.1 var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 4px 12px -4px rgba(32,29,29,.35);opacity:0;transform:translateY(4px);transition:opacity .25s,transform .25s;pointer-events:none}
+.flat .s-lab svg{width:12px;height:12px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.flat a.s:hover .s-lab,.flat a.s:focus-visible .s-lab{opacity:1;transform:none}
+@media (hover:none){.flat .s-lab{opacity:1;transform:none}.flat .tag{display:none}}
+@media (hover:none) and (max-width:700px){.flat .s-lab{font-size:9.5px;padding:4px 6px 4px 8px}}
+/* owner back office */
+#view-admin .acc-grid{grid-template-columns:220px minmax(0,1fr)}
+#boNav{border:0;gap:0}
+#boNav .bo-g{display:block;padding:14px 12px 6px;font:700 10.5px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
+#boNav a{border:0;border-radius:6px;padding:9px 12px;font-size:13.5px}
+#boNav a[aria-current="true"]{background:#201D1D;color:#fff}
+#boNav a em{background:#B03A2E;color:#fff}
+#boMain h2{font:400 26px/1.15 var(--f-display);margin:0 0 6px}
+#boMain h3{font:600 14px/1.3 var(--f-body);margin:16px 0 8px}
+#boMain .hint{margin:0 0 14px}
+#boMain .stat{border-radius:10px;color:inherit;text-decoration:none}
+#boMain .tbl td small{color:var(--ink-2)}
+.bo-files{white-space:nowrap}.bo-files>*+*{margin-left:6px}
+.bo-sel{height:32px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font-size:12.5px;padding:0 6px}
+.bo-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:4px 0 10px}
+.bo-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.bo-tabs button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:7px 12px;font-size:12.5px;cursor:pointer;color:var(--ink)}
+.bo-tabs button[aria-pressed="true"]{background:#201D1D;color:#fff;border-color:#201D1D}
+.bo-tabs em{font-style:normal;opacity:.7;margin-left:3px}
+#boDq{height:36px;border:1px solid var(--line);border-radius:999px;padding:0 14px;min-width:220px;background:var(--paper);font-size:13px}
+.bo-thumbs{display:flex;gap:4px}.bo-thumbs img{width:44px!important;height:32px!important}
+.bo-toast{position:sticky;top:calc(var(--hdrH,113px) + 8px);z-index:5;background:#201D1D;color:#fff;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px}
+.bo-toast[hidden]{display:none}
+.bo-inline{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.bo-inline input{height:36px;border:1px solid var(--line);border-radius:6px;padding:0 10px;background:var(--paper)}
+/* switches */
+.sw{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:center;cursor:pointer}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.sw>span{grid-row:span 2;width:38px;height:22px;border-radius:999px;background:#CFC8BC;position:relative;transition:background .2s}
+.sw>span::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.sw input:checked+span{background:#4E7A4A}.sw input:checked+span::after{transform:translateX(16px)}
+.sw input:focus-visible+span{outline:2px solid #201D1D;outline-offset:2px}
+.sw input:disabled+span{opacity:.4}
+.sw b{font-size:13.5px;font-weight:600}.sw small{grid-column:2;font-size:12px;color:var(--ink-2)}
+.sw.sm{display:inline-grid}
+/* forms */
+.bo-form fieldset{border:1px solid var(--line);border-radius:12px;padding:14px 16px 16px;margin:0 0 14px;background:var(--paper)}
+.bo-form legend{padding:0 6px;font:600 13px/1 var(--f-body);letter-spacing:.04em}
+.bo-form label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-2);margin-top:8px}
+.bo-form input:not([type=checkbox]):not([type=file]),.bo-form textarea,.bo-form select,.bd-edit input,.bd-edit textarea{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font:14px/1.3 var(--f-body);color:var(--ink);background:#fff}
+.bo-form .sw{margin-top:0}
+.bo-switches{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 16px}
+.bo-g2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.bo-l{display:block;font-size:12.5px;color:var(--ink-2);margin:10px 0 4px}
+.bo-slide+.bo-slide{border-top:1px solid var(--line);margin-top:14px}
+.bo-slide h3{margin-top:12px!important}
+.bo-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.bo-tile{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}
+.bo-tile small.hint{display:block;margin:6px 0 0;font-size:11px;word-break:break-all}
+.pp{display:grid;gap:6px}
+.pp-img{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:6px;background:var(--soft)}
+.pp-ctl{display:grid;gap:6px}
+.pp-ctl select,.pp-ctl input{font-size:12.5px!important;padding:6px 8px!important}
+.pp-up{justify-self:start;cursor:pointer}
+.bo-save{position:sticky;bottom:0;display:flex;gap:8px;padding:12px 0;background:linear-gradient(transparent,var(--bg,#FBF9F5) 30%)}
+/* design & designer window */
+.bo-dlg{width:min(860px,calc(100vw - 24px));max-height:calc(100svh - 40px);border:0;border-radius:14px;padding:0;box-shadow:0 30px 80px -20px rgba(0,0,0,.45)}
+.bo-dlg::backdrop{background:rgba(20,15,15,.45)}
+.bo-dlg>div{padding:20px 22px 22px;overflow:auto}
+.bo-x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;border:0;background:#F2EEE7;cursor:pointer;font-size:14px;z-index:1}
+.bd-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-right:40px}
+.bd-h h2{font:400 26px/1.1 var(--f-display);margin:2px 0}.bd-h small{color:var(--ink-2)}
+.bd-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-top:14px}
+.bd-pic img{width:100%;border-radius:8px;display:block}
+.bd-file dl,.bd-dl2{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:13px}
+.bd-file dt,.bd-dl2 dt{color:var(--ink-2)}.bd-file dd,.bd-dl2 dd{margin:0}
+.bd-dl{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.bd-file .hint{font-size:11.5px;margin-top:8px}
+.bd-rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:8px 0}
+.bd-rooms img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;display:block}
+.bd-edit{display:grid;gap:8px;max-width:520px}.bd-edit label{display:grid;gap:4px;font-size:12.5px;color:var(--ink-2)}.bd-edit button{justify-self:start}
+.bd-act{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.bo-dlg .sw{margin-top:16px}
+@media (max-width:860px){
+  #view-admin .acc-grid{grid-template-columns:1fr}
+  #boNav{display:flex!important;overflow-x:auto;gap:4px;padding-bottom:6px;position:static;-webkit-overflow-scrolling:touch}
+  #boNav .bo-g{display:none}
+  #boNav a{flex:none;border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:12.5px;white-space:nowrap}
+  .bd-grid,.bo-g2{grid-template-columns:1fr}
+  #boDq{min-width:0;width:100%}
+}
+@media (max-width:640px){
+  #boMain .tbl thead{display:none}
+  #boMain .tbl,#boMain .tbl tbody{display:block}
+  #boMain .tbl tr{display:grid;grid-template-columns:58px minmax(0,1fr);gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  #boMain .tbl td{border:0;padding:0;grid-column:2}
+  #boMain .tbl td:first-child{grid-column:1;grid-row:1 / span 6}
+  #boMain .bo-files{white-space:normal;display:flex;flex-wrap:wrap;gap:6px}#boMain .bo-files>*+*{margin-left:0}
+}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -2370,8 +2515,8 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
         <a class="slide-link" id="s2link" href="#design-animal-kingdom"><img id="s2img" src="d/in-harmony-room2.webp" alt="In Harmony in a room" loading="lazy"></a>
         <div class="fade"></div>
       </div>
-      <div class="slide" data-k="Don't love a detail?" data-t="Our designers will change it." data-p="Remove an animal, change a color, make it bigger. Ask the designer before you order, free on every mural.">
-        <a class="slide-link s3split" id="s3link" href="#changes" aria-label="See how changes work"><span class="s3a"><img src="img/tree-before.webp" alt="Misty Glade, original"><em>Original</em></span><span class="s3b"><img id="s3img" src="img/tree-after.webp" alt="The same mural with the tree removed by the designer" loading="lazy"><em>Tree removed for you</em></span></a>
+      <div class="slide" data-k="Don't love a detail?" data-t="Our designers will change it." data-p="Remove an animal, change a color, make it bigger. Chat with the designer before you order, free on every mural.">
+        <a class="slide-link s3split" id="s3link" href="#changes" aria-label="See how changes work"><span class="s3a"><img src="img/forest-before.webp" alt="Misty Glade, original"><em>Original</em></span><span class="s3b"><img id="s3img" src="img/forest-after.webp" alt="The same mural with the tree removed by the designer" loading="lazy"><em>Tree removed for you</em></span></a>
         <div class="fade"></div>
       </div>
       <div class="hero-copy">
@@ -2472,14 +2617,12 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
       <a class="tile big" href="#designers-all"><img src="d/in-harmony-full.webp" alt="" loading="lazy"><span class="lab"><strong>All designers</strong></span></a>
       <a class="tile" href="#designer-maren-holt"><img src="d/wild-bouquet-room1.webp" alt="" loading="lazy"><span class="lab"><strong>MAREN HOLT</strong><small>Fades &amp; fine repeats · Copenhagen</small></span></a>
       <a class="tile" href="#designer-tomas-reyes"><img src="d/shadow-leaf-room1.webp" alt="" loading="lazy"><span class="lab"><strong>TOMÁS REYES</strong><small>Palms &amp; light · Valparaíso</small></span></a>
-      <a class="tile" href="#designer-ines-okafor"><img src="d/jumbo-dog-sketch-roll.webp" alt="" loading="lazy"><span class="lab"><strong>INÈS OKAFOR</strong><small>Happy repeats · Lagos</small></span></a>
-      <a class="tile" href="#designer-yuki-arai"><img src="d/vine-charcoal-roll.webp" alt="" loading="lazy"><span class="lab"><strong>YUKI ARAI</strong><small>Ink &amp; empty space · Kyoto</small></span></a>
     </div>
   </section>
 
   <section class="pg sec chg-band" aria-label="Changes on any design">
       <div class="cb-in">
-        <img src="img/tree-after.webp" alt="" loading="lazy">
+        <img src="img/forest-after.webp" alt="" loading="lazy">
         <div class="cb-txt"><span class="k">Made-to-order changes</span><b>Love it, but want one thing changed?</b><p>Our designers can change any design for your wall. Free to ask.</p></div>
         <ol class="cb-steps"><li>Pick a design</li><li>Tell the designer</li><li>Approve the proof</li></ol>
         <a class="btn btn-wine" href="#changes">How it works</a>
@@ -2515,7 +2658,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
       <div class="fd-body" id="fBody"></div>
       <footer><button type="button" class="btn optline" id="fClearAll">Clear all</button><button type="button" class="btn btn-wine" id="fApply">Apply</button></footer>
     </aside>
-    <p class="empty" id="shopEmpty" hidden>No designs match yet. <a href="#shop">See all designs</a> or <a href="#changes">ask a designer to make one</a>.</p>
+    <p class="empty" id="shopEmpty" hidden>No designs match yet. <a href="#shop">See all designs</a> or <a href="#changes">chat with a designer to make one</a>.</p>
   </section>
 </div>
 <div id="view-size" hidden>
@@ -2589,7 +2732,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
           <p id="bigText"></p>
           <div class="notice-opts">
             <button type="button" class="btn btn-wine btn-sm" id="optEnlarge">Enlarge it</button>
-            <a class="btn btn-sm optline" href="#" id="optAsk">Ask the designer to extend it</a>
+            <a class="btn btn-sm optline" href="#" id="optAsk">Chat with the designer to extend it</a>
           </div>
         </div>
 
@@ -2751,7 +2894,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 
       <section class="oi-contact">
         <div><b>Need a hand?</b><p>Not sure your picture will work, or want advice on size and paper? We're happy to look at it first.</p></div>
-        <div class="oi-c-btns"><a class="btn btn-wine" href="#request">Ask a designer</a><a class="btn optline" href="#account-messages">Message the studio</a></div>
+        <div class="oi-c-btns"><a class="btn btn-wine" href="#request">Chat with a designer</a><a class="btn optline" href="#account-messages">Message the studio</a></div>
       </section>
     </div>
 
@@ -2773,8 +2916,8 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
       </ul>
     </div>
       <div class="ba" id="ba">
-        <img src="img/tree-before.webp" alt="Mural with a large tree on the left" loading="lazy">
-        <img class="after" src="img/tree-after.webp" alt="The same mural with the tree removed by the designer" loading="lazy">
+        <img src="img/forest-before.webp" alt="Forest mural with a large dark tree in the middle" loading="lazy">
+        <img class="after" src="img/forest-after.webp" alt="The same mural with the tree removed by the designer" loading="lazy">
         <span class="tg l">Before</span><span class="tg r">After · tree removed</span>
         <span class="rule"></span><span class="knob"><svg class="ico"><use href="#i-lr"/></svg></span>
         <label for="bar" class="sr">Drag to compare before and after</label>
@@ -2784,13 +2927,13 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
       <div class="cz-side chatdemo" aria-label="Example chat with a designer">
         <header class="ct-head cd-head"><span class="av" style="background:#9C7A45">TR</span><div><b>Tomás Reyes</b><small>Usually replies within an hour</small></div></header>
         <div class="cd-msgs">
-          <div class="msg me"><div class="bub">Hi! I love Misty Glade, but the tree on the left covers my window. Could you take it out?</div><time>10:02</time></div>
-          <div class="msg me"><div class="bub card"><img src="img/tree-before.webp" alt="The original with the tree circled"><span class="cbody"><b>The tree I mean</b><small>Original · my 14 × 9 ft wall</small></span></div><time>10:02</time></div>
+          <div class="msg me"><div class="bub">Hi! I love Misty Glade, but could you take out the big dark tree in the middle? I want it lighter.</div><time>10:02</time></div>
+          <div class="msg me"><div class="bub card"><img src="img/forest-before.webp" alt="The original with the tree circled"><span class="cbody"><b>The tree I mean</b><small>Original · my 14 × 9 ft wall</small></span></div><time>10:02</time></div>
           <div class="msg"><div class="bub">Of course! Here's a proof with the tree removed:</div><time>10:09</time></div>
-          <div class="msg"><div class="bub card"><img src="img/tree-after.webp" alt="Proof: the mural with the tree removed"><span class="cbody"><b>Proof 1 · tree removed</b><small>Sized for your 14 × 9 ft wall</small></span></div><time>10:31</time></div>
+          <div class="msg"><div class="bub card"><img src="img/forest-after.webp" alt="Proof: the mural with the tree removed"><span class="cbody"><b>Proof 1 · tree removed</b><small>Sized for your 14 × 9 ft wall</small></span></div><time>10:31</time></div>
           <div class="msg"><div class="offer"><span class="ot">Price offer</span><span class="op">$60.00</span><p>Ready in 2 days.</p><div class="ob"><span class="btn btn-wine btn-sm">✓ Approved</span></div></div><time>10:34</time></div>
         </div>
-        <a class="btn btn-wine cd-cta" href="#design-animal-kingdom">Ask a designer for a change</a>
+        <a class="btn btn-wine cd-cta" href="#request">Post a request</a>
       </div>
     </div>
     
@@ -2898,6 +3041,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
       </aside>
       <div class="ct-main">
         <header class="ct-head">
+          <button type="button" class="ct-back" id="ctBack" aria-label="All chats"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
           <span class="av" id="ctAv">MH</span>
           <div><b id="ctName">Maren Holt</b><small><span id="ctResp">Usually replies within a few hours</span> · <a href="#" id="ctProfile">Profile</a></small></div>
           <span hidden><img id="ctThumb" src="" alt=""><b id="ctDName"></b><a id="ctDLink" href="#"></a></span><div class="ct-reqs"><button type="button" class="ct-reqs-btn" id="ctReqsBtn" aria-expanded="false" aria-controls="ctReqsPop">Requests <span id="ctReqN">1</span> <span aria-hidden="true">▾</span></button><div class="ct-reqs-pop" id="ctReqsPop" hidden></div></div>
@@ -3141,9 +3285,10 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 <div id="view-admin" hidden>
   <div class="pg crumbs-row"><nav class="crumbs" aria-label="Breadcrumb"><a href="#home">Home</a><span>/</span><b>Back office</b></nav></div>
   <section class="pg acc">
-    <div class="pg-head acc-head"><div><span class="k">Owner · back office</span><h1>Everything in one place.</h1><p>Orders and print files, every request and chat, designs to review, designers and Pro applications.</p></div></div>
+    <div class="pg-head acc-head"><div><span class="k">Owner · back office</span><h1>Everything in one place.</h1><p>Orders and print files, every design and its original file, designers, the homepage, menu and prices.</p></div></div>
     <div class="acc-grid"><nav class="acc-nav" id="boNav" aria-label="Back office sections"></nav><div class="acc-main" id="boMain"></div></div>
   </section>
+  <dialog class="bo-dlg" id="boDlg" aria-label="Details"><button type="button" class="bo-x" aria-label="Close" onclick="this.closest('dialog').close()">✕</button><div id="boDlgBody"></div></dialog>
 </div>
 
 <div id="view-cart" hidden>
@@ -3356,7 +3501,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
           <span class="av" id="avIni">LS</span>
           <div><b>Want something changed?</b><small>Free to ask · <span id="chBy">Linden Studio</span> replies within an hour</small></div>
         </div>
-                <a class="btn btn-wine" id="chgGo" href="#chat-animal-kingdom">Ask the designer</a>
+                <a class="btn btn-wine" id="chgGo" href="#chat-animal-kingdom">Chat with the designer</a>
       </div>
     </div>
   </section>
@@ -3483,11 +3628,21 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
     M({ slug: 'luxury-henley', name: 'Luxury Henley', by: 'Maren Holt', ini: 'MH', sku: 'AM-1112', rooms: ['bedroom', 'dining', 'living'], styles: ['ombre', 'moody', 'minimal'], colors: ['grey', 'blue'], line: 'A fade from pale grey to charcoal.', ov: 'A soft grey-to-charcoal ombre with a fine paper texture. Works in offices, hallways and hotel corridors.' }),
     { slug: 'jumbo-dog-sketch', name: 'Jumbo Dog Sketch', by: 'Inès Okafor', ini: 'IO', sku: 'AM-1120', kind: 'repeat', repeatIn: 50, match: 'Straight match', rooms: ['kids', 'playroom', 'entry'], styles: ['animals', 'line-art'], colors: ['green', 'beige'], line: 'Big, loose dog sketches in army green on ivory beige.', ov: 'Dozens of dogs drawn in a quick, loose line in army green and blush on ivory. A repeating pattern, so it covers any size of wall with no visible joins.' },
     { slug: 'my-favorite-dogs', name: 'My Favorite Dogs', by: 'Inès Okafor', ini: 'IO', sku: 'AM-1124', kind: 'repeat', repeatIn: 60, match: 'Straight match', rooms: ['kids', 'playroom', 'entry'], styles: ['animals'], colors: ['red', 'grey'], line: 'Dachshunds, setters and Dalmatians on warm grey.', ov: 'Painted dogs of every breed, scattered on a warm grey ground. A repeating pattern for playrooms, mudrooms and dog lovers.' },
-    { slug: 'vine-charcoal', name: 'Vine', by: 'Maren Holt', ini: 'MH', sku: 'EH-036', kind: 'repeat', repeatIn: 54, match: 'Straight match', rooms: ['bedroom', 'living', 'kitchen', 'dining'], styles: ['line-art', 'minimal', 'black-white', 'botanical'], colors: ['white', 'black', 'beige'], line: 'Fine vines and brushed leaves. Two colorways.', ov: 'Thin trailing vines with brush-stroke leaves. Comes in Charcoal (black leaves on white) and Oatmeal (white leaves on warm beige). Ask the designer for any other color.',
+    { slug: 'vine-charcoal', name: 'Vine', by: 'Maren Holt', ini: 'MH', sku: 'EH-036', kind: 'repeat', repeatIn: 54, match: 'Straight match', rooms: ['bedroom', 'living', 'kitchen', 'dining'], styles: ['line-art', 'minimal', 'black-white', 'botanical'], colors: ['white', 'black', 'beige'], line: 'Fine vines and brushed leaves. Two colorways.', ov: 'Thin trailing vines with brush-stroke leaves. Comes in Charcoal (black leaves on white) and Oatmeal (white leaves on warm beige). Chat with the designer for any other color.',
       colorways: [{ slug: 'vine-charcoal', name: 'Charcoal' }, { slug: 'vine-oatmeal', name: 'Oatmeal' }] },
   ];
   DESIGNS.forEach(d => { d.colors = [...new Set((d.colorways ? d.colorways.flatMap(c => AUTO_COLORS[c.slug] || []) : AUTO_COLORS[d.slug] || []).concat(d.slug === 'vine-charcoal' ? ['black'] : []))]; });
-  const bySlug = Object.fromEntries(DESIGNS.map(d => [d.slug, d])); bySlug['vine-oatmeal'] = bySlug['vine-charcoal'];
+  /* ---------- owner back office store (preview: kept in this browser) ---------- */
+  const BOK = 'am_bo'; let BOS = {}; try { BOS = JSON.parse(localStorage.getItem(BOK) || '{}') || {}; } catch (e) {}
+  const boSave = () => { try { localStorage.setItem(BOK, JSON.stringify(BOS)); return true; } catch (e) { alert('Too many uploaded pictures to keep in this preview. Use picture links instead.'); return false; } };
+  const dslug = (n) => n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const ALLD = DESIGNS.slice();
+  const dRec = (k) => (BOS.designs || {})[k] || {};
+  const dState = (k) => dRec(k).st || 'live';
+  const desRec = (k) => (BOS.designers || {})[k] || {};
+  ALLD.forEach(d => { const o = dRec(d.slug); if (o.name) d.name = o.name; if (o.line) d.line = o.line; });
+  for (let i = DESIGNS.length - 1; i >= 0; i--) { const d = DESIGNS[i]; if (dState(d.slug) !== 'live' || desRec(dslug(d.by)).st === 'paused') DESIGNS.splice(i, 1); }
+  const bySlug = Object.fromEntries(ALLD.map(d => [d.slug, d])); bySlug['vine-oatmeal'] = bySlug['vine-charcoal'];
   const $ = id => document.getElementById(id);
   const money = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const heart = '<svg class="ico"><use href="#i-heart"/></svg>';
@@ -3541,10 +3696,11 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
     let seed = day * 2654435761 % 4294967296;
     const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
     const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-    const pool = shuffle(DESIGNS).map(d => d.colorways ? d.colorways[Math.floor(rnd() * d.colorways.length)].slug : d.slug); // one colorway per design
+    const PLAIN = new Set(['vine-oatmeal', 'luxury-henley', 'ombre-smokey']); // close-ups that are almost only background color: never shown as a hero sample
+    const pool = shuffle(DESIGNS).map(d => { if (!d.colorways) return d.slug; const cs = d.colorways.filter(c => !PLAIN.has(c.slug)); return cs.length ? cs[Math.floor(rnd() * cs.length)].slug : null; }).filter(x => x && !PLAIN.has(x)); // one colorway per design
     const nameOf = (s) => { const d = bySlug[s]; return d.colorways ? `${d.name} · ${d.colorways.find(c => c.slug === s).name}` : d.name; };
     document.querySelectorAll('#flat a.s').forEach((a, k) => {
-      const s = pool[k % pool.length]; a.href = '#design-' + s; a.style.backgroundImage = `url(d/${s}-close.webp)`;
+      const s = pool[k % pool.length]; a.href = '#design-' + s; a.style.backgroundImage = 'none'; a.innerHTML = `<i class="sk" style="background-image:url(d/${s}-close.webp)"></i><span class="s-lab">${nameOf(s)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>`;
       a.setAttribute('aria-label', 'Open ' + nameOf(s)); a.title = nameOf(s);
     });
     const tag = (el, s) => { el.innerHTML = `No. ${bySlug[s].sku.replace(/\D/g, '').slice(-3)}<b>${nameOf(s)}</b>`; };
@@ -3556,6 +3712,36 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
     $('s2img').src = `d/${fs}-room${fr}.webp`; $('s2img').alt = `${fd.name} in a room`; $('s2link').href = '#design-' + fs; $('s2link').setAttribute('aria-label', 'Open ' + fd.name);
     $('slide2').dataset.k = `Today's featured mural · ${fd.name}`;
   })();
+  /* ---------- homepage edits from the back office ---------- */
+  const HOME_SECS = [['hero', () => $('hero'), 'Banner slideshow'], ['qrow', () => document.querySelector('#view-home .qrow'), 'Quick links under the banner'], ['look', () => document.querySelector('#view-home .g-cat'), 'Shop by look'], ['rooms', () => $('rooms'), 'Wallpaper for every room'], ['transform', () => document.querySelector('#view-home .split')?.closest('section'), 'Transform your walls'], ['duo', () => $('designers-banner'), 'Artisan Pro & Sell your art'], ['trends', () => $('trends')?.closest('section'), 'Trends'], ['new', () => $('new'), 'New arrivals'], ['designers', () => $('designers'), 'Meet our designers'], ['changes', () => document.querySelector('#view-home .chg-band'), 'Changes banner'], ['signup', () => document.querySelector('#view-home .signup'), 'Email signup']];
+  const TILE_GROUPS = [['look', '.g-cat .tile', 'Shop by look'], ['room', '#rooms .g-app .tile', 'Wallpaper for every room'], ['mood', '.g-look .tile', 'Transform your walls'], ['des', '#designers .g-des .tile', 'Meet our designers']];
+  function boTiles() {
+    const out = [];
+    TILE_GROUPS.forEach(([g, sel, label]) => document.querySelectorAll('#view-home ' + sel).forEach((el, i) => {
+      if (!el.dataset.def) el.dataset.def = JSON.stringify({ img: el.querySelector('img')?.getAttribute('src') || '', t: el.querySelector('strong')?.textContent || '', s: el.querySelector('small')?.textContent || '', href: el.getAttribute('href') || '' });
+      out.push({ key: g + '-' + i, group: label, el, def: JSON.parse(el.dataset.def) });
+    }));
+    const ph = document.querySelector('#view-home .split .ph img');
+    if (ph) { if (!ph.dataset.def) ph.dataset.def = JSON.stringify({ img: ph.getAttribute('src'), t: 'Transform your walls picture', s: '', href: '' }); out.push({ key: 'split', group: 'Transform your walls', el: ph, def: JSON.parse(ph.dataset.def), single: true }); }
+    return out;
+  }
+  const qLinks = () => [...document.querySelectorAll('#view-home .qrow a')];
+  qLinks().forEach(a => { if (!a.dataset.def) a.dataset.def = JSON.stringify({ t: a.lastChild.textContent.trim(), href: a.getAttribute('href') }); });
+  const SLIDE_DEF = [...document.querySelectorAll('#hero .slide')].map((sl, i) => ({ k: sl.dataset.k, t: sl.dataset.t, p: sl.dataset.p, img: i === 1 ? $('s2img').getAttribute('src') : i === 2 ? sl.querySelector('.s3a img').getAttribute('src') : '', img2: i === 2 ? sl.querySelector('.s3b img').getAttribute('src') : '', link: i === 1 ? $('s2link').getAttribute('href') : i === 2 ? $('s3link').getAttribute('href') : '' }));
+  function boApply() {
+    const H = BOS.home || {};
+    HOME_SECS.forEach(([k, f]) => { const el = f(); if (el) el.hidden = !!(H.off || {})[k]; });
+    boTiles().forEach(({ key, el, def, single }) => { const o = { ...def, ...((H.tiles || {})[key] || {}) };
+      if (single) { el.src = o.img; return; }
+      const im = el.querySelector('img'); if (im) im.src = o.img; const st = el.querySelector('strong'); if (st) st.textContent = o.t; const sm = el.querySelector('small'); if (sm) sm.textContent = o.s; el.setAttribute('href', o.href); });
+    qLinks().forEach((a, i) => { const d = JSON.parse(a.dataset.def), o = { ...d, ...((H.quick || [])[i] || {}) }; a.lastChild.textContent = o.t; a.setAttribute('href', o.href); });
+    [...document.querySelectorAll('#hero .slide')].forEach((sl, i) => { const o = { ...SLIDE_DEF[i], ...((H.slides || [])[i] || {}) };
+      sl.dataset.k = o.k; sl.dataset.t = o.t; sl.dataset.p = o.p;
+      if (i === 1) { $('s2img').src = o.img; $('s2link').setAttribute('href', o.link); }
+      if (i === 2) { sl.querySelector('.s3a img').src = o.img; sl.querySelector('.s3b img').src = o.img2; $('s3link').setAttribute('href', o.link); }
+      if (i === 0 && sl.classList.contains('on')) { $('hk').textContent = o.k; $('ht').textContent = o.t; $('hp').textContent = o.p; } });
+  }
+  boApply();
   /* ---------- designers, collections, requests ---------- */
   const slugify = (t) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const DESIGNERS = [
@@ -3568,7 +3754,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
   ].map(x => ({ ...x, slug: slugify(x.name) }));
   const desBySlug = Object.fromEntries(DESIGNERS.map(x => [x.slug, x]));
   const designerOf = (d) => desBySlug[slugify(d.by)];
-  const designsOf = (x) => DESIGNS.filter(d => slugify(d.by) === x.slug);
+  const designsOf = (x) => { const v = DESIGNS.filter(d => slugify(d.by) === x.slug); return v.length ? v : ALLD.filter(d => slugify(d.by) === x.slug); };
   const COLLECTIONS = [
     { slug: 'jungle-tales', name: 'Jungle Tales', by: 'linden-studio', designs: ['animal-kingdom', 'sumatra-classic'], desc: 'Two jungle scenes from the same sketchbook: one bright and busy, one soft and misty.' },
     { slug: 'black-and-white-garden', name: 'Black & White Garden', by: 'nora-lind', designs: ['calendula', 'in-harmony'], desc: 'Flowers and leaves in ink and grey, with just a little color where it matters.' },
@@ -3811,8 +3997,11 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
         st.msgs.push({ html: `<div class="sysmsg">Chat with ${designerOf(d0).name} about this design</div>` });
       }
       renderChat(slug); syncReq(slug);
+      let lst = false; try { lst = sessionStorage.getItem('am_list') === '1'; sessionStorage.removeItem('am_list'); } catch (x) {}
+      $('ctChat').classList.toggle('list-mode', lst && innerWidth <= 860);
     }
   }
+  $('ctBack').onclick = () => $('ctChat').classList.add('list-mode');
   $('ctSignForm').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('ctEmail').value.trim())) { $('ctSignMsg').textContent = 'Enter your email address, like name@example.com.'; return; }
@@ -3873,12 +4062,13 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
     return out; })();
   const styleImg = (k) => styleImgs[k] || '';
   const MEGA = [
-    ['type', 'Type', () => [['#shop', 'All designs', 'd/sumatra-classic-room1.webp'], ['#shop-murals', 'Murals', 'd/animal-kingdom-room1.webp'], ['#shop-repeats', 'Repeating patterns', 'd/my-favorite-dogs-room1.webp'], ['#own', 'Your own image', 'img/living-the-glade.webp'], ['#request', 'Made for you', 'img/tree-after.webp']]],
+    ['type', 'Type', () => [['#shop', 'All designs', 'd/sumatra-classic-room1.webp'], ['#shop-murals', 'Murals', 'd/animal-kingdom-room1.webp'], ['#shop-repeats', 'Repeating patterns', 'd/my-favorite-dogs-room1.webp'], ['#own', 'Your own image', 'img/living-the-glade.webp'], ['#request', 'Made for you', 'img/forest-after.webp']]],
     ['rooms', 'Rooms', () => Object.entries(ROOMS).map(([k, n]) => [`#room-${k}`, n, `img/cover-${COVER[k] || 'living-room'}.webp`]).concat([['#rooms-all', 'All rooms', 'img/cover-living-room.webp']])],
     ['style', 'Style', () => Object.entries(STYLES).map(([k, n]) => [`#style-${k}`, n, styleImg(k)]).filter(x => x[2])],
     ['color', 'Color', null],
     ['designers', 'Designers', () => DESIGNERS.map(x => [`#designer-${x.slug}`, x.name, `d/${designsOf(x)[0].slug}-room1.webp`]).concat([['#designers-all', 'All designers', 'd/in-harmony-room2.webp']])],
   ];
+  MEGA.forEach(m => { if (typeof m[2] === 'function') { const f = m[2]; m.push(f); m[2] = () => f().map(([h, t, i]) => { const o = (BOS.menu || {})[h] || {}; return [h, o.t || t, o.img || i]; }); } });
   let megaCat = 'type';
   function renderMega() {
     $('megaCats').innerHTML = MEGA.map(([k, n]) => `<button type="button" data-k="${k}" aria-current="${k === megaCat}">${n}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5 8 6l-3.5 3.5"/></svg></button>`).join('');
@@ -4252,7 +4442,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
     const sq = Math.ceil((W * H) / 144);
     $('szSq').textContent = `${sq} sq ft`; $('szRate').textContent = `${Z.paper.name} · ${money(Z.paper.rate)} / sq ft`;
     $('szPrice').textContent = money(sq * Z.paper.rate);
-    $('szNote').textContent = blocked ? (L.need > MAX_UP ? 'Ask the designer, or enter a smaller wall.' : 'Choose "Enlarge it" or ask the designer first.') : `Printed for ${W / 12} × ${H / 12} ft at ${Math.round(Z.s * 100)}% size, ${dpi} DPI, just as you see it.`;
+    $('szNote').textContent = blocked ? (L.need > MAX_UP ? 'Chat with the designer, or enter a smaller wall.' : 'Choose "Enlarge it" or chat with the designer first.') : `Printed for ${W / 12} × ${H / 12} ft at ${Math.round(Z.s * 100)}% size, ${dpi} DPI, just as you see it.`;
   }
   let PRESET = null;
   function loadSize(slug) {
@@ -4287,7 +4477,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
     bg = document.createElement('div'); bg.className = 'modal-bg'; bg.id = 'bigModal';
     bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="bmH"><h3 id="bmH">Your wall is bigger than this design</h3>
       <p>${d.name} was made for walls up to ${DESIGN_FT[Z.cw]} ft wide. ${tooBig ? `Stretching it to your wall would print at ${needDpi} DPI, which looks blurry.` : `We can enlarge it to fit: it prints at ${needDpi} DPI, sharp from a normal distance, softer up close.`} ${first} can also extend the scene to fit your wall exactly.</p>
-      <div class="mb"><a class="btn btn-wine" href="#chat-${Z.cw}" id="bmAsk">Ask ${first} to extend it</a>${tooBig ? '' : `<button class="btn optline" id="bmEnl">Enlarge it (${needDpi} DPI)</button>`}</div>
+      <div class="mb"><a class="btn btn-wine" href="#chat-${Z.cw}" id="bmAsk">Chat with ${first} to extend it</a>${tooBig ? '' : `<button class="btn optline" id="bmEnl">Enlarge it (${needDpi} DPI)</button>`}</div>
       <button class="link" id="bmSize">Change my wall size</button></div>`;
     document.body.append(bg);
     const close = () => bg.remove();
@@ -4409,7 +4599,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
     const dpi = Math.round(SRC_DPI / MR.s);
     $('mrPct').textContent = Math.round(MR.s * 100) + '%';
     $('mrZoom').value = Math.round(1000 * Math.log(MR.s / L.lo) / Math.log(L.hi / L.lo));
-    $('mrInfo').textContent = MR.d.kind === 'repeat' ? `Repeating pattern · covers any wall · pattern tile ${Math.round(MR.d.repeatIn * MR.s)} in wide · ${dpi} DPI` : `One scene, made for walls up to ${DESIGN_FT[MR.slug]} × ${Math.round(L.Dh / 12 * 10) / 10} ft. Shown at ${Math.round(MR.s * 100)}% · ${dpi} DPI${dpi < MIN_DPI ? ' · too soft to print, make it smaller or ask the designer' : ''}.`;
+    $('mrInfo').textContent = MR.d.kind === 'repeat' ? `Repeating pattern · covers any wall · pattern tile ${Math.round(MR.d.repeatIn * MR.s)} in wide · ${dpi} DPI` : `One scene, made for walls up to ${DESIGN_FT[MR.slug]} × ${Math.round(L.Dh / 12 * 10) / 10} ft. Shown at ${Math.round(MR.s * 100)}% · ${dpi} DPI${dpi < MIN_DPI ? ' · too soft to print, make it smaller or chat with the designer' : ''}.`;
     const sq = Math.ceil(L.Win * L.Hin / 144); $('mrSq').textContent = `${sq} sq ft`; $('mrPrice').textContent = money(sq * 4.5);
   }
   const queue = () => { cancelAnimationFrame(MR.raf); MR.raf = requestAnimationFrame(render); };
@@ -5221,28 +5411,149 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
     if (tab === 'upload') upRender();
     document.querySelectorAll('#stMain .seg-chips.multi button').forEach(b => b.onclick = () => b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')));
   }
-  // ---- owner back office (everything visible)
-  const BO = [['overview', 'Overview'], ['orders', 'Orders & print files'], ['requests', 'Design requests'], ['chats', 'All chats'], ['review', 'Designs to review', 2], ['designers', 'Designers', 1], ['pro', 'Artisan Pro', 1], ['prices', 'Prices & materials'], ['homepage', 'Homepage']];
+  // ---- owner back office (same sections as the old site's /admin, plus the new storefront parts)
+  const BO_IMGS = ["d/animal-kingdom-close.webp", "d/animal-kingdom-full.webp", "d/animal-kingdom-peel.webp", "d/animal-kingdom-room1.webp", "d/animal-kingdom-room2.webp", "d/animal-kingdom-room3.webp", "d/calendula-close.webp", "d/calendula-full.webp", "d/calendula-peel.webp", "d/calendula-room1.webp", "d/calendula-room2.webp", "d/calendula-room3.webp", "d/in-harmony-close.webp", "d/in-harmony-full.webp", "d/in-harmony-peel.webp", "d/in-harmony-room1.webp", "d/in-harmony-room2.webp", "d/in-harmony-room3.webp", "d/jumbo-dog-sketch-close.webp", "d/jumbo-dog-sketch-full.webp", "d/jumbo-dog-sketch-peel.webp", "d/jumbo-dog-sketch-roll.webp", "d/jumbo-dog-sketch-room1.webp", "d/jumbo-dog-sketch-room2.webp", "d/jumbo-dog-sketch-room3.webp", "d/luxury-henley-close.webp", "d/luxury-henley-full.webp", "d/luxury-henley-peel.webp", "d/luxury-henley-room1.webp", "d/luxury-henley-room2.webp", "d/luxury-henley-room3.webp", "d/my-favorite-dogs-close.webp", "d/my-favorite-dogs-full.webp", "d/my-favorite-dogs-peel.webp", "d/my-favorite-dogs-roll.webp", "d/my-favorite-dogs-room1.webp", "d/my-favorite-dogs-room2.webp", "d/my-favorite-dogs-room3.webp", "d/ombre-smokey-close.webp", "d/ombre-smokey-full.webp", "d/ombre-smokey-peel.webp", "d/ombre-smokey-room1.webp", "d/ombre-smokey-room2.webp", "d/ombre-smokey-room3.webp", "d/palm-leaves-shadow-close.webp", "d/palm-leaves-shadow-full.webp", "d/palm-leaves-shadow-peel.webp", "d/palm-leaves-shadow-room1.webp", "d/palm-leaves-shadow-room2.webp", "d/palm-leaves-shadow-room3.webp", "d/shadow-leaf-close.webp", "d/shadow-leaf-full.webp", "d/shadow-leaf-peel.webp", "d/shadow-leaf-room1.webp", "d/shadow-leaf-room2.webp", "d/shadow-leaf-room3.webp", "d/sumatra-classic-close.webp", "d/sumatra-classic-full.webp", "d/sumatra-classic-peel.webp", "d/sumatra-classic-room1.webp", "d/sumatra-classic-room2.webp", "d/sumatra-classic-room3.webp", "d/swaying-palm-leaves-close.webp", "d/swaying-palm-leaves-full.webp", "d/swaying-palm-leaves-peel.webp", "d/swaying-palm-leaves-room1.webp", "d/swaying-palm-leaves-room2.webp", "d/swaying-palm-leaves-room3.webp", "d/vine-charcoal-close.webp", "d/vine-charcoal-full.webp", "d/vine-charcoal-peel.webp", "d/vine-charcoal-roll.webp", "d/vine-charcoal-room1.webp", "d/vine-charcoal-room2.webp", "d/vine-charcoal-room3.webp", "d/vine-oatmeal-close.webp", "d/vine-oatmeal-full.webp", "d/vine-oatmeal-peel.webp", "d/vine-oatmeal-roll.webp", "d/vine-oatmeal-room1.webp", "d/vine-oatmeal-room2.webp", "d/vine-oatmeal-room3.webp", "d/wild-bouquet-close.webp", "d/wild-bouquet-full.webp", "d/wild-bouquet-peel.webp", "d/wild-bouquet-room1.webp", "d/wild-bouquet-room2.webp", "d/wild-bouquet-room3.webp", "img/R4H-film.webp", "img/bedroom-linen-jute.webp", "img/bedroom-watercolor-mountain.webp", "img/cover-bathroom.webp", "img/cover-bedroom.webp", "img/cover-commercial.webp", "img/cover-dining-room.webp", "img/cover-hallway.webp", "img/cover-hotel.webp", "img/cover-kids.webp", "img/cover-kitchen.webp", "img/cover-living-room.webp", "img/cover-nursery.webp", "img/cover-office.webp", "img/cover-restaurant.webp", "img/entry-sisal-grasscloth.webp", "img/forest-after.webp", "img/forest-before.webp", "img/hero-poster.webp", "img/living-the-glade.webp", "img/p-cranes-at-dusk.webp", "img/p-deco-arches.webp", "img/p-fernhouse.webp", "img/p-long-mist.webp", "img/pw-romantic.webp", "img/style-abstract.webp", "img/style-art-deco.webp", "img/style-botanical.webp", "img/style-chinoiserie.webp", "img/style-floral.webp", "img/style-geometric.webp", "img/style-japanese.webp", "img/style-landscape.webp", "img/style-minimal.webp", "img/style-textured-neutrals.webp", "img/style-tropical.webp", "img/sw-banana.webp", "img/sw-cranes.webp", "img/sw-deco.webp", "img/sw-fern.webp", "img/sw-floral.webp", "img/sw-forest.webp", "img/sw-geometric.webp", "img/sw-japanese.webp", "img/sw-landscape.webp", "img/tree-after.webp", "img/tree-before.webp"];
+  const BO_GROUPS = [
+    ['Sales', [['overview', 'Overview'], ['orders', 'Orders'], ['print', 'Print files'], ['invoices', 'Invoices'], ['estimates', 'Estimates'], ['customers', 'Customers'], ['codes', 'Discount codes']]],
+    ['Designs', [['designs', 'Designs'], ['collections', 'Collections'], ['requests', 'Design requests'], ['reviews', 'Reviews']]],
+    ['Designers', [['designers', 'Designers'], ['payouts', 'Payouts']]],
+    ['Store', [['homepage', 'Homepage & banners'], ['menu', 'Menu pictures'], ['prices', 'Prices & materials'], ['pro', 'Artisan Pro'], ['messages', 'Messages'], ['signups', 'Email signups'], ['emails', 'Emails'], ['settings', 'Settings']]],
+  ];
+  const bx = (v) => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // uploads waiting for review (in the real site these come from the designer studio)
+  const BO_UPLOADS = [
+    { id: 'u-soft-bloom', img: 'calendula', name: 'Soft Bloom', by: 'Maren Holt', kind: 'mural', ft: 14, hft: 9.8, file: 'soft-bloom-final.tif', px: [42000, 29400], mb: 1840, dpi: 250, sent: 'Today' },
+    { id: 'u-leaf-study', img: 'wild-bouquet', name: 'Leaf Study', by: 'Yuki Arai', kind: 'repeat', rep: 24, file: 'leaf-study-tile.png', px: [7200, 9000], mb: 96, dpi: 300, sent: 'Yesterday' },
+  ];
+  const BO_APPLICANTS = [
+    { slug: 'lena-park', name: 'Lena Park', ini: 'LP', color: '#71508C', place: 'Portland, USA', email: 'hello@lenapark.studio', portfolio: 'lenapark.studio', styles: ['Botanical', 'Watercolor'], applied: 'Today' },
+    { slug: 'omar-haddad', name: 'Omar Haddad', ini: 'OH', color: '#2F6B6B', place: 'Amman, Jordan', email: 'studio@omarhaddad.art', portfolio: 'behance.net/omarhaddad', styles: ['Geometric', 'Art deco'], applied: '2 days ago' },
+  ];
+  const origOf = (d, slug) => { // details of the original print file the designer uploaded
+    const ft = DESIGN_FT[d.slug]; const mural = d.kind !== 'repeat';
+    const wIn = mural ? ft * 12 : d.repeatIn, dpi = mural ? 250 : 300, hIn = mural ? Math.round(wIn * 0.5) : Math.round(d.repeatIn * 1.25);
+    return { file: `${slug}-original.${mural ? 'tif' : 'png'}`, px: [wIn * dpi, hIn * dpi], dpi, size: mural ? `${ft} × ${Math.round(hIn / 12 * 10) / 10} ft` : `${d.repeatIn} in tile`, mb: Math.round(wIn * dpi * hIn * dpi * 3 / 1048576 / (mural ? 1 : 2.4)) };
+  };
+  const pillFor = (st) => ({ live: ['ok', 'Live'], hidden: ['', 'Hidden'], pending: ['wait', 'To review'], declined: ['bad', 'Declined'], approved: ['ok', 'Approved'], paused: ['', 'Paused'], rejected: ['bad', 'Rejected'] }[st] || ['', st]);
+  const pill = (st) => { const [c, t] = pillFor(st); return `<span class="pill ${c}">${t}</span>`; };
+  const boDesignRows = () => ALLD.flatMap(d => (d.colorways || [{ slug: d.slug, name: '' }]).map((c, i) => ({ key: i ? c.slug : d.slug, d, slug: c.slug, cw: d.colorways ? c.name : '', main: i === 0 })));
+  const desStatus = (slug) => desRec(slug).st || (BO_APPLICANTS.some(a => a.slug === slug) ? 'pending' : 'approved');
+  const upState = (u) => dRec(u.id).st || (desRec(dslug(u.by)).trusted ? 'live' : 'pending');
+  const counts = () => ({ designs: BO_UPLOADS.filter(u => upState(u) === 'pending').length, designers: BO_APPLICANTS.filter(a => desStatus(a.slug) === 'pending').length });
+  const setD = (k, o) => { BOS.designs = BOS.designs || {}; BOS.designs[k] = { ...(BOS.designs[k] || {}), ...o }; boSave(); };
+  const setDes = (k, o) => { BOS.designers = BOS.designers || {}; BOS.designers[k] = { ...(BOS.designers[k] || {}), ...o }; boSave(); };
+  const boMsg = (t) => { const m = $('boToast'); if (!m) return; m.textContent = t; m.hidden = false; clearTimeout(boMsg.t); boMsg.t = setTimeout(() => { m.hidden = true; }, 3200); };
+  const rebuildShop = () => { // re-filter what the shop shows after a design or designer change
+    DESIGNS.length = 0; ALLD.forEach(d => { if (dState(d.slug) === 'live' && desRec(dslug(d.by)).st !== 'paused') DESIGNS.push(d); });
+    try { renderMega(); } catch (e) {}
+  };
+  const picker = (name, cur) => `<div class="pp" data-pp="${name}"><img class="pp-img" src="${bx(cur)}" alt=""><div class="pp-ctl">
+      <select data-pp-sel aria-label="Choose a picture"><option value="">Choose from the site's pictures…</option>${BO_IMGS.map(u => `<option value="${u}"${u === cur ? ' selected' : ''}>${u.replace(/^(d|img)\//, '').replace('.webp', '')}</option>`).join('')}</select>
+      <input type="url" data-pp-url placeholder="…or paste a picture link (https://…)" value="${/^https?:/.test(cur) ? bx(cur) : ''}">
+      <label class="btn btn-sm optline pp-up">Upload a picture<input type="file" accept="image/*" data-pp-file hidden></label></div>
+      <input type="hidden" name="${name}" value="${bx(cur)}"></div>`;
+  function wirePickers(root) {
+    root.querySelectorAll('[data-pp]').forEach(pp => {
+      const hid = pp.querySelector('input[type=hidden]'), im = pp.querySelector('.pp-img');
+      const set = (v) => { hid.value = v; im.src = v; };
+      pp.querySelector('[data-pp-sel]').onchange = (e) => { if (e.target.value) set(e.target.value); };
+      pp.querySelector('[data-pp-url]').onchange = (e) => { const v = e.target.value.trim(); if (/^https:\/\//.test(v)) set(v); };
+      pp.querySelector('[data-pp-file]').onchange = (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { const i = new Image(); i.onload = () => { const k = Math.min(1, 1400 / Math.max(i.width, i.height)), c = document.createElement('canvas'); c.width = Math.round(i.width * k); c.height = Math.round(i.height * k); c.getContext('2d').drawImage(i, 0, 0, c.width, c.height); set(c.toDataURL('image/jpeg', 0.82)); }; i.src = r.result; }; r.readAsDataURL(f); };
+    });
+  }
+  const fval = (form, n) => form.querySelector(`[name="${n}"]`)?.value ?? '';
+
+  function boDesignDialog(key) {
+    const up = BO_UPLOADS.find(u => u.id === key);
+    const row = up ? null : boDesignRows().find(r => r.key === key);
+    const d = row?.d, img = up ? up.img : row.slug;
+    const st = up ? upState(up) : dState(key);
+    const o = up ? { file: up.file, px: up.px, dpi: up.dpi, size: up.kind === 'mural' ? `${up.ft} × ${up.hft} ft` : `${up.rep} in tile`, mb: up.mb } : origOf(d, row.slug);
+    const name = up ? up.name : (d.name + (row.cw ? ' · ' + row.cw : '')), by = up ? up.by : d.by;
+    const rec = dRec(key);
+    $('boDlgBody').innerHTML = `<header class="bd-h"><div><span class="k">${up ? 'New upload' : d.sku}</span><h2>${bx(name)}</h2><small>${bx(by)} · ${up ? (up.kind === 'mural' ? 'Mural' : 'Repeating pattern') : (d.kind === 'repeat' ? 'Repeating pattern' : 'Mural')}</small></div>${pill(st)}</header>
+      <div class="bd-grid"><div class="bd-pic"><img src="d/${img}-full.webp" alt=""></div>
+      <div class="bd-file"><h3>Original print file</h3><dl><dt>File</dt><dd>${o.file}</dd><dt>Pixels</dt><dd>${o.px[0].toLocaleString()} × ${o.px[1].toLocaleString()} px</dd><dt>Print size</dt><dd>${o.size}</dd><dt>Sharpness</dt><dd>${o.dpi} DPI at full size <span class="pill ok">OK</span></dd><dt>File size</dt><dd>${o.mb >= 1024 ? (o.mb / 1024).toFixed(1) + ' GB' : o.mb + ' MB'}</dd><dt>Stored</dt><dd>Private file storage · kept for every future order</dd></dl>
+        <div class="bd-dl"><a class="btn btn-wine btn-sm" href="d/${img}-full.webp" download="${o.file.replace(/\.(tif|png)$/, '')}-preview.webp">Download original</a><a class="btn btn-sm optline" href="d/${img}-full.webp" target="_blank" rel="noopener">Open original</a></div>
+        <p class="hint">In this preview the download is a small stand-in picture. On the real site it is the designer's full file.</p></div></div>
+      ${up ? '' : `<h3>Room pictures</h3><div class="bd-rooms">${[1, 2, 3].map(n => `<a href="d/${row.slug}-room${n}.webp" target="_blank" rel="noopener"><img src="d/${row.slug}-room${n}.webp" alt="" loading="lazy"></a>`).join('')}</div>`}
+      ${up ? '' : `<form class="bd-edit" id="bdEdit"><h3>Edit details</h3><label>Name<input name="name" value="${bx(rec.name || d.name)}"></label><label>Short line<textarea name="line" rows="2">${bx(rec.line || d.line)}</textarea></label><button class="btn btn-sm optline" type="submit">Save details</button></form>`}
+      <div class="bd-act">${st !== 'live' && st !== 'hidden' ? `<button class="btn btn-wine btn-sm" data-act="live">Approve · put in the shop</button>` : ''}${st === 'pending' ? `<button class="btn btn-sm optline" data-act="declined">Decline</button>` : ''}${st === 'live' ? `<button class="btn btn-sm optline" data-act="hidden">Hide from the shop</button>` : ''}${st === 'hidden' ? `<button class="btn btn-wine btn-sm" data-act="live">Show in the shop again</button>` : ''}</div>`;
+    $('boDlg').showModal();
+    $('boDlgBody').querySelectorAll('[data-act]').forEach(b => b.onclick = () => { const v = b.dataset.act; let note = ''; if (v === 'declined') note = prompt('Reason for the designer (optional)') || ''; setD(key, { st: v, note }); rebuildShop(); $('boDlg').close(); boMsg(v === 'live' ? `${name} is live in the shop.` : v === 'hidden' ? `${name} is hidden. Past orders keep their files.` : `${name} declined.`); renderAdmin(curTab); });
+    const ed = $('bdEdit'); if (ed) ed.onsubmit = (e) => { e.preventDefault(); const nm = fval(ed, 'name').trim(), ln = fval(ed, 'line').trim(); setD(key, { name: nm, line: ln }); if (nm) d.name = nm; if (ln) d.line = ln; boMsg('Details saved.'); renderAdmin(curTab); };
+  }
+  function boDesignerDialog(slug) {
+    const ap = BO_APPLICANTS.find(a => a.slug === slug), x = ap || desBySlug[slug], st = desStatus(slug), rec = desRec(slug);
+    const ds = ap ? [] : ALLD.filter(d => dslug(d.by) === slug);
+    $('boDlgBody').innerHTML = `<header class="bd-h"><div style="display:flex;gap:12px;align-items:center">${av(x)}<div><h2>${x.name}</h2><small>${x.place}${ap ? ' · applied ' + ap.applied : ' · since ' + x.since}</small></div></div>${pill(st)}</header>
+      ${ap ? `<dl class="bd-dl2"><dt>Email</dt><dd>${ap.email}</dd><dt>Portfolio</dt><dd>${ap.portfolio}</dd><dt>Styles</dt><dd>${ap.styles.join(', ')}</dd></dl>` : `<p>${x.line}</p><div class="bd-rooms">${ds.map(d => `<img src="d/${d.slug}-full.webp" alt="${d.name}" title="${d.name}">`).join('')}</div><dl class="bd-dl2"><dt>Designs</dt><dd>${ds.length}</dd><dt>Sold</dt><dd>${money(ds.length * 1240)}</dd><dt>Owed</dt><dd>${money(ds.length * 86)}</dd></dl>`}
+      <label class="sw"><input type="checkbox" id="bdTrust" ${rec.trusted ? 'checked' : ''} ${st !== 'approved' ? 'disabled' : ''}><span></span><b>Auto-approve this designer's uploads</b><small>New designs go live without waiting for your review. Turn off to review them again.</small></label>
+      <div class="bd-act">${st !== 'approved' ? `<button class="btn btn-wine btn-sm" data-s="approved">Approve designer</button>` : `<button class="btn btn-sm optline" data-s="paused">Pause designer · hide their designs</button>`}${st === 'pending' ? `<button class="btn btn-sm optline" data-s="rejected">Reject</button>` : ''}</div>`;
+    $('boDlg').showModal();
+    $('bdTrust').onchange = (e) => { setDes(slug, { trusted: e.target.checked }); boMsg(e.target.checked ? `${x.name}: new designs go live automatically.` : `${x.name}: new designs wait for your review.`); renderAdmin(curTab); };
+    $('boDlgBody').querySelectorAll('[data-s]').forEach(b => b.onclick = () => { setDes(slug, { st: b.dataset.s }); rebuildShop(); $('boDlg').close(); boMsg(`${x.name}: ${pillFor(b.dataset.s)[1].toLowerCase()}.`); renderAdmin(curTab); });
+  }
+
+  const BO_CUSTOMERS = [['Sarah Klein', 'Brooklyn, NY', 3, 1284], ['James Park', 'Austin, TX', 1, 567], ['Studio Nord Interiors', 'Chicago, IL', 6, 4120], ['Maya Chen', 'Seattle, WA', 2, 742], ['Daniel Ross', 'Miami, FL', 1, 360]];
+  let curTab = 'overview', designFilter = 'all', designQ = '';
   function renderAdmin(tab) {
-    tab = tab || 'overview';
-    $('boNav').innerHTML = BO.map(([k, n, c]) => `<a href="#admin-${k}" aria-current="${k === tab}">${n}${c ? `<em>${c}</em>` : ''}</a>`).join('');
+    curTab = tab = tab || 'overview';
+    const c = counts();
+    $('boNav').innerHTML = BO_GROUPS.map(([g, items]) => `<span class="bo-g">${g}</span>` + items.map(([k, n]) => { const cnt = c[k]; return `<a href="#admin-${k}" aria-current="${k === tab}">${n}${cnt ? `<em>${cnt}</em>` : ''}</a>`; }).join('')).join('');
+    const rows = boDesignRows();
+    const ordersT = (list, print) => `<div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Order</th><th>Customer</th><th>Design</th><th>Wall &amp; paper</th><th>Total</th><th>Status</th><th>Files</th></tr></thead><tbody>${list.map(([id, dt, sl, wall, st, cls, tot], i) => { const d = bySlug[sl]; const o = origOf(d, sl); return `<tr><td><img src="d/${sl}-full.webp" alt=""></td><td><b>${id}</b><br><small>${dt}</small></td><td>${BO_CUSTOMERS[i % BO_CUSTOMERS.length][0]}</td><td><a href="#design-${sl}">${d.name}</a><br><small>${d.sku}</small></td><td>${wall}</td><td>${money(tot)}</td><td>${print ? '<span class="pill wait">Ready to print</span>' : `<select class="bo-sel" aria-label="Order status"><option>Awaiting payment</option><option>Paid</option><option ${st === 'In production' ? 'selected' : ''}>In production</option><option>Shipped</option><option ${st === 'Delivered' ? 'selected' : ''}>Delivered</option></select>`}</td><td class="bo-files"><button class="btn btn-sm btn-wine" data-tiff="${id}">Print file (TIFF panels)</button><a class="btn btn-sm optline" href="d/${sl}-full.webp" download="${o.file.replace(/\.(tif|png)$/, '')}-preview.webp">Original</a></td></tr>`; }).join('')}</tbody></table></div>`;
+    const M = {};
+    M.overview = `<div class="stats"><div class="stat"><b>${ORDERS.length}</b><small>Open orders</small></div><div class="stat"><b>$4,235</b><small>Sales, last 30 days</small></div><a class="stat" href="#admin-designs"><b>${c.designs}</b><small>Designs to review</small></a><a class="stat" href="#admin-designers"><b>${c.designers}</b><small>Designers waiting for approval</small></a></div>
+      <h2>Latest orders</h2>${ordersT(ORDERS.slice(0, 4))}`;
+    M.orders = `<h2>Orders</h2><p class="hint">Every order saves the customer's exact wall, crop or repeat and points to the original file that was sold, so you can always reprint it.</p>${ordersT(ORDERS)}`;
+    M.print = `<h2>Print files</h2><p class="hint">Paid orders ready for the printer. The print file is made from the designer's original at 250 DPI, cut into numbered panels with overlap. The original is never changed.</p>${ordersT(ORDERS.slice(0, 3), true)}`;
+    M.invoices = `<h2>Invoices</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>${ORDERS.map(([id, dt, , , , , tot], i) => `<tr><td>INV-${id.slice(3)}</td><td>${BO_CUSTOMERS[i % 5][0]}</td><td>${dt}</td><td>${money(tot)}</td><td><span class="pill ${i ? 'ok' : 'wait'}">${i ? 'Paid' : 'Sent'}</span></td><td><button class="btn btn-sm optline" onclick="this.textContent='PDF ready ✓'">Download PDF</button></td></tr>`).join('')}</tbody></table></div>`;
+    M.estimates = `<h2>Estimates</h2><p class="hint">Quotes for big or commercial jobs. Send one, and the customer can accept it and pay online.</p><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Estimate</th><th>Customer</th><th>Job</th><th>Amount</th><th>Status</th></tr></thead><tbody><tr><td>EST-118</td><td>Studio Nord Interiors</td><td>Hotel lobby · 3 walls · Grasscloth</td><td>${money(6840)}</td><td><span class="pill wait">Sent</span></td></tr><tr><td>EST-117</td><td>Maya Chen</td><td>Nursery · 1 wall · Linen</td><td>${money(612)}</td><td><span class="pill ok">Accepted</span></td></tr></tbody></table></div>`;
+    M.customers = `<h2>Customers</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Customer</th><th>Place</th><th>Orders</th><th>Spent</th></tr></thead><tbody>${BO_CUSTOMERS.map(([n, pl, o, t]) => `<tr><td><b>${n}</b></td><td>${pl}</td><td>${o}</td><td>${money(t)}</td></tr>`).join('')}</tbody></table></div>`;
+    const codes = BOS.codes || [['WELCOME10', '10% off', 'Active'], ['TRADE20', '20% off · Artisan Pro', 'Active']];
+    M.codes = `<h2>Discount codes</h2><div class="tbl-wrap"><table class="tbl"><tbody>${codes.map(([k, v, st], i) => `<tr><td><b>${bx(k)}</b></td><td>${bx(v)}</td><td><span class="pill ok">${st}</span></td><td><button class="btn btn-sm optline" data-delcode="${i}">Delete</button></td></tr>`).join('')}</tbody></table></div>
+      <form class="bo-inline" id="codeForm"><input name="k" placeholder="CODE" required><input name="v" placeholder="e.g. 15% off" required><button class="btn btn-wine btn-sm">Add code</button></form>`;
+    const shown = rows.filter(r => designFilter === 'all' || dState(r.key) === designFilter).filter(r => !designQ || (r.d.name + ' ' + r.cw + ' ' + r.d.by + ' ' + r.d.sku).toLowerCase().includes(designQ));
+    const ups = BO_UPLOADS.filter(u => designFilter === 'all' || upState(u) === designFilter);
+    const n = (f) => rows.filter(r => dState(r.key) === f).length + BO_UPLOADS.filter(u => upState(u) === f).length;
+    M.designs = `<h2>Designs</h2><p class="hint">Every design and color. Open one to see the original print file, download it, edit its details, or approve, hide or decline it. Hidden designs leave the shop, but past orders keep their files.</p>
+      <div class="bo-bar"><div class="bo-tabs">${[['all', 'All', rows.length + BO_UPLOADS.length], ['pending', 'To review', n('pending')], ['live', 'Live', n('live')], ['hidden', 'Hidden', n('hidden')], ['declined', 'Declined', n('declined')]].map(([k, t, x]) => `<button type="button" data-df="${k}" aria-pressed="${designFilter === k}">${t} <em>${x}</em></button>`).join('')}</div><input type="search" id="boDq" placeholder="Search name, designer or SKU" value="${bx(designQ)}"></div>
+      <div class="tbl-wrap"><table class="tbl bo-dt"><thead><tr><th></th><th>Design</th><th>Type &amp; size</th><th>Original file</th><th>Status</th><th></th></tr></thead><tbody>
+      ${ups.map(u => `<tr><td><img src="d/${u.img}-full.webp" alt=""></td><td><b>${u.name}</b><br><small>${u.by} · sent ${u.sent.toLowerCase()}</small></td><td>${u.kind === 'mural' ? `Mural · ${u.ft} × ${u.hft} ft` : `Repeat · ${u.rep} in`}</td><td><small>${u.file}<br>${u.dpi} DPI</small></td><td>${pill(upState(u))}</td><td class="bo-files">${upState(u) === 'pending' ? `<button class="btn btn-wine btn-sm" data-quick="${u.id}" data-v="live">Approve</button>` : ''}<button class="btn btn-sm optline" data-open="${u.id}">Open</button></td></tr>`).join('')}
+      ${shown.map(r => { const o = origOf(r.d, r.slug), st = dState(r.key); return `<tr><td><img src="d/${r.slug}-full.webp" alt=""></td><td><b>${r.d.name}${r.cw ? ' · ' + r.cw : ''}</b><br><small>${r.d.by} · ${r.d.sku}</small></td><td>${r.d.kind === 'repeat' ? `Repeat · ${r.d.repeatIn} in` : `Mural · ${DESIGN_FT[r.d.slug]} ft wide`}</td><td><small>${o.file}<br>${o.dpi} DPI</small></td><td>${pill(st)}</td><td class="bo-files">${st === 'live' ? `<button class="btn btn-sm optline" data-quick="${r.key}" data-v="hidden">Hide</button>` : `<button class="btn btn-wine btn-sm" data-quick="${r.key}" data-v="live">${st === 'hidden' ? 'Show' : 'Approve'}</button>`}<button class="btn btn-sm optline" data-open="${r.key}">Open</button></td></tr>`; }).join('')}
+      </tbody></table></div>`;
+    M.collections = `<h2>Collections</h2><p class="hint">Groups of designs shown together, like a designer's series.</p><div class="tbl-wrap"><table class="tbl"><tbody>${[['Jungle Classics', ['animal-kingdom', 'sumatra-classic']], ['Quiet Light', ['palm-leaves-shadow', 'shadow-leaf', 'swaying-palm-leaves']], ['For Dog People', ['jumbo-dog-sketch', 'my-favorite-dogs']]].map(([t, ss]) => `<tr><td><b>${t}</b><br><small>${ss.length} designs</small></td><td><div class="bo-thumbs">${ss.map(x => `<img src="d/${x}-full.webp" alt="">`).join('')}</div></td><td><span class="pill ok">Live</span></td></tr>`).join('')}</tbody></table></div>`;
     const allReq = REQS.concat([{ id: 'R-1033', slug: 'ombre-smokey', by: 'maren-holt', who: 'James P.', kind: 'Custom size', text: 'Can the fade go to 22 ft wide?', stage: 1 }]);
-    const M = {
-      overview: `<div class="stats"><div class="stat"><b>11</b><small>Open orders</small></div><div class="stat"><b>$4,235</b><small>Sales, last 30 days</small></div><div class="stat"><b>2</b><small>Designs to review</small></div><div class="stat"><b>1</b><small>Designer application</small></div></div><h2>Latest orders</h2>${orderRows(ORDERS, true)}`,
-      orders: `<h2>Orders &amp; print files</h2><p class="hint">Every order snapshots the customer's wall, crop or repeat. One click makes the ready-to-print 250 DPI TIFF in numbered panels.</p>${orderRows(ORDERS, true)}`,
-      requests: `<h2>Design requests</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Request</th><th>Customer → designer</th><th>Status</th><th></th></tr></thead><tbody>${allReq.map(r => `<tr><td><img src="d/${r.slug}-full.webp" alt=""></td><td><b>${bySlug[r.slug].name}</b><br><small>${r.kind} · “${r.text}”</small></td><td>${r.who} → ${desBySlug[r.by].name}</td><td><span class="pill ${r.stage >= 3 ? 'ok' : 'wait'}">${STAGES[r.stage]}</span></td><td><a class="btn btn-sm optline" href="#chat-${r.slug}">Read chat</a></td></tr>`).join('')}</tbody></table></div>`,
-      chats: `<h2>All chats</h2><p class="hint">The studio can read every customer–designer conversation and step in as the store.</p><div class="tbl-wrap"><table class="tbl"><tbody>${allReq.map(r => `<tr><td><span class="av" style="background:${desBySlug[r.by].color}">${desBySlug[r.by].ini}</span></td><td><b>${desBySlug[r.by].name} and ${r.who}</b><br><small>About ${bySlug[r.slug].name} · “${r.text}”</small></td><td><a class="btn btn-sm optline" href="#chat-${r.slug}">Open</a></td></tr>`).join('')}</tbody></table></div>`,
-      review: `<h2>Designs to review</h2><div class="tbl-wrap"><table class="tbl"><tbody>${[['calendula', 'Soft Bloom', 'Maren Holt', 'Mural 14 × 9.8 ft · 252 DPI · rooms made'], ['wild-bouquet', 'Leaf Study', 'Yuki Arai', 'Repeat 24 in · seamless check passed']].map(([s, n, by, info]) => `<tr><td><img src="d/${s}-full.webp" alt=""></td><td><b>${n}</b><br><small>${by} · ${info}</small></td><td><button class="btn btn-wine btn-sm" onclick="this.textContent='Approved ✓ live'">Approve</button> <button class="btn btn-sm optline" onclick="this.textContent='Declined'">Decline</button></td></tr>`).join('')}</tbody></table></div>`,
-      designers: `<h2>Designers</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Designer</th><th>Designs</th><th>Status</th><th></th></tr></thead><tbody><tr><td><span class="av" style="background:#71508C">LP</span></td><td><b>Lena Park</b><br><small>USA · portfolio: lenapark.studio · applied today</small></td><td>0</td><td><span class="pill wait">Pending</span></td><td><button class="btn btn-wine btn-sm" onclick="this.textContent='Approved ✓'">Approve</button> <button class="btn btn-sm optline" onclick="this.textContent='Rejected'">Reject</button></td></tr>${DESIGNERS.map(x => `<tr><td>${av(x)}</td><td><b>${x.name}</b><br><small>${x.place}</small></td><td>${designsOf(x).length}</td><td><span class="pill ok">Approved</span></td><td><a class="btn btn-sm optline" href="#designer-${x.slug}">Check designer</a></td></tr>`).join('')}</tbody></table></div>`,
-      pro: `<h2>Artisan Pro applications</h2><div class="tbl-wrap"><table class="tbl"><tbody><tr><td><b>Studio Nord Interiors</b><br><small>Interior designer · studionord.com · applied yesterday</small></td><td><span class="pill wait">Pending</span></td><td><button class="btn btn-wine btn-sm" onclick="this.textContent='Approved ✓ 20% applied'">Approve</button></td></tr></tbody></table></div>`,
-      homepage: `<h2>Homepage</h2><p class="hint">Turn sections on or off and pick featured designs, like V2. The hero picks new samples automatically every day.</p><div class="seg-chips multi">${['Hero slideshow', 'Love it, but want one thing changed?', 'Shop by look', 'Wallpaper for every room', 'Transform your walls', 'Trends', 'New arrivals', 'Meet our designers', 'Email signup'].map(n => `<button type="button" aria-pressed="true">${n}</button>`).join('')}</div>`,
-    };
-    M.prices = `<h2>Prices &amp; materials</h2><p class="hint">Set the base price and what each material adds. Every price on the site, the cart and checkout update straight away. Orders already placed keep their price.</p>
-      <form class="pr-form" id="prForm"><label class="pr-base"><span>Base price</span><span class="pr-in"><em>$</em><input id="prBase" type="number" min="0" step="0.05" value="${PRICING.base}"><em>/ sq ft</em></span></label>
-      <table class="tbl pr-tbl"><thead><tr><th>Material</th><th>Adds</th><th>Customer pays</th></tr></thead><tbody>${PAPERS.map(p => `<tr><td><span class="mat-ball pr-ball" style="background-image:url(tex/${p.id}-ball.webp)"></span><b>${p.name}</b></td><td><span class="pr-in"><em>+$</em><input type="number" step="0.05" data-adj="${p.id}" value="${p.adj}"><em>/ sq ft</em></span></td><td class="pr-out" data-out="${p.id}">${money(p.rate)} / sq ft</td></tr>`).join('')}</tbody></table>
-      <div class="pr-act"><button class="btn btn-wine btn-sm" type="submit">Save prices</button><button class="btn optline btn-sm" type="button" id="prReset">Back to defaults</button><span class="pr-ok" id="prOk" aria-live="polite"></span></div></form>`;
-    $('boMain').innerHTML = M[tab] || M.overview;
-    if (tab === 'prices') {
+    M.requests = `<h2>Design requests</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Request</th><th>Customer → designer</th><th>Status</th><th></th></tr></thead><tbody>${allReq.map(r => `<tr><td><img src="d/${r.slug}-full.webp" alt=""></td><td><b>${bySlug[r.slug].name}</b><br><small>${r.kind} · “${r.text}”</small></td><td>${r.who} → ${desBySlug[r.by].name}</td><td><span class="pill ${r.stage >= 3 ? 'ok' : 'wait'}">${STAGES[r.stage]}</span></td><td><a class="btn btn-sm optline" href="#chat-${r.slug}">Read chat</a></td></tr>`).join('')}</tbody></table></div>`;
+    M.reviews = `<h2>Reviews</h2><p class="hint">Customer reviews of designers. Hide any that break the rules.</p><div class="tbl-wrap"><table class="tbl"><tbody>${[['Sarah K.', 'linden-studio', 5, 'The jungle mural is even better on the wall. Panels lined up perfectly.'], ['Maya C.', 'ines-okafor', 5, 'Inès changed the dog colors for our nursery in a day.'], ['Tom W.', 'maren-holt', 4, 'Beautiful fade, shipping took a little longer.']].map(([w, d, r, t], i) => `<tr><td><b>${'★'.repeat(r)}</b><br><small>${w} → ${desBySlug[d].name}</small></td><td>${t}</td><td><button class="btn btn-sm optline" onclick="this.textContent=this.textContent==='Hide'?'Show':'Hide'">Hide</button></td></tr>`).join('')}</tbody></table></div>`;
+    const desList = BO_APPLICANTS.map(a => ({ x: a, slug: a.slug, ap: true })).concat(DESIGNERS.map(x => ({ x, slug: x.slug })));
+    M.designers = `<h2>Designers</h2><p class="hint">Every new designer waits here until you approve them. Turn on <b>Auto-approve</b> for a designer you trust and their new uploads go live without review.</p>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Designer</th><th>Designs</th><th>Status</th><th>Auto-approve</th><th></th></tr></thead><tbody>${desList.map(({ x, slug, ap }) => { const st = desStatus(slug); return `<tr><td>${av(x)}</td><td><b>${x.name}</b><br><small>${x.place}${ap ? ' · applied ' + x.applied.toLowerCase() : ''}</small></td><td>${ap ? 0 : ALLD.filter(d => dslug(d.by) === slug).length}</td><td>${pill(st)}</td><td><label class="sw sm"><input type="checkbox" data-trust="${slug}" ${desRec(slug).trusted ? 'checked' : ''} ${st !== 'approved' ? 'disabled' : ''} aria-label="Auto-approve ${x.name}'s uploads"><span></span></label></td><td class="bo-files">${st === 'pending' ? `<button class="btn btn-wine btn-sm" data-dst="${slug}" data-v="approved">Approve</button>` : ''}<button class="btn btn-sm optline" data-dopen="${slug}">Open</button></td></tr>`; }).join('')}</tbody></table></div>`;
+    M.payouts = `<h2>Payouts</h2><p class="hint">What each designer has earned from sales and what is still owed.</p><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Designer</th><th>Sold</th><th>Earned</th><th>Paid</th><th>Owed</th><th></th></tr></thead><tbody>${DESIGNERS.map((x, i) => { const k = ALLD.filter(d => dslug(d.by) === x.slug).length; return `<tr><td>${x.name}</td><td>${money(k * 1240)}</td><td>${money(k * 160)}</td><td>${money(k * 74)}</td><td><b>${money(k * 86)}</b></td><td><button class="btn btn-sm optline" onclick="this.textContent='Marked paid ✓'">Mark paid</button></td></tr>`; }).join('')}</tbody></table></div>`;
+    const H = BOS.home || {}, sl = [0, 1, 2].map(i => ({ ...SLIDE_DEF[i], ...((H.slides || [])[i] || {}) }));
+    M.homepage = `<h2>Homepage &amp; banners</h2><p class="hint">Change the banner slides, the quick links, every picture tile and which sections show. Pictures can come from the site, a link, or an upload. <a href="#home">View homepage</a></p>
+      <form id="homeForm" class="bo-form">
+      <fieldset><legend>Sections</legend><div class="bo-switches">${HOME_SECS.map(([k, , l]) => `<label class="sw"><input type="checkbox" name="sec-${k}" ${(H.off || {})[k] ? '' : 'checked'}><span></span><b>${l}</b></label>`).join('')}</div></fieldset>
+      <fieldset><legend>Banner slides</legend>${sl.map((o, i) => `<div class="bo-slide"><h3>Slide ${i + 1}${i === 0 ? ' · wallpaper samples' : i === 1 ? ' · featured room' : ' · before &amp; after'}</h3>
+        <div class="bo-g2"><label>Small line<input name="s${i}k" value="${bx(o.k)}"></label><label>Title<input name="s${i}t" value="${bx(o.t)}"></label></div><label>Text<textarea name="s${i}p" rows="2">${bx(o.p)}</textarea></label>
+        ${i === 0 ? '<p class="hint">The samples on this slide are picked automatically every day from live designs with a clear pattern.</p>' : `<label>Opens when tapped<input name="s${i}link" value="${bx(o.link)}" placeholder="#design-… or a full link"></label><div class="bo-g2"><div><span class="bo-l">${i === 1 ? 'Picture' : 'Before picture'}</span>${picker(`s${i}img`, o.img)}</div>${i === 2 ? `<div><span class="bo-l">After picture</span>${picker('s2img2', o.img2)}</div>` : ''}</div>`}</div>`).join('')}</fieldset>
+      <fieldset><legend>Quick links under the banner</legend>${qLinks().map((a, i) => { const o = { ...JSON.parse(a.dataset.def), ...((H.quick || [])[i] || {}) }; return `<div class="bo-g2"><label>Label<input name="q${i}t" value="${bx(o.t)}"></label><label>Link<input name="q${i}h" value="${bx(o.href)}"></label></div>`; }).join('')}</fieldset>
+      ${TILE_GROUPS.map(([, , label]) => label).concat(['Transform your walls']).filter((v, i, a) => a.indexOf(v) === i).map(label => `<fieldset><legend>${label} · pictures</legend><div class="bo-tiles">${boTiles().filter(t => t.group === label).map(t => { const o = { ...t.def, ...((H.tiles || {})[t.key] || {}) }; return `<div class="bo-tile">${picker('img-' + t.key, o.img)}${t.single ? '' : `<label>Title<input name="t-${t.key}" value="${bx(o.t)}"></label>${t.def.s !== '' ? `<label>Under the title<input name="s-${t.key}" value="${bx(o.s)}"></label>` : ''}<label>Opens<input name="h-${t.key}" value="${bx(o.href)}"></label>`}</div>`; }).join('')}</div></fieldset>`).join('')}
+      <div class="bo-save"><button class="btn btn-wine" type="submit">Save homepage</button><button class="btn optline" type="button" id="homeReset">Back to the original</button></div></form>`;
+    M.menu = `<h2>Menu pictures</h2><p class="hint">The pictures and names in the All designs menu. Change any picture to one from the site, a link, or an upload.</p><form id="menuForm" class="bo-form">${MEGA.filter(m => m[5] || typeof m[3] === 'function' || m.length > 3).map(m => { const f = m[m.length - 1]; if (typeof f !== 'function') return ''; return `<fieldset><legend>${m[1]}</legend><div class="bo-tiles">${f().map(([h, t, im]) => { const o = (BOS.menu || {})[h] || {}; return `<div class="bo-tile">${picker('m-' + h, o.img || im)}<label>Name<input name="mt-${h}" value="${bx(o.t || t)}"></label><small class="hint">${h}</small></div>`; }).join('')}</div></fieldset>`; }).join('')}<div class="bo-save"><button class="btn btn-wine" type="submit">Save menu</button></div></form>`;
+    M.prices = pricesHTML();
+    M.pro = `<h2>Artisan Pro</h2><div class="tbl-wrap"><table class="tbl"><tbody><tr><td><b>Studio Nord Interiors</b><br><small>Interior designer · studionord.com · applied yesterday</small></td><td><span class="pill wait">Pending</span></td><td><button class="btn btn-wine btn-sm" onclick="this.textContent='Approved ✓ 20% applied'">Approve</button></td></tr><tr><td><b>Harbor Hospitality</b><br><small>Hotel group · 4 locations</small></td><td><span class="pill ok">Member</span></td><td></td></tr></tbody></table></div>`;
+    M.messages = `<h2>Messages</h2><p class="hint">Read every customer–designer chat and step in as the store.</p><div class="tbl-wrap"><table class="tbl"><tbody>${allReq.map(r => `<tr><td><span class="av" style="background:${desBySlug[r.by].color}">${desBySlug[r.by].ini}</span></td><td><b>${desBySlug[r.by].name} and ${r.who}</b><br><small>About ${bySlug[r.slug].name} · “${r.text}”</small></td><td><a class="btn btn-sm optline" href="#chat-${r.slug}">Open</a></td></tr>`).join('')}</tbody></table></div>`;
+    M.signups = `<h2>Email signups</h2><div class="tbl-wrap"><table class="tbl"><tbody>${['a.m***@gmail.com', 'studio@n***.com', 'j.park@***.com'].map((e, i) => `<tr><td>${e}</td><td><small>${['Today', 'Yesterday', 'Nov 14'][i]}</small></td></tr>`).join('')}</tbody></table></div><button class="btn btn-sm optline" onclick="this.textContent='CSV ready ✓'">Download CSV</button>`;
+    const em = BOS.emails || {};
+    M.emails = `<h2>Emails</h2><p class="hint">The wording of the emails the store sends.</p><form id="emailForm" class="bo-form">${[['order', 'Order confirmation', 'Thanks for your order! We print your wallpaper to the exact size of your wall and email you when it ships.'], ['shipped', 'Order shipped', 'Your wallpaper is on its way. Track it here: {tracking}'], ['designer', 'Designer approved', 'Welcome to Artisan Murals! You can now upload your designs from your studio.']].map(([k, t, v]) => `<label>${t}<textarea name="${k}" rows="3">${bx(em[k] || v)}</textarea></label>`).join('')}<div class="bo-save"><button class="btn btn-wine btn-sm">Save emails</button></div></form>`;
+    const se = { minDpi: 150, maxGb: 5, royalty: 12, proPct: 20, ...(BOS.settings || {}) };
+    M.settings = `<h2>Settings</h2><form id="setForm" class="bo-form"><fieldset><legend>Designers</legend><div class="bo-g2"><label>Lowest sharpness allowed (DPI)<input type="number" name="minDpi" value="${se.minDpi}"></label><label>Biggest upload (GB)<input type="number" name="maxGb" value="${se.maxGb}"></label><label>Designer share of each sale (%)<input type="number" name="royalty" value="${se.royalty}"></label></div><p class="hint">New designers always need your approval. Auto-approve is set per designer on the Designers page.</p></fieldset>
+      <fieldset><legend>Artisan Pro</legend><label>Trade discount (%)<input type="number" name="proPct" value="${se.proPct}"></label></fieldset><div class="bo-save"><button class="btn btn-wine btn-sm">Save settings</button></div></form>`;
+    $('boMain').innerHTML = `<div class="bo-toast" id="boToast" role="status" hidden></div>` + (M[tab] || M.overview);
+    const main = $('boMain');
+        if (tab === 'prices') {
       const live = () => { const base = +$('prBase').value || 0; document.querySelectorAll('[data-adj]').forEach(i => { $('boMain').querySelector(`[data-out="${i.dataset.adj}"]`).textContent = `${money(Math.round((base + (+i.value || 0)) * 100) / 100)} / sq ft`; }); $('prOk').textContent = ''; };
       $('prForm').oninput = live;
       $('prForm').onsubmit = (e) => { e.preventDefault(); const adj = {}; document.querySelectorAll('[data-adj]').forEach(i => { adj[i.dataset.adj] = Math.round((+i.value || 0) * 100) / 100; });
@@ -5250,9 +5561,49 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
         applyPricing(); refreshPrices(); $('prOk').textContent = 'Saved. All prices on the site are updated.'; };
       $('prReset').onclick = () => { PRICING = PRICING_DEFAULT; try { localStorage.removeItem('am_pricing'); } catch (x) {} applyPricing(); refreshPrices(); renderAdmin('prices'); };
     }
-    document.querySelectorAll('#boMain .seg-chips.multi button').forEach(b => b.onclick = () => b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')));
-    document.querySelectorAll('[data-tiff]').forEach(b => b.onclick = () => { b.textContent = 'Making 250 DPI TIFF…'; setTimeout(() => { b.textContent = 'TIFF ready ✓'; }, 1200); });
+
+    wirePickers(main);
+    main.querySelectorAll('[data-tiff]').forEach(b => b.onclick = () => { b.textContent = 'Making 250 DPI TIFF…'; b.disabled = true; setTimeout(() => { b.textContent = 'TIFF ready ✓'; }, 1200); });
+    main.querySelectorAll('[data-df]').forEach(b => b.onclick = () => { designFilter = b.dataset.df; renderAdmin('designs'); });
+    const dq = $('boDq'); if (dq) dq.oninput = () => { designQ = dq.value.trim().toLowerCase(); const pos = dq.selectionStart; renderAdmin('designs'); const n2 = $('boDq'); n2.focus(); n2.setSelectionRange(pos, pos); };
+    main.querySelectorAll('[data-open]').forEach(b => b.onclick = () => boDesignDialog(b.dataset.open));
+    main.querySelectorAll('[data-quick]').forEach(b => b.onclick = () => { setD(b.dataset.quick, { st: b.dataset.v }); rebuildShop(); boMsg(b.dataset.v === 'live' ? 'Live in the shop.' : 'Hidden from the shop. Past orders keep their files.'); renderAdmin(tab); });
+    main.querySelectorAll('[data-dopen]').forEach(b => b.onclick = () => boDesignerDialog(b.dataset.dopen));
+    main.querySelectorAll('[data-dst]').forEach(b => b.onclick = () => { setDes(b.dataset.dst, { st: b.dataset.v }); boMsg('Designer approved. They can now upload designs.'); renderAdmin(tab); });
+    main.querySelectorAll('[data-trust]').forEach(i => i.onchange = () => { setDes(i.dataset.trust, { trusted: i.checked }); boMsg(i.checked ? 'Auto-approve on: their new designs go live without review.' : 'Auto-approve off: their new designs wait for your review.'); renderAdmin(tab); });
+    main.querySelectorAll('[data-delcode]').forEach(b => b.onclick = () => { const cs = (BOS.codes || codes).slice(); cs.splice(+b.dataset.delcode, 1); BOS.codes = cs; boSave(); renderAdmin('codes'); });
+    const cf = $('codeForm'); if (cf) cf.onsubmit = (e) => { e.preventDefault(); BOS.codes = (BOS.codes || codes).concat([[fval(cf, 'k').trim().toUpperCase(), fval(cf, 'v').trim(), 'Active']]); boSave(); renderAdmin('codes'); };
+    const hf = $('homeForm');
+    if (hf) {
+      hf.onsubmit = (e) => { e.preventDefault(); const h = { off: {}, slides: [], quick: [], tiles: {} };
+        HOME_SECS.forEach(([k]) => { if (!hf.querySelector(`[name="sec-${k}"]`).checked) h.off[k] = true; });
+        [0, 1, 2].forEach(i => { h.slides[i] = { k: fval(hf, `s${i}k`), t: fval(hf, `s${i}t`), p: fval(hf, `s${i}p`) }; if (i) { h.slides[i].link = fval(hf, `s${i}link`); h.slides[i].img = fval(hf, `s${i}img`); } if (i === 2) h.slides[i].img2 = fval(hf, 's2img2'); });
+        qLinks().forEach((a, i) => { h.quick[i] = { t: fval(hf, `q${i}t`), href: fval(hf, `q${i}h`) }; });
+        boTiles().forEach(t => { h.tiles[t.key] = { img: fval(hf, 'img-' + t.key) }; if (!t.single) { h.tiles[t.key].t = fval(hf, 't-' + t.key); h.tiles[t.key].href = fval(hf, 'h-' + t.key); if (t.def.s !== '') h.tiles[t.key].s = fval(hf, 's-' + t.key); } });
+        BOS.home = h; if (boSave()) { boApply(); boMsg('Homepage saved. Open the homepage to see it.'); } };
+      $('homeReset').onclick = () => { if (!confirm('Put the homepage back to the original pictures and wording?')) return; delete BOS.home; boSave(); boApply(); renderAdmin('homepage'); boMsg('Homepage is back to the original.'); };
+    }
+    const mf = $('menuForm'); if (mf) mf.onsubmit = (e) => { e.preventDefault(); const m = {}; mf.querySelectorAll('[data-pp]').forEach(pp => { const h = pp.dataset.pp.slice(2); m[h] = { img: pp.querySelector('input[type=hidden]').value, t: fval(mf, 'mt-' + h) }; }); BOS.menu = m; if (boSave()) { try { renderMega(); } catch (x) {} boMsg('Menu saved.'); } };
+    const ef = $('emailForm'); if (ef) ef.onsubmit = (e) => { e.preventDefault(); BOS.emails = Object.fromEntries([...ef.querySelectorAll('textarea')].map(t => [t.name, t.value])); boSave(); boMsg('Emails saved.'); };
+    const sf = $('setForm'); if (sf) sf.onsubmit = (e) => { e.preventDefault(); BOS.settings = Object.fromEntries([...sf.querySelectorAll('input')].map(i => [i.name, +i.value])); boSave(); boMsg('Settings saved.'); };
   }
+  const pricesHTML = () => `<h2>Prices &amp; materials</h2><p class="hint">Set the base price and what each material adds. Every price on the site, the cart and checkout update straight away. Orders already placed keep their price.</p>
+      <form class="pr-form" id="prForm"><label class="pr-base"><span>Base price</span><span class="pr-in"><em>$</em><input id="prBase" type="number" min="0" step="0.05" value="${PRICING.base}"><em>/ sq ft</em></span></label>
+      <table class="tbl pr-tbl"><thead><tr><th>Material</th><th>Adds</th><th>Customer pays</th></tr></thead><tbody>${PAPERS.map(p => `<tr><td><span class="mat-ball pr-ball" style="background-image:url(tex/${p.id}-ball.webp)"></span><b>${p.name}</b></td><td><span class="pr-in"><em>+$</em><input type="number" step="0.05" data-adj="${p.id}" value="${p.adj}"><em>/ sq ft</em></span></td><td class="pr-out" data-out="${p.id}">${money(p.rate)} / sq ft</td></tr>`).join('')}</tbody></table>
+      <div class="pr-act"><button class="btn btn-wine btn-sm" type="submit">Save prices</button><button class="btn optline btn-sm" type="button" id="prReset">Back to defaults</button><span class="pr-ok" id="prOk" aria-live="polite"></span></div></form>`;
+
+  // downloads: inside the Claude viewer, files go through its save prompt; elsewhere a normal browser download
+  let dlNs; const dlReady = (window.claude && typeof window.claude.use === 'function') ? window.claude.use('downloads').then(n => (dlNs = n)).catch(() => null) : Promise.resolve(null);
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[download]'); if (!a || !(window.claude && window.claude.use)) return;
+    e.preventDefault();
+    const name = a.getAttribute('download') || a.getAttribute('href').split('/').pop(), label = a.textContent;
+    dlReady.then(async (ns) => {
+      if (!ns) { window.open(a.href, '_blank', 'noopener'); return; }
+      try { a.textContent = 'Preparing…'; const blob = await (await fetch(a.href)).blob(); a.textContent = label; await ns.save({ filename: name, data: blob }); }
+      catch (err) { a.textContent = label; if (err && err.code !== 'declined') window.open(a.href, '_blank', 'noopener'); }
+    });
+  });
   // ---- sell + pro forms
   document.querySelectorAll('#pfType button').forEach(b => b.onclick = () => document.querySelectorAll('#pfType button').forEach(x => x.setAttribute('aria-checked', String(x === b))));
   const okEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -5299,7 +5650,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
     if ((m = h.match(/^myroom-(.+)$/))) { show('view-myroom'); scrollTo(0, 0); loadMyRoom(m[1]); return; }
     if (h === 'rooms-all') { show('view-rooms'); renderRooms(); scrollTo(0, 0); return; }
     // Messages / Inbox open the chat straight away, on the most recent conversation
-    if (h === 'account-messages' || h === 'studio-inbox') { const keys = Object.keys(CHATS); location.replace('#chat-' + (keys.length ? keys[keys.length - 1] : (h === 'studio-inbox' ? 'vine-charcoal' : 'animal-kingdom'))); return; }
+    if (h === 'account-messages' || h === 'studio-inbox') { try { sessionStorage.setItem('am_list', '1'); } catch (x) {} const keys = Object.keys(CHATS); location.replace('#chat-' + (keys.length ? keys[keys.length - 1] : (h === 'studio-inbox' ? 'vine-charcoal' : 'animal-kingdom'))); return; }
     if ((m = h.match(/^account(?:-(.+))?$/))) { show('view-account'); renderAccount(m[1]); scrollTo(0, 0); return; }
     if ((m = h.match(/^studio(?:-(.+))?$/))) { show('view-studio'); renderStudio(m[1]); scrollTo(0, 0); return; }
     if ((m = h.match(/^admin(?:-(.+))?$/))) { show('view-admin'); renderAdmin(m[1]); scrollTo(0, 0); return; }
