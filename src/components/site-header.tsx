@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, Menu, Search, ShoppingBag, User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useCart } from "@/lib/cart";
 import { cn } from "@/lib/utils";
 import { roomLabels, getTaxonomy } from "@/lib/design-taxonomy";
@@ -106,11 +107,12 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
     addEventListener("keydown", k);
     return () => { document.body.style.overflow = ""; removeEventListener("keydown", k); };
   }, [open, onClose]);
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
   const sec = "px-5 py-3 border-b border-border";
   const k = "mb-1 mt-2 text-[10.5px] font-bold uppercase tracking-[.12em] text-muted-foreground";
   const row = "flex items-center justify-between py-2.5 text-[15px]";
-  return (
+  // drawn at the end of the page so the header's frosted background can't trap it
+  return createPortal(
     <div className="fixed inset-0 z-[90] lg:hidden">
       <div className="absolute inset-0 bg-foreground/35" onClick={onClose} aria-hidden="true" />
       <aside aria-label="Menu" className="absolute inset-y-0 left-0 flex w-[min(340px,86vw)] flex-col bg-background shadow-2xl animate-in slide-in-from-left duration-200">
@@ -146,7 +148,8 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
           </div>
         </nav>
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
