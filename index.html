@@ -2467,6 +2467,12 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 .up-gdt.fold .fic svg{width:16px!important;height:16px!important;fill:#9C8E78!important}
 .up-gdt.fold .th:not(:has(img)) .fic{position:static;background:none}
 .up-gdt.fold .th:not(:has(img)) .fic svg{width:44px!important;height:44px!important;fill:#CFC4B2!important}
+.up-spin{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:upspin .8s linear infinite;vertical-align:-2px;margin-right:7px;opacity:.7}
+@keyframes upspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.up-spin{animation-duration:2.4s}}
+.up-prog{margin:0;padding:10px 14px;font-size:12.5px;color:var(--ink-2);background:var(--soft);border-bottom:1px solid var(--line)}.up-prog b{color:var(--ink)}
+.up-mk{display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.85);padding:6px 0}
+.up-sharp{position:absolute;left:6px;right:6px;bottom:6px;z-index:2;display:flex;align-items:center;justify-content:center;padding:5px 6px;border-radius:999px;background:rgba(255,255,255,.94);font-size:10.5px;color:var(--ink)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -5313,7 +5319,7 @@ async function tiffCrop(read, box, sink, onProgress) {
     while (tiffRunning < 4) {
       const f = tiffWanted()[0]; if (!f) return;
       TIFF_THUMBS[f.id] = 'busy'; tiffRunning++;
-      driveTiffThumb(f.id, 360).then(u => { TIFF_THUMBS[f.id] = u || 'none'; }, () => { TIFF_THUMBS[f.id] = 'none'; }).then(() => {
+      driveTiffThumb(f.id, 720).then(u => { TIFF_THUMBS[f.id] = u || 'none'; }, () => { TIFF_THUMBS[f.id] = 'none'; }).then(() => {
         tiffRunning--; const u = TIFF_THUMBS[f.id];
         UP.files.forEach(x => { if (x.driveId === f.id) { if (u !== 'none') { x.src = u; x.check = u; } if (TIFF_SIZE[f.id]) [x.px, x.py] = TIFF_SIZE[f.id]; } });
         tiffRepaint(); upTiffThumbs();
@@ -5346,14 +5352,16 @@ async function tiffCrop(read, box, sink, onProgress) {
     const dl = UP.dl || {}; if (!UP.driveFolder) return '';
     const crumbs = (dl.stack || []).map((s, i, a) => i < a.length - 1 ? `<button type="button" class="up-crumb" data-fid="${s.id}">${upEsc(s.name)}</button><span>›</span>` : `<b>${upEsc(s.name)}</b>`).join('');
     let body;
-    if (dl.busy) body = '<p class="up-gdl-msg">Opening your folder…</p>';
+    if (dl.busy) body = '<p class="up-gdl-msg"><span class="up-spin" aria-hidden="true"></span>Opening your folder in Google Drive…</p>';
     else if (dl.err === 'offline') body = `<iframe src="https://drive.google.com/embeddedfolderview?id=${UP.driveFolder}#grid" title="Files in your Google Drive folder" loading="lazy"></iframe><p class="up-gdl-msg">Couldn't reach the folder reader from here, so this is Google's own view of your folder. To add a picture, open it in Drive, copy its link and paste it above.</p>`;
     else if (dl.err) body = `<p class="up-gdl-msg err">${upEsc(dl.err)}</p>`;
     else if (dl.files && !dl.files.length) body = '<p class="up-gdl-msg">This folder is empty.</p>';
     else if (dl.files) body = `<div class="up-gdl">${dl.files.map(f => f.folder
       ? `<button type="button" class="up-gdt fold" data-fid="${f.id}" data-fname="${upEsc(f.name)}"><span class="th">${folderCover(f.id) ? `<img src="${upEsc(folderCover(f.id))}" alt="">` : ''}<span class="fic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>${DL_CACHE[f.id] ? DL_CACHE[f.id].filter(x => !x.folder).length : ''}</span></span><small>${upEsc(f.name)}</small></button>`
-      : `<button type="button" class="up-gdt${UP.files.some(x => x.driveId === f.id) ? ' on' : ''}" data-add="${f.id}" data-fname="${upEsc(f.name)}" aria-pressed="${UP.files.some(x => x.driveId === f.id)}"><span class="th"><span class="ext">${upEsc((f.name.split('.').pop() || 'file').slice(0, 5).toUpperCase())}</span>${TIFF_THUMBS[f.id] && TIFF_THUMBS[f.id].startsWith('blob:') ? `<img src="${TIFF_THUMBS[f.id]}" alt="">` : TIFF_THUMBS[f.id] === 'busy' ? '<span class="up-mk">Making preview…</span>' : `<img src="${f.thumb ? upEsc(f.thumb) : `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`}" alt="" loading="lazy" onerror="this.remove()">`}<em>${UP.files.some(x => x.driveId === f.id) ? '✓ Added' : '+ Add'}</em></span><small>${upEsc(f.name)}</small></button>`).join('')}</div>`;
-    return `<div class="up-gdf"><div class="up-gdf-h"><div class="up-crumbs">${crumbs}</div><a href="https://drive.google.com/drive/folders/${(dl.stack || []).slice(-1)[0]?.id || UP.driveFolder}" target="_blank" rel="noopener">Open in Drive ↗</a></div>${body}</div>`;
+      : `<button type="button" class="up-gdt${UP.files.some(x => x.driveId === f.id) ? ' on' : ''}" data-add="${f.id}" data-fname="${upEsc(f.name)}" aria-pressed="${UP.files.some(x => x.driveId === f.id)}"><span class="th"><span class="ext">${upEsc((f.name.split('.').pop() || 'file').slice(0, 5).toUpperCase())}</span>${TIFF_THUMBS[f.id] && TIFF_THUMBS[f.id].startsWith('blob:') ? `<img src="${TIFF_THUMBS[f.id]}" alt="">` : TIFF_THUMBS[f.id] === 'busy' ? '<span class="up-mk"><span class="up-spin" aria-hidden="true"></span>Making preview…</span>' : `<img src="${f.thumb ? upEsc(f.thumb) : `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`}" alt="" loading="lazy" onerror="this.remove()">`}<em>${UP.files.some(x => x.driveId === f.id) ? '✓ Added' : '+ Add'}</em></span><small>${upEsc(f.name)}</small></button>`).join('')}</div>`;
+    const tiffIds = Object.keys(TIFF_THUMBS), tiffDone = tiffIds.filter(k => TIFF_THUMBS[k] !== 'busy').length, tiffBusy = tiffIds.length - tiffDone;
+    const prog = tiffBusy ? `<p class="up-prog" role="status"><span class="up-spin" aria-hidden="true"></span>Making pictures of your designs… <b>${tiffDone} of ${tiffIds.length + tiffWanted().length} ready</b>. Big print files take a few seconds each. You can keep choosing while they load.</p>` : '';
+    return `<div class="up-gdf"><div class="up-gdf-h"><div class="up-crumbs">${crumbs}</div><a href="https://drive.google.com/drive/folders/${(dl.stack || []).slice(-1)[0]?.id || UP.driveFolder}" target="_blank" rel="noopener">Open in Drive ↗</a></div>${prog}${body}</div>`;
   }
   function upWireGrid() {
     document.querySelectorAll('.up-gdf [data-fid]').forEach(b => b.onclick = () => upOpenFolder(b.dataset.fid, b.dataset.fname));
@@ -5363,13 +5371,13 @@ async function tiffCrop(read, box, sink, onProgress) {
       const tt = TIFF_THUMBS[id], src = tt && tt.startsWith('blob:') ? tt : `https://drive.google.com/thumbnail?id=${id}&sz=w1600`, nm = b.dataset.fname;
       UP.files.push({ file: nm, driveId: id, drive: true, src, check: src, px: (TIFF_SIZE[id] || [0])[0], py: (TIFF_SIZE[id] || [0, 0])[1], vector: /\.(pdf|svg|ai|eps)$/i.test(nm), role: UP.files.some(x => x.role === 'main') ? 'color' : 'main', cw: prettyName(nm) });
       upRender();
-      if (/\.tiff?$/i.test(nm)) driveTiffThumb(id, 1800).then(u => { if (!u) return; UP.files.forEach(x => { if (x.driveId === id) { x.src = u; x.check = u; x.det = null; } }); upRender(); }).catch(() => {}); // sharp picture for the print preview
+      if (/\.tiff?$/i.test(nm)) { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = true; }); upRender(); driveTiffThumb(id, 2600).then(u => { UP.files.forEach(x => { if (x.driveId === id) { x.sharpening = false; if (u) { x.src = u; x.check = u; x.det = null; } } }); upRender(); }).catch(() => { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = false; }); upRender(); }); } // sharp picture for the print preview
     });
   }
   /* step 1: artwork from a Drive folder or your computer */
   function upStep0() {
     const tiles = UP.files.map((f, i) => `<div class="up-file ${f.role ? 'on ' + f.role : ''}">
-        <button type="button" class="up-th" data-i="${i}" aria-pressed="${!!f.role}" aria-label="Use ${upEsc(f.file)}">${f.drive ? `<span class="up-ext">${upEsc((f.file.split('.').pop() || 'file').slice(0, 5).toUpperCase())}<small>Preview made after copying</small></span>` : ''}<img src="${f.src}" alt="" ${f.drive ? 'onerror="this.remove()"' : ''}>${f.role ? `<em>${f.role === 'main' ? 'Main' : 'Colorway'}</em>` : ''}</button>
+        <button type="button" class="up-th" data-i="${i}" aria-pressed="${!!f.role}" aria-label="Use ${upEsc(f.file)}">${f.sharpening ? '<span class="up-sharp"><span class="up-spin" aria-hidden="true"></span>Making a sharp picture…</span>' : ''}${f.drive ? `<span class="up-ext">${upEsc((f.file.split('.').pop() || 'file').slice(0, 5).toUpperCase())}<small>Preview made after copying</small></span>` : ''}<img src="${f.src}" alt="" ${f.drive ? 'onerror="this.remove()"' : ''}>${f.role ? `<em>${f.role === 'main' ? 'Main' : 'Colorway'}</em>` : ''}</button>
         <small title="${upEsc(f.file)}">${upEsc(f.file)}</small>
         <small class="mut">${f.drive && !f.px ? 'Full size is copied when you submit' : f.vector ? 'Vector file' : `${f.px.toLocaleString()} × ${f.py.toLocaleString()} px`}</small>
         ${f.role ? `<input class="up-cwn" data-i="${i}" value="${upEsc(f.cw)}" maxlength="40" aria-label="Colorway name" placeholder="Colorway name">
