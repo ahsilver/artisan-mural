@@ -4969,7 +4969,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
   function upWire0() {
     const show = () => {
       const l = $('upLink').value.trim(); UP.link = l;
-      const folder = l.match(/drive\.google\.com\/drive\/(?:u\/\d+\/)?folders\/([\w-]{10,})/), file = l.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]{10,})/) || l.match(/docs\.google\.com\/\w+\/d\/([\w-]{10,})/);
+      const isG = /(drive|docs)\.google\.com/.test(l), folder = isG && l.match(/folders\/([\w-]{10,})/), file = isG && !folder && (l.match(/\/d\/([\w-]{10,})/) || l.match(/[?&]id=([\w-]{10,})/));
       if (!folder && !file) return upErr('That isn\'t a Google Drive link. It should look like drive.google.com/file/d/… or drive.google.com/drive/folders/…');
       upErr('');
       if (folder) { UP.driveFolder = folder[1]; UP.link = ''; upOpenFolder(folder[1], 'Your folder', true); return; }
@@ -4977,7 +4977,9 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
       $('upStatus').textContent = 'Getting the file from Google Drive…'; $('upShow').disabled = true;
       const im = new Image();
       im.onload = () => { UP.files.push({ file: 'Google Drive file', driveId: id, drive: true, src: im.src, check: im.src, px: 0, py: 0, vector: false, role: UP.files.some(x => x.role === 'main') ? 'color' : 'main', cw: 'Colorway ' + (UP.files.length + 1) }); UP.link = ''; upRender(); };
-      im.onerror = () => { $('upShow').disabled = false; $('upStatus').textContent = ''; upErr('Google Drive didn\'t share this file. In Drive, set sharing to "Anyone with the link", then paste it again.'); };
+      im.onerror = () => { // maybe it's a folder link in another format: try reading it as a folder before giving up
+        fetch(DRIVE_API + encodeURIComponent(id)).then(r => r.ok ? r.json() : Promise.reject()).then(d => { if (!d.files) throw 0; UP.driveFolder = id; UP.link = ''; upOpenFolder(id, d.name || 'Your folder', true); })
+          .catch(() => { $('upShow').disabled = false; $('upStatus').textContent = ''; upErr('Google Drive didn\'t share this file. In Drive, set sharing to "Anyone with the link", then paste it again.'); }); };
       im.src = `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;
     };
     upWireGrid();
