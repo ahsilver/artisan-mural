@@ -1,13 +1,13 @@
 /* Messages: list + thread. Flat, light borders, 13.5px text, 32px controls, 6px radius. */
 :root{--ms-b:#D6EAF6;--ms-t:#082635;--ms-m:#6B7280;--ms-bg:#fff;--ms-soft:#EEF6FB;--ms-hover:#F4FAFE;--ms-on:#E3F1FA;--ms-own:#8EC6E7;--ms-dot:#2F86B8;--ms-bad:#B91C1C;}
-.ms{font-size:13.5px;line-height:1.45;color:var(--ms-t);background:var(--ms-bg);border:1px solid var(--ms-b);border-radius:6px;overflow:hidden;font-family:"Inter Tight",ui-sans-serif,system-ui,sans-serif;display:grid;grid-template-columns:minmax(0,1fr);height:min(680px,calc(100dvh - 150px));min-height:440px}
+.ms{font-size:13.5px;line-height:1.45;color:var(--ms-t);background:var(--ms-bg);border:1px solid var(--ms-b);border-radius:6px;overflow:hidden;font-family:var(--font-sans);display:grid;grid-template-columns:minmax(0,1fr);height:min(680px,calc(100dvh - 150px));min-height:440px}
 .ms *{box-shadow:none!important;box-sizing:border-box}
 @media(min-width:768px){.ms{grid-template-columns:300px minmax(0,1fr)}.ms.ms-wide{grid-template-columns:340px minmax(0,1fr)}}
 .ms-list{display:flex;flex-direction:column;min-height:0;min-width:0;border-right:1px solid var(--ms-b)}
 .ms-list-top{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--ms-b);align-items:center}
 .ms-in{height:32px;border:1px solid var(--ms-b);border-radius:6px;padding:0 10px;font-size:13.5px;min-width:0;width:100%;background:#fff;color:var(--ms-t);outline:none;font-family:inherit}
 .ms-in:focus,.ms-ta:focus{border-color:#9CA3AF}
-.ms-btn{font-family:"Inter Tight",ui-sans-serif,system-ui,sans-serif;height:32px;padding:0 12px;border:1px solid var(--ms-b);border-radius:6px;background:#fff;color:var(--ms-t);font-size:13.5px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;text-decoration:none;font-family:inherit}
+.ms-btn{font-family:var(--font-sans);height:32px;padding:0 12px;border:1px solid var(--ms-b);border-radius:6px;background:#fff;color:var(--ms-t);font-size:13.5px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;text-decoration:none;font-family:inherit}
 .ms-btn:hover{background:var(--ms-hover)}
 .ms-btn.pri{background:var(--ms-own);border-color:var(--ms-own);color:#082635;font-weight:600}
 .ms-btn.pri:hover{opacity:.92}
