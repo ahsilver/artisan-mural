@@ -71,6 +71,7 @@ function OrderPanel({ id, onChanged, onClose }: { id: string; onChanged: () => v
   const car = carrier ?? o.carrier ?? "";
   const trk = tracking ?? o.tracking_number ?? "";
   const sel = o.selection ?? {};
+  const pay: any = (() => { try { return typeof o.payment_info === "string" ? JSON.parse(o.payment_info) : o.payment_info; } catch { return null; } })();
   const save = (patch: any, okText = "Saved.") => s.run(async () => { await api("admin/orders/" + id, { body: { ...patch, notify } }); await reload(); onChanged(); }, okText);
   return <div>
     <div className="bo-row" style={{ justifyContent: "space-between" }}><h2>Order {o.id.slice(0, 8).toUpperCase()}</h2><button className="bo-btn sm" onClick={onClose}>Close</button></div>
@@ -80,7 +81,7 @@ function OrderPanel({ id, onChanged, onClose }: { id: string; onChanged: () => v
     <div style={{ marginTop: 12 }}><label className="bo-lbl">Status</label>
       <div className="bo-steps">{FLOW.map((st) => { const i = FLOW.indexOf(o.status); const k = FLOW.indexOf(st); return <button key={st} disabled={s.busy} className={st === o.status ? "cur" : i >= 0 && k < i ? "done" : ""} onClick={() => save({ status: st }, `Status: ${LABEL[st]}`)}>{LABEL[st]}</button>; })}</div>
       <div className="bo-row"><button className="bo-btn sm danger" disabled={s.busy || o.status === "cancelled"} onClick={() => confirm("Cancel this order?") && save({ status: "cancelled" }, "Order cancelled")}>Cancel order</button><button className="bo-btn sm danger" disabled={s.busy || o.status === "refunded"} onClick={() => confirm("Mark this order refunded?") && save({ status: "refunded" }, "Marked refunded")}>Mark refunded</button>
-        <label className="bo-switch" style={{ marginLeft: "auto" }}><input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />Email customer (test mode)</label></div>
+        <label className="bo-switch" style={{ marginLeft: "auto" }}><input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />Email and notify the customer</label></div>
     </div>
     <div className="bo-card" style={{ marginTop: 14 }} id="print"><h2>Print this order</h2><ReadyToPrint order={o} art={data.art} /></div>
     {data.project && <div className="bo-card" style={{ marginTop: 14 }}><h2>{data.project.kind === "edit" ? "Change request" : "Custom design"}: {data.project.title}</h2>
@@ -104,15 +105,39 @@ function OrderPanel({ id, onChanged, onClose }: { id: string; onChanged: () => v
     <div className="bo-card"><h2>All stored files</h2>
       {data.files.length ? data.files.map((f: any) => <div key={f.url} className="bo-row" style={{ justifyContent: "space-between", padding: "4px 0" }}><span>{f.label}</span><a className="bo-btn sm" href={f.url} target="_blank" rel="noreferrer">Download</a></div>) : <div className="bo-sub">No print file attached to this design yet. Built-in sample designs have no print file.</div>}
     </div>
-    <div className="bo-card"><h2>Details</h2>
+    <div className="bo-grid2 bo-od">
+      <div className="bo-card"><h2>Customer</h2>
+        <dl className="bo-dl"><dt>Name</dt><dd>{o.customer_name || "—"}</dd><dt>Email</dt><dd>{o.customer_email ? <a href={`mailto:${o.customer_email}`}>{o.customer_email}</a> : "—"}</dd><dt>Phone</dt><dd>{o.phone ? <a href={`tel:${o.phone}`}>{o.phone}</a> : "—"}</dd><dt>Account</dt><dd>{o.user_id ? "Signed-in customer" : "Guest / added by you"}</dd><dt>Placed</dt><dd>{fmtDateTime(o.created_at)}{o.source && o.source !== "website" ? ` · ${o.source}` : ""}</dd></dl>
+      </div>
+      <div className="bo-card"><h2>Shipping address</h2><p className="bo-addr">{o.shipping_address || "—"}</p>
+        <h2 style={{ marginTop: 14 }}>Billing address</h2><p className="bo-addr">{o.billing_address && o.billing_address !== o.shipping_address ? o.billing_address : o.shipping_address ? "Same as shipping" : "—"}</p></div>
+      <div className="bo-card"><h2>Payment</h2>
+        <dl className="bo-dl">
+          <dt>Status</dt><dd>{o.status === "awaiting_payment" ? <span className="bo-pill warn">Awaiting payment</span> : ["cancelled", "refunded"].includes(o.status) ? <span className="bo-pill">{LABEL[o.status]}</span> : <span className="bo-pill ok">Paid</span>}</dd>
+          <dt>Method</dt><dd><select className="bo-sel" style={{ width: 200, height: 28 }} value={o.payment_method ?? ""} onChange={(e) => save({ paymentMethod: e.target.value }, "Payment saved")}><option value="">Not recorded</option>{[...new Set(["Card (Sola)", "PayPal", "Bank transfer", "Cash / check", "Zelle", o.payment_method].filter(Boolean))].map((x) => <option key={x}>{x}</option>)}</select></dd>
+          {pay?.last4 ? <><dt>Card</dt><dd>{pay.brand ?? "Card"} •••• {pay.last4}{pay.exp ? ` · exp ${pay.exp}` : ""}{pay.mode === "test" ? " · test mode" : ""}</dd>{pay.holder && <><dt>Name on card</dt><dd>{pay.holder}</dd></>}</> : <><dt>Card</dt><dd className="bo-sub">{o.status === "awaiting_payment" ? "Not paid yet" : "No card details recorded"}</dd></>}
+        </dl>
+        <p className="bo-sub" style={{ marginTop: 6 }}>For safety only the card type, last 4 digits, expiry and name are kept. Full card numbers stay with the payment company.</p>
+      </div>
+      <div className="bo-card"><h2>Money</h2>
+        <dl className="bo-dl bo-money">
+          <dt>{o.design_fee ? "Printing + design" : "Subtotal"}</dt><dd>{money(o.estimated_total)}</dd>
+          {Number(o.design_fee) > 0 && <><dt>· of which design work</dt><dd>{money(o.design_fee)}</dd></>}
+          {Number(o.discount) > 0 && <><dt>Discount{o.coupon ? ` (${o.coupon})` : ""}</dt><dd>−{money(o.discount)}</dd></>}
+          {Number(o.tax) > 0 && <><dt>Tax</dt><dd>{money(o.tax)}</dd></>}
+          {Number(o.credit_applied) > 0 && <><dt>Store credit</dt><dd>−{money(o.credit_applied)}</dd></>}
+          <dt><b>Total</b></dt><dd><b>{money(o.amount_due ?? o.estimated_total)}</b></dd>
+        </dl>
+      </div>
+    </div>
+    <div className="bo-card"><h2>What they ordered</h2>
       <dl className="bo-dl">
-        <dt>Customer</dt><dd>{o.customer_name}</dd><dt>Email</dt><dd>{o.customer_email || "—"}</dd><dt>Phone</dt><dd>{o.phone || "—"}</dd>
-        <dt>Ship to</dt><dd style={{ whiteSpace: "pre-line" }}>{o.shipping_address}</dd>
-        <dt>Design</dt><dd>{o.design_title}{(sel.colorName || sel.color) ? ` · color ${sel.colorName || (/^c\d+$/.test(sel.color) ? (data?.art?.name ?? sel.color) : sel.color)}` : ""}</dd><dt>Finish</dt><dd>{o.finish}</dd>
+        <dt>Design</dt><dd>{o.design_title}{(sel.colorName || sel.color) ? ` · color ${sel.colorName || (/^c\d+$/.test(sel.color) ? (data?.art?.name ?? sel.color) : sel.color)}` : ""}</dd>
+        <dt>Paper</dt><dd>{o.finish}</dd>
         <dt>Wall</dt><dd>{sel.wallName ? <b>{sel.wallName}: </b> : null}{sel.width && sel.height ? `${sel.width} × ${sel.height} ${sel.unit ?? ""}` : "—"}{sel.panels ? ` · ${sel.panels} panels` : ""}</dd>
-        <dt>Area</dt><dd>{Number(o.square_feet).toFixed(2)} sq ft</dd><dt>Total</dt><dd>{money(o.estimated_total)}</dd>
-        <dt>Payment</dt><dd><select className="bo-sel" style={{ width: 180, height: 28 }} value={o.payment_method ?? ""} onChange={(e) => save({ paymentMethod: e.target.value }, "Payment saved")}><option value="">Not recorded</option><option>Card (Sola)</option><option>PayPal</option><option>Bank transfer</option><option>Cash / check</option><option>Invoice</option><option>Other</option></select></dd>
-        <dt>Customer note</dt><dd>{o.notes || "—"}</dd>
+        <dt>Area</dt><dd>{Number(o.square_feet).toFixed(2)} sq ft</dd>
+        {sel.zoom != null && <><dt>Placement</dt><dd>zoom {Number(sel.zoom).toFixed(2)} · position {Math.round(Number(sel.x ?? 0.5) * 100)}% / {Math.round(Number(sel.y ?? 0.5) * 100)}%{sel.waste ? ` · ${sel.waste}% extra` : ""} <span className="bo-sub">(the exact part they chose is in the print file above)</span></dd></>}
+        <dt>Customer note</dt><dd style={{ whiteSpace: "pre-wrap" }}>{o.notes || "—"}</dd>
         {data.cartSiblings.length > 0 && <><dt>Same checkout</dt><dd>{data.cartSiblings.map((c: any) => <div key={c.id}>{c.design_slug} · {money(c.estimated_total)}</div>)}</dd></>}
       </dl>
     </div>

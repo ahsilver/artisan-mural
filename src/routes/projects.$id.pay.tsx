@@ -14,8 +14,9 @@ function Pay() {
   const { session, loading } = useSession();
   const navigate = useNavigate();
   const [p, setP] = useState<any>(null);
-  const [f, setF] = useState({ width: "", height: "", unit: "ft", finish: "", name: "", phone: "", address: "", state: "", card: "" });
+  const [f, setF] = useState({ width: "", height: "", unit: "ft", finish: "", name: "", phone: "", address: "", state: "", card: "", exp: "", cardName: "", billing: "" });
   const [price, setPrice] = useState<any>(null);
+  const [sameBill, setSameBill] = useState(true);
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   useEffect(() => { if (session) papi(`projects/${id}`).then((x) => { setP(x); if (x.wallSize) { const m = String(x.wallSize).match(/(\d+(?:\.\d+)?)\s*[x×by]+\s*(\d+(?:\.\d+)?)/i); if (m) setF((v) => ({ ...v, width: m[1], height: m[2] })); } }).catch((e) => setErr(e.message)); }, [session?.user?.id, id]);
   useEffect(() => { if (!session || !p || p.status !== "approved") return; const t = setTimeout(() => papi(`projects/${id}/price`, { width: Number(f.width), height: Number(f.height), unit: f.unit, finish: f.finish, state: f.state }).then((r) => { setPrice(r); if (!f.finish && r.finish) setF((v) => ({ ...v, finish: r.finish })); }).catch(() => {}), 250); return () => clearTimeout(t); }, [f.width, f.height, f.unit, f.finish, f.state, p?.status]);
@@ -28,7 +29,7 @@ function Pay() {
   const accepted = p.quotes.find((x: any) => x.status === "accepted");
   async function pay(e: React.FormEvent) {
     e.preventDefault(); setErr(""); setBusy(true);
-    try { await papi(`projects/${id}/pay`, { ...f, width: Number(f.width), height: Number(f.height) }); await navigate({ to: "/projects/$id", params: { id }, search: { paid: 1 } as any }); } catch (x: any) { setErr(x.message); setBusy(false); }
+    try { await papi(`projects/${id}/pay`, { ...f, billing: sameBill ? "" : f.billing, width: Number(f.width), height: Number(f.height) }); await navigate({ to: "/projects/$id", params: { id }, search: { paid: 1 } as any }); } catch (x: any) { setErr(x.message); setBusy(false); }
   }
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
   return shell(
@@ -50,7 +51,11 @@ function Pay() {
             <label className="cf"><span>State</span><input maxLength={2} value={f.state} onChange={set("state")} placeholder="NY" /></label></div>
         </div></section>
         <section className="co-step"><header><span className="n">4</span><h2>Payment</h2></header><div className="co-body">
-          <div className="co-grid"><label className="cf w2"><span>Card number</span><input required inputMode="numeric" autoComplete="off" placeholder="4242 4242 4242 4242" value={f.card} onChange={set("card")} /></label></div>
+          <div className="co-grid"><label className="cf w2"><span>Card number</span><input required inputMode="numeric" autoComplete="cc-number" placeholder="4242 4242 4242 4242" value={f.card} onChange={set("card")} /></label>
+            <label className="cf"><span>Expiry</span><input inputMode="numeric" autoComplete="cc-exp" placeholder="MM / YY" maxLength={7} value={f.exp} onChange={set("exp")} /></label>
+            <label className="cf"><span>Name on card</span><input autoComplete="cc-name" maxLength={80} value={f.cardName} onChange={set("cardName")} /></label></div>
+          <label className="co-check"><input type="checkbox" checked={sameBill} onChange={(e) => setSameBill(e.target.checked)} /><span>Billing address is the same as shipping</span></label>
+          {!sameBill && <label className="cf"><span>Billing address</span><textarea rows={2} maxLength={600} value={f.billing} onChange={set("billing")} autoComplete="billing street-address" /></label>}
           <p className="co-test">Test mode: no card is charged.</p>
           {err && <p className="co-err" role="alert">{err}</p>}
           <button type="submit" className="btn btn-wine big" disabled={busy || !(price?.sqft > 0)}>{busy ? "Paying…" : `Pay ${money(q?.due ?? 0)}`}</button>

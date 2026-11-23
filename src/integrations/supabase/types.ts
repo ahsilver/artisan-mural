@@ -705,6 +705,8 @@ export type Database = {
       }
       order_requests: {
         Row: {
+          billing_address: string | null
+          payment_info: Json | null
           carrier: string | null
           cart_id: string | null
           created_at: string
@@ -731,6 +733,8 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          billing_address?: string | null
+          payment_info?: Json | null
           carrier?: string | null
           cart_id?: string | null
           created_at?: string
@@ -757,6 +761,8 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          billing_address?: string | null
+          payment_info?: Json | null
           carrier?: string | null
           cart_id?: string | null
           created_at?: string

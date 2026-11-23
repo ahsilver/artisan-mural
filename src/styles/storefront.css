@@ -2705,3 +2705,10 @@
 .am .hiw-list{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink-2);display:grid;gap:4px}
 .am .hiw-group{display:grid;gap:6px;margin-top:10px}
 .am .hiw-group h3{margin:0;font:700 11px/1 var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+.am .co-sub{grid-column:1/-1;font:600 13px var(--f-body);margin-top:6px}
+/* order panel */
+.am .bo-skin .bo-od{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+.am .bo-skin .bo-od .bo-card{margin:0}
+.am .bo-skin .bo-addr{margin:6px 0 0;white-space:pre-line;font-size:14px;line-height:1.5}
+.am .bo-skin .bo-money dd{text-align:right}
+@media (max-width:700px){.am .bo-skin .bo-od{grid-template-columns:1fr}}

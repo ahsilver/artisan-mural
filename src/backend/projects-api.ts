@@ -335,6 +335,9 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
     if (sqft < 1 || sqft > 5000) return bad("That wall size doesn't look right.");
     if (!String(body.name ?? "").trim() || String(body.address ?? "").trim().length < 5) return bad("Name and shipping address are needed.");
     const card = String(body.card ?? "").replace(/\s/g, "");
+    // keep only what is safe to keep: brand, last 4, expiry and name on the card (never the number or the security code)
+    const brand = /^4/.test(card) ? "Visa" : /^(5[1-5]|2[2-7])/.test(card) ? "Mastercard" : /^3[47]/.test(card) ? "American Express" : /^6/.test(card) ? "Discover" : "Card";
+    const payInfo = JSON.stringify({ method: "Card", brand, last4: card.slice(-4), exp: String(body.exp ?? "").slice(0, 7) || null, holder: String(body.cardName ?? "").slice(0, 80) || null, mode: "test" });
     if (!/^4242424242424242$/.test(card)) return bad("Test mode: use the test card 4242 4242 4242 4242. No real money is taken.");
     const pp = await printPrice(env, pr.design_slug, String(body.finish ?? ""), sqft);
     const fee = Number(pr.fee ?? 0); const sub = r2(pp.printing + fee);
@@ -344,6 +347,7 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
     const sel = { width: w, height: h, unit, waste: 0 };
     await DB.prepare(`INSERT INTO order_requests (id, user_id, cart_id, design_slug, finish, selection, square_feet, estimated_total, customer_name, customer_email, phone, shipping_address, notes, status, payment_method, source, project_id, design_fee, due_at, tax, discount, credit_applied, amount_due, status_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'waiting_on_designer', 'Card (test mode)', 'design request', ?, ?, ?, ?, ?, ?, ?, ?)`)
       .bind(oid, uid, oid, pr.design_slug ?? `project-${pr.id.slice(0, 8)}`, pp.finish, JSON.stringify(sel), sqft, sub, String(body.name).slice(0, 100), pr.customer_email ?? "", body.phone ? String(body.phone).slice(0, 40) : null, String(body.address).slice(0, 600), `${pr.kind === "edit" ? "Change request" : "Custom design"}: ${pr.title}`, pr.id, fee, due, q.tax, r2(q.special + q.couponDiscount), q.credit, q.due, now).run();
+    await DB.prepare(`UPDATE order_requests SET billing_address = ?, payment_info = ? WHERE id = ?`).bind(String(body.billing ?? "").trim().slice(0, 600) || String(body.address).slice(0, 600), payInfo, oid).run();
     if (q.credit > 0) await DB.prepare(`INSERT INTO store_credit (id, user_id, amount, kind, ref, note) VALUES (?, ?, ?, 'spend', ?, ?)`).bind(crypto.randomUUID(), uid, -q.credit, oid, "Used at checkout").run();
     await addEvent(env, oid, "paid", `Paid $${q.due.toFixed(2)} by card (test mode): printing $${pp.printing.toFixed(2)} + design $${fee.toFixed(2)}${q.shipping ? ` + shipping $${q.shipping.toFixed(2)}` : ""}${q.tax ? ` + tax $${q.tax.toFixed(2)}` : ""}`, uid);
     await addEvent(env, oid, "waiting_on_designer", `Waiting on designer, due ${fmtDay(due)}`, null);

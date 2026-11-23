@@ -12,6 +12,7 @@ export const createCartOrder = createServerFn({ method: "POST" })
     name: z.string().trim().min(1).max(100),
     phone: z.string().trim().max(40),
     address: z.string().trim().min(5).max(600),
+    billing: z.string().trim().max(600).optional(),
     notes: z.string().trim().max(1000),
   }).parse(input))
   .handler(async ({ data, context }) => {
@@ -29,7 +30,7 @@ export const createCartOrder = createServerFn({ method: "POST" })
       const cw = design.colorways?.find((c) => c.id === item.selection.color) ?? (design.colorways && design.colorways.length > 1 ? design.colorways[0] : undefined);
       const selection0 = cw ? { ...item.selection, color: cw.id, colorName: cw.name } : item.selection;
       const selection = item.name ? { ...selection0, wallName: item.name } : selection0;
-      return { user_id: context.userId, cart_id: cartId, design_slug: design.slug, finish: material.id, selection, ...(cw?.originalId ? { print_original_id: cw.originalId } : {}), square_feet: Math.round(sqft * 100) / 100, estimated_total: Math.round(sqft * unitPrice(design, material) * 100) / 100, customer_name: data.name, customer_email: email, phone: data.phone || null, shipping_address: data.address, notes: data.notes || null, status: "awaiting_payment" };
+      return { user_id: context.userId, cart_id: cartId, design_slug: design.slug, finish: material.id, selection, ...(cw?.originalId ? { print_original_id: cw.originalId } : {}), square_feet: Math.round(sqft * 100) / 100, estimated_total: Math.round(sqft * unitPrice(design, material) * 100) / 100, customer_name: data.name, customer_email: email, phone: data.phone || null, shipping_address: data.address, billing_address: data.billing || data.address, notes: data.notes || null, status: "awaiting_payment" };
     });
     const { error } = await context.supabase.from("order_requests").insert(rows);
     if (error) { console.error(error); throw new Error("Your order could not be saved. Please try again."); }

@@ -35,6 +35,7 @@ function Checkout() {
   const [state, setState] = useState("");
   const [q, setQ] = useState<any>(null);
   const [addr, setAddr] = useState<any>(null);
+  const [sameBill, setSameBill] = useState(true);
   useEffect(() => { if (session) api("account/me").then((a) => { setAcct(a); const first = a?.addresses?.[0]; if (first) { setAddr((cur: any) => cur ?? first); setState((s) => s || first.state || ""); } }).catch(() => setAcct(null)); }, [session?.user.id]);
   useEffect(() => { if (session && total > 0) api("account/quote", { body: { subtotal: total, coupon: appliedCoupon, state, useCredit } }).then(setQ).catch(() => setQ(null)); }, [session?.user.id, total, appliedCoupon, state, useCredit]);
   const due = q ? q.due : total;
@@ -51,7 +52,7 @@ function Checkout() {
     if (big) { setError(`Your wall is bigger than ${big.d!.title} was made for. Don't worry, we can fix it: open it from your cart and tap "Ask the designer to make it fit".`); return; }
     setBusy(true); setError("");
     try {
-      const r = await create({ data: { items: lines.map(l => ({ design: l.design, finish: l.finish, selection: l.selection, ...(l.name ? { name: l.name } : {}) })), name: v("name"), phone: v("phone"), address: [v("address"), v("city"), v("state"), v("postal"), v("country")].filter(Boolean).join(", "), notes: v("notes") } });
+      const r = await create({ data: { items: lines.map(l => ({ design: l.design, finish: l.finish, selection: l.selection, ...(l.name ? { name: l.name } : {}) })), name: v("name"), phone: v("phone"), address: [v("address"), v("city"), v("state"), v("postal"), v("country")].filter(Boolean).join(", "), ...(sameBill ? {} : { billing: [v("bname"), v("baddress"), v("bcity"), v("bstate"), v("bpostal"), v("bcountry")].filter(Boolean).join(", ") }), notes: v("notes") } });
       void fetch("/backend/orders-placed", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cartId: (r as any)?.cartId }) }).catch(() => {});
       let fin: any = null;
       try { fin = await api("account/finalize", { body: { cartId: r.cartId, coupon: appliedCoupon, state: v("state"), useCredit } }); } catch {} if (fin?.firstOrder) try { localStorage.removeItem("am-welcome-code"); localStorage.setItem("am-popup-hide-until", String(Date.now() + 365 * 864e5)); } catch {}
@@ -81,6 +82,15 @@ function Checkout() {
               <label className="cf"><span>Country</span><input name="country" required maxLength={80} autoComplete="country-name" defaultValue={addr?.country ?? ""} /></label>
               <label className="cf w2"><span>Notes for our studio <small>(optional)</small></span><textarea name="notes" maxLength={1000} rows={3} placeholder="Delivery times, wall details, anything we should know" /></label>
             </div>
+            <label className="co-check"><input type="checkbox" checked={sameBill} onChange={(e) => setSameBill(e.target.checked)} /><span>Billing address is the same as shipping</span></label>
+            {!sameBill && <div className="co-grid"><b className="w2 co-sub">Billing address</b>
+              <label className="cf w2"><span>Name on the bill</span><input name="bname" required maxLength={100} autoComplete="billing name" /></label>
+              <label className="cf w2"><span>Street address</span><input name="baddress" required maxLength={300} autoComplete="billing street-address" /></label>
+              <label className="cf"><span>City</span><input name="bcity" required maxLength={100} autoComplete="billing address-level2" /></label>
+              <label className="cf"><span>State</span><input name="bstate" maxLength={40} autoComplete="billing address-level1" /></label>
+              <label className="cf"><span>Postal code</span><input name="bpostal" required maxLength={20} autoComplete="billing postal-code" /></label>
+              <label className="cf"><span>Country</span><input name="bcountry" required maxLength={80} autoComplete="billing country-name" /></label>
+            </div>}
           </div></section>
           <section className="co-step">{head(3, "Proof & payment")}<div className="co-body">
             <p className="co-test" data-testid="checkout-payment-note">No payment is taken yet. We email a print proof and a secure payment link; printing starts after you approve and pay.</p>
