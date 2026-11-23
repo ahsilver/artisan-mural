@@ -2512,3 +2512,6 @@
 .am .own-wall:active{cursor:grabbing}
 .am .own-art{position:absolute;inset:0}
 .am .own-guides{position:absolute;inset:0;pointer-events:none}
+.am .pro-applycard{display:grid;gap:12px;padding:22px;border:1px solid var(--line)}
+.am .pro-need{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink-2);display:grid;gap:4px}
+.am .sl-apply-cta{display:grid;gap:12px;justify-items:start}

@@ -1,8 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
-import room from "@/assets/showcase-after.jpg";
-import { Button } from "@/components/ui/button";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { loadSite } from "@/lib/site-settings";
 import { PRO_DEFAULTS, useProMe } from "@/lib/pro";
 
@@ -41,49 +37,41 @@ function ProPage() {
     ["Do you handle commercial projects?", "Yes. Offices, hallways, lobbies, hotels, senior living and healthcare spaces. Ask your specialist about commercial-grade finishes and project quotes."],
   ];
   const ld = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) };
-  const cta = approved ? <Button asChild size="lg" className="h-12"><a href="/browse">Shop with your {pro.discountPct}% price <ArrowRight /></a></Button>
-    : pending ? <Button asChild size="lg" variant="outline" className="h-12"><a href="/account">Application received · view status</a></Button>
-    : <Button asChild size="lg" className="h-12"><a href="/pro/apply">Apply now <ArrowRight /></a></Button>;
+  const ic = (d: string) => <span className="pb-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d={d} /></svg></span>;
+  const icons = ["M20 12l-8 8-8-8V4h8z M8 8h.01", "M4 4h16v16H4z M4 10h16", "M12 3v4 M12 17v4 M3 12h4 M17 12h4 M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z", "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21c0-4 4-6 8-6s8 2 8 6", "M4 6h16 M4 12h16 M4 18h10", "M3 7h18v13H3z M8 7V4h8v3"];
+  const cta = approved ? <Link className="btn btn-wine" to="/browse">Shop with your {pro.discountPct}% price</Link>
+    : pending ? <Link className="btn sl-ghost" to="/account">Application received · view status</Link>
+    : <Link className="btn btn-wine" to="/pro/apply">Apply now</Link>;
   return (
-    <div className="pro-page">
-      <section className="mx-auto grid max-w-7xl items-center gap-8 px-5 pb-12 pt-10 sm:px-8 sm:pb-16 sm:pt-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-14">
-        <div className="min-w-0">
-          <p className="text-xs font-medium uppercase text-clay">{pro.name}</p>
-          <h1 className="mt-4 text-4xl leading-tight sm:text-5xl">For the people who design the room.</h1>
-          <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">A free program for design professionals. Professional pricing, free samples and a specialist who knows your projects, from one wall to a whole building.</p>
-          <div className="mt-7 flex flex-wrap items-center gap-3">{cta}{!approved && <Button asChild size="lg" variant="outline" className="h-12"><a href="#faq">Questions</a></Button>}</div>
-          <p className="mt-4 text-sm text-muted-foreground">Free to join · Approval in {pro.approvalDays}</p>
+    <div className="am">
+      <section className="pro-hero">
+        <img src="/p/img/cover-hotel.webp" alt="A designer mural in a hotel lobby" />
+        <div className="pro-hero-in pg"><span className="k">{pro.name} · for design professionals</span><h1>For the people who <span>design the room.</span></h1>
+          <p>Interior designers, architects and hospitality teams get trade pricing, free samples and one specialist for every project.</p>
+          <div className="sl-cta">{cta}<a className="btn sl-ghost" href="#pro-how">How it works</a></div>
+          <small>Free to join · no minimum order · approval in {pro.approvalDays}</small></div>
+      </section>
+      <section className="pg pro-strip" aria-label="Member benefits at a glance">
+        <div><b>{pro.discountPct}%</b><span>off every order</span></div>{pro.freeSamples && <div><b>Free</b><span>samples, any finish</span></div>}<div><b>1</b><span>dedicated specialist</span></div><div><b>Priority</b><span>production</span></div>
+      </section>
+      <section className="pg sec pro-wrap">
+        <div className="pro-ben">{benefits.map(([t, d], k) => <div key={t}>{ic(icons[k % icons.length]!)}<b>{t}</b><p>{d}</p></div>)}</div>
+        <div className="pro-spaces">
+          <Link to="/browse" search={{ room: "Commercial" }}><img src="/p/img/cover-restaurant.webp" alt="" loading="lazy" /><span>Hotels &amp; restaurants</span></Link>
+          <Link to="/browse" search={{ room: "Office & study" }}><img src="/p/img/cover-office.webp" alt="" loading="lazy" /><span>Offices</span></Link>
+          <Link to="/browse" search={{ room: "Living room" }}><img src="/p/img/cover-living-room.webp" alt="" loading="lazy" /><span>Residential projects</span></Link>
         </div>
-        <img src={room} alt="A made-to-measure wallpaper mural in a finished room" className="aspect-[4/3] w-full rounded-lg object-cover" />
-      </section>
-
-      <section className="border-y border-border bg-secondary">
-        <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
-          <p className="text-xs font-medium uppercase text-clay">Member benefits</p>
-          <h2 className="mt-3 text-3xl sm:text-4xl">What you get.</h2>
-          <div className="mt-8 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-            {benefits.map(([t, d]) => <div key={t} className="border-t border-border pt-5"><h3 className="text-lg font-medium">{t}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{d}</p></div>)}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
-        <p className="text-xs font-medium uppercase text-clay">How it works</p>
-        <ol className="mt-6 grid gap-6 sm:grid-cols-3">
-          {[["Apply", "A short application, about three minutes."], ["Get approved", `We review it by hand within ${pro.approvalDays}.`], ["Order at your price", "Sign in and your price applies automatically."]].map(([t, d], i) => <li key={t} className="flex gap-4"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-sm">{i + 1}</span><div><p className="font-medium">{t}</p><p className="mt-1 text-sm text-muted-foreground">{d}</p></div></li>)}
-        </ol>
-      </section>
-
-      <section id="faq" className="border-t border-border">
-        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-[.8fr_1.2fr]">
-          <div><p className="text-xs font-medium uppercase text-clay">Questions</p><h2 className="mt-3 text-3xl sm:text-4xl">Good to know.</h2></div>
-          <Accordion type="single" collapsible className="w-full">
-            {faq.map(([q, a], i) => <AccordionItem key={q} value={"f" + i}><AccordionTrigger className="text-left text-base">{q}</AccordionTrigger><AccordionContent className="text-sm leading-6 text-muted-foreground">{a}</AccordionContent></AccordionItem>)}
-          </Accordion>
+        <div className="pro-how" id="pro-how"><span className="k">How it works</span><h2 className="sl-h">Three steps to trade pricing</h2>
+          <ol className="pro-steps"><li><b>Apply</b><span>Tell us about your business. About three minutes.</span></li><li><b>Get approved</b><span>We review it by hand, usually within {pro.approvalDays}.</span></li><li><b>Order at your price</b><span>Sign in and your discount applies to every order and sample.</span></li></ol></div>
+        <div className="pro-bottom">
+          <div className="pro-faqw" id="faq"><h2 className="sl-h">Questions</h2><div className="faq">{faq.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div></div>
+          {!approved && (
+            <div className="apply-form pro-applycard"><div className="pro-fh"><span className="k">Free to join</span><h2>Apply to {pro.name}</h2><p>About three minutes. We confirm by email, usually within {pro.approvalDays}.</p></div>
+              <ul className="pro-need"><li>Your business name and role</li><li>A website, Instagram or portfolio</li><li>Business address and phone</li><li>Resale certificate or tax ID (optional, speeds things up)</li></ul>
+              {pending ? <Link className="btn btn-wine big" to="/account">View your application</Link> : <Link className="btn btn-wine big" to="/pro/apply">Start your application</Link>}</div>
+          )}
         </div>
       </section>
-
-      {!approved && <section className="border-t border-border bg-secondary"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-10 sm:px-8"><div><h2 className="text-2xl">Ready to work together?</h2><p className="mt-1 text-sm text-muted-foreground">Free to join. No minimum order.</p></div>{cta}</div></section>}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
     </div>
   );
