@@ -78,7 +78,7 @@ function CustomRequest() {
           <ol className="rq-flow"><li><b>Describe it</b></li><li><b>Get prices</b></li><li><b>Approve &amp; pay</b></li><li><b>We print</b></li></ol>
         </div>
         {loading ? <p className="hint">Loading…</p> : !session ? (
-          <div className="rq-card rq-signin"><h2>Sign in to send your request</h2><p className="hint">So designers can answer you here and you get a notification when a price arrives.</p><AuthPanel /></div>
+          <div className="rq-card rq-signin"><h2>Sign in to send your request</h2><p className="hint">So designers can answer you here and you get a notification when a price arrives.</p><AuthPanel kicker="" title="" sub="" /></div>
         ) : (
           <form className="rq-form" noValidate onSubmit={submit}>
             <div className="rq-card">

@@ -59,7 +59,7 @@ export function Reviews({ kind, target, title }: { kind: "design" | "designer"; 
           </li>)}
         </ul>
         <div className="mt-4">
-          {!session ? (auth ? <div className="max-w-sm"><AuthPanel /></div> : <button type="button" className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground" onClick={() => setAuth(true)}>{kind === "design" ? "Bought this design? Sign in to review it" : "Worked with this designer? Sign in to review"}</button>)
+          {!session ? (auth ? <div className="max-w-sm"><AuthPanel kicker="" title="" sub="" /></div> : <button type="button" className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground" onClick={() => setAuth(true)}>{kind === "design" ? "Bought this design? Sign in to review it" : "Worked with this designer? Sign in to review"}</button>)
             : me?.eligible ? (open ? <div className="max-w-xl space-y-3 rounded-sm border border-border bg-card p-4" data-testid="review-form">
                 <Stars value={rating} onChange={setRating} />
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name to show (e.g. Anna K.)" aria-label="Name to show" maxLength={60} />

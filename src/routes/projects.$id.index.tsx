@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Loader2, ArrowLeft, Check, CheckCircle2, Clock } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { AuthPanel } from "@/components/auth-panel";
+import { SignInPage } from "@/components/auth-panel";
 import { useSession } from "@/hooks/use-session";
 import { papi, money, day, when, StatusPill, Chat, AttList } from "@/components/projects";
 
@@ -28,7 +28,7 @@ function Project() {
   useEffect(() => { if (session) void load(); }, [session?.user?.id, id]);
   useEffect(() => { if (!session) return; const t = setInterval(load, 30000); return () => clearInterval(t); }, [session?.user?.id, id]);
   if (loading) return <Loader2 className="mx-auto my-20 animate-spin" />;
-  if (!session) return <div className="mx-auto max-w-lg px-6 py-12"><h1 className="text-4xl">Design request</h1><div className="mt-6"><AuthPanel /></div></div>;
+  if (!session) return <SignInPage kicker="Design request" title="Sign in to see this request" />;
   if (err) return <div className="mx-auto max-w-3xl px-6 py-12"><p className="text-destructive">{err}</p><Link to="/projects" className="mt-4 inline-block text-sm underline">My design requests</Link></div>;
   if (!p) return <Loader2 className="mx-auto my-20 animate-spin" />;
   const idx = STEPS.findIndex(([s]) => s === p.status);

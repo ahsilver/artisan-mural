@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, ArrowLeft, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AuthPanel } from "@/components/auth-panel";
+import { SignInPage } from "@/components/auth-panel";
 import { useSession } from "@/hooks/use-session";
 import { papi, money } from "@/components/projects";
 
@@ -22,7 +22,7 @@ function Pay() {
   useEffect(() => { if (session) papi(`projects/${id}`).then((x) => { setP(x); if (x.wallSize) { const m = String(x.wallSize).match(/(\d+(?:\.\d+)?)\s*[x×by]+\s*(\d+(?:\.\d+)?)/i); if (m) setF((v) => ({ ...v, width: m[1], height: m[2] })); } }).catch((e) => setErr(e.message)); }, [session?.user?.id, id]);
   useEffect(() => { if (!session || !p || p.status !== "approved") return; const t = setTimeout(() => papi(`projects/${id}/price`, { width: Number(f.width), height: Number(f.height), unit: f.unit, finish: f.finish, state: f.state }).then((r) => { setPrice(r); if (!f.finish && r.finish) setF((v) => ({ ...v, finish: r.finish })); }).catch(() => {}), 250); return () => clearTimeout(t); }, [f.width, f.height, f.unit, f.finish, f.state, p?.status]);
   if (loading) return <Loader2 className="mx-auto my-20 animate-spin" />;
-  if (!session) return <div className="mx-auto max-w-lg px-6 py-12"><AuthPanel /></div>;
+  if (!session) return <SignInPage kicker="Payment" title="Sign in to pay" sub="Sign in with the account you used for this request." />;
   if (!p) return err ? <p className="mx-auto max-w-xl px-6 py-12 text-destructive">{err}</p> : <Loader2 className="mx-auto my-20 animate-spin" />;
   if (p.status !== "approved") return <div className="mx-auto max-w-xl px-6 py-12"><p>{p.status === "in_progress" || p.status === "delivered" ? "This request is already paid." : "Approve a price first."}</p><Link to="/projects/$id" params={{ id }} className="mt-3 inline-block text-sm underline">Back to the request</Link></div>;
   const q = price?.quote; const inp = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";

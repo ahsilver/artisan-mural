@@ -58,7 +58,7 @@ function Apply() {
   return wrap(<>
     <h1 className="mt-5 text-4xl sm:text-5xl">Apply to {pro.name}</h1>
     <p className="mt-3 text-muted-foreground">About three minutes. Free, no minimum order.</p>
-    {me && !me.signedIn ? <div className="soft-panel mt-8"><h2 className="text-xl">First, sign in or create an account</h2><p className="mt-1 text-sm text-muted-foreground">Your professional price is linked to this account.</p><AuthPanel /></div> : <>
+    {me && !me.signedIn ? <div className="soft-panel mt-8"><h2 className="text-xl">First, sign in or create an account</h2><p className="mt-1 text-sm text-muted-foreground">Your professional price is linked to this account.</p><AuthPanel kicker="" title="" sub="" /></div> : <>
     <div className="mt-8" aria-label={`Step ${step + 1} of ${STEPS.length}`}>
       <div className="flex gap-1.5">{STEPS.map((s, i) => <span key={s} className={"h-1 flex-1 rounded-full " + (i <= step ? "bg-foreground" : "bg-border")} />)}</div>
       <p className="mt-3 text-xs uppercase tracking-wide text-muted-foreground">Step {step + 1} of {STEPS.length} · {STEPS[step]}</p>

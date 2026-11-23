@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
 import { BadgeDollarSign, Check, ImageIcon, Loader2, MessageCircle, Package, Palette, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AuthPanel } from "@/components/auth-panel";
+import { SignInPage } from "@/components/auth-panel";
 import { Inbox } from "@/components/inbox";
 import { CollectionManager } from "@/components/collection-manager";
 import { useSession } from "@/hooks/use-session";
@@ -65,7 +65,7 @@ function Admin() {
   const reject = (key: string, fn: (note: string) => Promise<unknown>) => { const note = window.prompt("Reason (shown to the designer):") ?? null; if (note !== null) void act(key, () => fn(note)); };
 
   if (loading) return <Loader2 className="mx-auto my-20 animate-spin" />;
-  if (!session) return <div className="mx-auto max-w-lg px-6 py-12"><h1 className="mb-6 text-4xl">Owner portal</h1><AuthPanel /></div>;
+  if (!session) return <SignInPage kicker="Owner" title="Owner portal" sub="" />;
   if (error && !data) return <div className="mx-auto max-w-lg px-6 py-20 text-center"><h1 className="text-3xl">Owner portal</h1><p className="mt-4 text-sm text-muted-foreground">{error}</p></div>;
   if (!data) return <Loader2 className="mx-auto my-20 animate-spin" />;
   const pending = { designers: data.designers.filter(d => d.status === "pending").length, designs: data.designs.filter(d => d.review === "pending" && d.submittedAt).length };

@@ -67,7 +67,7 @@ export function DesignerReviews({ designerSlug, designerName }: { designerSlug: 
 
       <div className="mt-5 rounded-xl border border-border bg-card p-5">
         <p className="text-sm font-medium">{mine ? "Your review" : `Rate ${designerName}`}</p>
-        {!uid ? (showAuth ? <div className="mt-4"><AuthPanel /></div> : <Button className="mt-3" variant="outline" onClick={() => setShowAuth(true)}>Sign in to leave a review</Button>) : <div className="mt-3 space-y-3">
+        {!uid ? (showAuth ? <div className="mt-4"><AuthPanel kicker="" title="" sub="" /></div> : <Button className="mt-3" variant="outline" onClick={() => setShowAuth(true)}>Sign in to leave a review</Button>) : <div className="mt-3 space-y-3">
           <Stars value={rating} onChange={setRating} />
           <input aria-label="Name shown with your review" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" maxLength={80} className="h-11 w-full rounded-md border border-input bg-background px-3 sm:max-w-xs" />
           <textarea aria-label="Your review" value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={2000} placeholder="How was working with this designer?" className="w-full rounded-md border border-input bg-background p-3" />

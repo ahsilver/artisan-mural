@@ -36,7 +36,7 @@ function BecomeDesigner() {
   }
   const shell = (children: React.ReactNode) => <div className="mx-auto max-w-2xl px-5 py-8 sm:py-12"><p className="text-eyebrow text-clay">For designers</p><h1 className="mt-2 text-3xl sm:text-5xl">Sell your designs on every wall.</h1><p className="mt-3 text-sm"><Link to="/designers/how-it-works" className="underline underline-offset-4">How it works for designers, with all questions and answers</Link></p>{children}</div>;
   if (loading) return shell(<Loader2 className="mt-8 animate-spin" />);
-  if (!session) return shell(<><p className="mt-3 text-sm text-muted-foreground">First create your account. Then we'll ask a few questions about you and your work.</p><div className="mt-8"><AuthPanel /></div></>);
+  if (!session) return shell(<><p className="mt-3 text-sm text-muted-foreground">First create your account. Then we'll ask a few questions about you and your work.</p><div className="mt-8"><AuthPanel kicker="" title="" sub="" /></div></>);
   if (profile === undefined) return shell(<Loader2 className="mt-8 animate-spin" />);
   if (profile) return shell(<div className="soft-panel mt-8">
     {profile.status === "approved" ? <><p className="flex items-center gap-2 text-lg font-medium"><Check className="h-5 w-5 text-primary" />You're approved, {profile.full_name.split(" ")[0]}!</p><p className="mt-2 text-sm text-muted-foreground">Your designs, collections and customer projects are in your studio.</p><Button asChild className="mt-5 h-12"><Link to="/studio">See all your designs & projects<ArrowRight /></Link></Button></>

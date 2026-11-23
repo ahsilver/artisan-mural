@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { BadgeDollarSign, BarChart3, ImagePlus, Loader2, Layers, LogOut, MessageCircle, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AuthPanel } from "@/components/auth-panel";
+import { SignInPage } from "@/components/auth-panel";
 import { Inbox } from "@/components/inbox";
 import { CollectionManager } from "@/components/collection-manager";
 import { useSession } from "@/hooks/use-session";
@@ -41,7 +41,7 @@ function Studio() {
   const [mine, setMine] = useState<Awaited<ReturnType<typeof getMyDesignerProfile>> | null>(null);
   useEffect(() => { if (!session) return; void stats().then(setData).catch(() => setData(null)); void offersFn().then(setOffers).catch(() => setOffers([])); void profileFn().then(setMine).catch(() => setMine(null)); }, [session?.user.id]);
   if (loading) return <p className="px-8 py-20 text-sm text-muted-foreground">Loading your studio…</p>;
-  if (!session) return <div className="mx-auto max-w-lg px-6 py-12"><h1 className="mb-6 text-4xl">Designer studio</h1><AuthPanel /></div>;
+  if (!session) return <SignInPage designer title="Designer studio" />;
   const rows = data?.rows ?? [];
   const totalSqft = rows.reduce((n, r) => n + r.sqft, 0);
   const who = data?.isAdmin ? "Artisan Mural studio" : data?.designerSlug ? designerBySlug(data.designerSlug)?.name : null;

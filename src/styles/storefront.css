@@ -2543,3 +2543,9 @@
 .am #view-chat .ct-main{min-width:0;grid-template-columns:minmax(0,1fr)}
 .am #view-chat .ct-head{min-width:0}
 @media (max-width:860px){.am #view-chat .chat{overflow:hidden;max-width:100%}}
+/* sign in */
+.am .am-auth .signin{margin:0 auto}
+.am .auth-page{padding:48px 20px 72px}
+.am .auth-forgot{justify-self:end;margin-top:-4px;border:0;background:none;font:600 13px var(--f-body);color:var(--ink);text-decoration:underline;cursor:pointer;padding:0}
+.am .rq-ok.err{color:#B03A2E}
+.am .own-signin .signin h1,.am .rq-card .signin h1{font-size:24px}

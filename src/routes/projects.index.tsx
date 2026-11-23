@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, Plus, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AuthPanel } from "@/components/auth-panel";
+import { SignInPage } from "@/components/auth-panel";
 import { useSession } from "@/hooks/use-session";
 import { papi, money, day, StatusPill } from "@/components/projects";
 
@@ -17,7 +17,7 @@ function Projects() {
   const [err, setErr] = useState("");
   useEffect(() => { if (session) papi("projects/mine").then((r) => setList(r.projects)).catch((e) => setErr(e.message)); }, [session?.user?.id]);
   if (loading) return <Loader2 className="mx-auto my-20 animate-spin" />;
-  if (!session) return <div className="mx-auto max-w-lg px-6 py-12"><h1 className="text-4xl">My design requests</h1><p className="mt-2 text-sm text-muted-foreground">Sign in to see your requests and the designers' prices.</p><div className="mt-6"><AuthPanel /></div></div>;
+  if (!session) return <SignInPage kicker="My requests" title="My design requests" sub="Sign in to see your requests and the designers' prices." />;
   return <div className="mx-auto max-w-4xl px-5 py-10 sm:px-8">
     <div className="flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-4xl sm:text-5xl">My design requests</h1><p className="mt-2 text-sm text-muted-foreground">Changes to a design and custom designs: prices, chat and progress.</p></div>
       <Button asChild><Link to="/custom-request"><Plus />New custom design</Link></Button></div>

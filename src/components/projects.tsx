@@ -135,7 +135,7 @@ export function RequestChange({ design, designer, open: openProp, onOpenChange, 
     {trigger && <AskDesignerButton onClick={() => setOpen(true)} />}
     <Dialog open={open} onOpenChange={setOpen}><DialogContent data-testid="request-change" className="max-h-[92vh] overflow-y-auto sm:max-w-xl">
       <DialogHeader><DialogTitle className="text-3xl">Customize this design</DialogTitle><DialogDescription>A private chat with {designer.name} about “{design.title}”. Tell them what you'd like changed; they reply with a price and timing.</DialogDescription></DialogHeader>
-      {!session ? <div><p className="mb-3 text-sm text-muted-foreground">Sign in or create a free account first. Your chat with the designer opens right after.</p><AuthPanel /></div>
+      {!session ? <div><p className="mb-3 text-sm text-muted-foreground">Sign in or create a free account first. Your chat with the designer opens right after.</p><AuthPanel kicker="" title="" sub="" /></div>
         : err ? <p className="text-sm text-destructive" role="alert">{err}</p>
         : <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Opening your chat with {designer.name}…</p>}
     </DialogContent></Dialog>

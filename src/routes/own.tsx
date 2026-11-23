@@ -118,7 +118,7 @@ function Own() {
               <button type="button" className="btn btn-wine big" disabled={busy} onClick={() => send("print")}>{busy ? "Sending…" : "Get my proof & price"}</button>
               <p className="hint">The studio checks your file, sends a proof of exactly what will print, and the final price. You pay after you approve.</p>
               {err && <p className="up-err" role="alert">{err}</p>}
-              {ask && !session && <div className="own-signin"><b>Sign in to send it</b><p className="hint">So we can send you the proof and the price.</p><AuthPanel /></div>}
+              {ask && !session && <div className="own-signin"><b>Sign in to send it</b><p className="hint">So we can send you the proof and the price.</p><AuthPanel kicker="" title="" sub="" /></div>}
             </aside>
           </div>
         )}

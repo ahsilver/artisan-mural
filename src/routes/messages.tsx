@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
-import { AuthPanel } from "@/components/auth-panel";
+import { SignInPage } from "@/components/auth-panel";
 import { GuestMessages } from "@/components/guest-messages";
 import { StoreChat } from "@/components/storefront/chat";
 import { useSession } from "@/hooks/use-session";
@@ -14,7 +14,7 @@ function Messages() {
   const { conversation } = Route.useSearch();
   const [signIn, setSignIn] = useState(false);
   if (loading) return <p className="px-8 py-20 text-sm text-muted-foreground">Loading conversations…</p>;
-  if (!session) return signIn ? <div className="mx-auto max-w-lg px-6 py-12"><AuthPanel /></div> : <GuestMessages activeId={conversation} onSignIn={() => setSignIn(true)} />;
+  if (!session) return signIn ? <SignInPage kicker="Messages" title="Sign in to see your messages" sub="You'll get a notification when a designer replies or sends a price." /> : <GuestMessages activeId={conversation} onSignIn={() => setSignIn(true)} />;
   const c = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("c") : null;
   return <div className="am"><div className="pg crumbs-row"><nav className="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/account">My account</a><span>/</span><b>Messages</b></nav></div><section className="pg msgs-page">
     <div className="pg-head msgs-head"><div><span className="k">Your conversations</span><h1>Messages</h1></div><button type="button" className="btn optline btn-sm" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
