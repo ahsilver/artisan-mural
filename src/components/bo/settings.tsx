@@ -25,9 +25,10 @@ const GROUPS: Record<string, { title: string; note?: string; fields: F[] }> = {
     { k: "mode", label: "Mode", type: "select", options: ["test"] }, { k: "clientId", label: "PayPal client ID" }, { k: "clientSecret", label: "PayPal secret", type: "secret" },
     { k: "minimumPayout", label: "Minimum payout ($)", type: "number" }, { k: "schedule", label: "Payout schedule", type: "select", options: ["monthly", "twice a month", "weekly", "manual"] },
   ] },
-  emails: { title: "Emails", note: "Test mode: emails are kept in the Emails page, nothing is sent.", fields: [
-    { k: "mode", label: "Mode", type: "select", options: ["test"] }, { k: "fromName", label: "From name" }, { k: "fromEmail", label: "From email" }, { k: "replyTo", label: "Reply-to" },
-    { k: "orderConfirmation", label: "Order confirmation", type: "bool" }, { k: "shippingUpdate", label: "Shipping updates", type: "bool" }, { k: "designerApproved", label: "Designer and design decisions", type: "bool" },
+  emails: { title: "Emails", note: "Every action sends an email and a notification. In Test mode the emails are only kept in the Emails page. To really send them: make a free account at resend.com, add and verify your domain there, create an API key, paste it below with a From email on that domain, then switch Mode to live.", fields: [
+    { k: "mode", label: "Mode", type: "select", options: ["test", "live"], hint: "live = really send emails (needs the key and From email below)" }, { k: "provider", label: "Email service", type: "select", options: ["resend"] }, { k: "resendKey", label: "Resend API key", type: "secret", hint: "Starts with re_. Stored privately; only shown as dots." },
+    { k: "fromName", label: "From name" }, { k: "fromEmail", label: "From email", hint: "On your verified domain, e.g. hello@yourdomain.com" }, { k: "replyTo", label: "Reply-to email (optional)" },
+    { k: "orderConfirmation", label: "Order confirmation", type: "bool" }, { k: "shippingUpdate", label: "Shipping updates", type: "bool" }, { k: "designerApproved", label: "Designer approvals", type: "bool" },
   ] },
   pro: { title: "Pro program", note: "Your professional program for designers, architects and contractors. Approve applications in the Artisan Pro section. The default discount is used for new approvals; change a single member's discount in Artisan Pro → Members.", fields: [
     { k: "enabled", label: "Accept applications", type: "bool" }, { k: "name", label: "Program name", hint: "Shown on the site, the account page and emails, e.g. Artisan Pro or Design Professionals." },

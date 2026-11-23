@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AuthPanel } from "@/components/auth-panel";
 import { attachFile, type Att } from "@/components/projects";
 import { useSession } from "@/hooks/use-session";
+import { supabase } from "@/integrations/supabase/client";
 import { applyAsDesigner, getMyDesignerProfile, type DesignerProfile } from "@/lib/designer-profile.functions";
 import { defaultStyles } from "@/lib/design-taxonomy";
 import { plainError } from "@/lib/original-source";
@@ -64,6 +65,7 @@ function BecomeDesigner() {
       };
       await apply({ data: { fullName: f.name.trim(), studioName: f.studio.trim(), country: f.country.trim(), bio: f.bio.trim(), styles: f.styles, portfolio: [f.site, ...f.links].map((p) => p.trim()).filter(isUrl).slice(0, 5), application } });
       try { sessionStorage.removeItem(KEY); } catch {}
+      try { const { data: ss } = await supabase.auth.getSession(); await fetch("/backend/designer/applied", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${ss.session?.access_token ?? ""}` }, body: "{}" }); } catch {}
       setProfile((await getProfile()).profile);
     } catch (e) { setErr(plainError(e, "Could not send your application.")); } finally { setBusy(false); }
   }

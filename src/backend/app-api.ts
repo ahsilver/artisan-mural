@@ -1,6 +1,7 @@
 // Owner back office + designer dashboard + public settings API.
 import type { Who } from "./policies";
 import { signUrl } from "./storage";
+import { alert, alertOwners, queueMail } from "./alerts";
 import { imageDims } from "@/lib/image-dims";
 import { DEFAULT_DESIGNER_FAQ } from "@/lib/designer-faq";
 import { defaultTaxonomy, parseTaxonomy, canonicalCategories, canonicalRooms } from "@/lib/design-taxonomy";
@@ -25,7 +26,7 @@ export const DEFAULT_SETTINGS: Record<string, any> = {
   designerRules: { targetDpi: 200, minDpi: 150, maxUploadGb: 20, autoApproveTrusted: true, requireMockups: 1, royaltyStarter: 50, royaltyStudio: 55, royaltyAtelier: 60 },
   payments: { provider: "sola", mode: "test", solaKey: "", solaPin: "", acceptCards: true, acceptPayPal: false, manualPayments: true },
   payouts: { provider: "paypal", mode: "test", clientId: "", clientSecret: "", minimumPayout: 25, schedule: "monthly" },
-  emails: { mode: "test", fromName: "Artisan Mural", fromEmail: "", replyTo: "", orderConfirmation: true, shippingUpdate: true, designerApproved: true },
+  emails: { mode: "test", provider: "resend", resendKey: "", fromName: "Artisan Murals", fromEmail: "", replyTo: "", orderConfirmation: true, shippingUpdate: true, designerApproved: true },
   tax: { enabled: false, rate: 0, states: "", label: "Sales tax", shippingTaxable: false, tradeExempt: true },
   ai: { roomRenderEnabled: false, mockupsEnabled: true, provider: "google", apiKey: "", model: "gemini-3.1-flash-image", dailyLimit: 10, freeOverlayEnabled: true, wallDetectEnabled: true, autoTagEnabled: true, visionModel: "gemini-3.8-flash" },
   shipping: { flatRate: 0, freeOver: 0, processingDays: 5, countries: "US, CA" },
@@ -34,7 +35,7 @@ export const DEFAULT_SETTINGS: Record<string, any> = {
   taxonomy: { styles: defaultTaxonomy.styles.join("\n"), themes: defaultTaxonomy.themes.join("\n"), rooms: defaultTaxonomy.rooms.join("\n") },
   community: { promoEnabled: true, promoEvery: 12, promoTitle: "Can't find what you like?", promoText: "Get it custom. Tell a designer what you have in mind.", promoCta: "Get it custom", productLineEnabled: true, requestsEnabled: true, reviewsEnabled: true, contactEnabled: true },
 };
-const SECRET_FIELDS: Record<string, string[]> = { payments: ["solaKey", "solaPin"], payouts: ["clientSecret"], ai: ["apiKey"] };
+const SECRET_FIELDS: Record<string, string[]> = { payments: ["solaKey", "solaPin"], payouts: ["clientSecret"], ai: ["apiKey"], emails: ["resendKey"] };
 const PUBLIC_KEYS = ["general", "homepage", "ai", "taxonomy", "pro", "popup", "community"];
 
 export async function getSettings(env: Env): Promise<Record<string, any>> {
@@ -62,7 +63,7 @@ async function emailUsers(env: Env): Promise<Map<string, any>> {
   return new Map((r.results ?? []).map((u: any) => [u.id, u]));
 }
 export async function queueEmail(env: Env, to: string, subject: string, text: string, kind: string) {
-  await env.DB.prepare(`INSERT INTO email_outbox (id, to_addr, subject, html, text, kind) VALUES (?, ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), to, subject, `<p>${text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n/g, "<br>")}</p>`, text, kind).run();
+  await queueMail(env as any, to, subject, text, kind);
 }
 async function addEvent(env: Env, orderId: string, kind: string, message: string, actor: string | null) {
   await env.DB.prepare(`INSERT INTO order_events (id, order_id, kind, message, actor) VALUES (?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), orderId, kind, message, actor).run();
@@ -168,6 +169,21 @@ export async function handleApp(req: Request, env: Env, who: Who, origin: string
   const body: any = m === "GET" || m === "HEAD" || rawBody ? {} : await req.json().catch(() => ({}));
   try {
     // ---------- public ----------
+    if (p === "orders-placed" && req.method === "POST") {
+      const cartId = String(body?.cartId ?? "");
+      if (!/^[\w-]{8,80}$/.test(cartId)) return j({ error: "Unknown order" }, 400);
+      const rows = (((await env.DB.prepare(`SELECT id, user_id, customer_email, customer_name, design_slug, square_feet, estimated_total, created_at FROM order_requests WHERE cart_id = ? LIMIT 20`).bind(cartId).all()).results ?? []) as any[]);
+      const fresh = rows.filter((o) => Date.now() - Date.parse(o.created_at) < 15 * 60000);
+      for (const o of fresh) {
+        const seen: any = await env.DB.prepare(`SELECT 1 x FROM order_events WHERE order_id = ? AND kind = 'placed_alert'`).bind(o.id).first();
+        if (seen) continue;
+        await env.DB.prepare(`INSERT INTO order_events (id, order_id, kind, message, actor) VALUES (?, ?, 'placed_alert', 'Customer and owner notified', NULL)`).bind(crypto.randomUUID(), o.id).run();
+        const no = String(o.id).slice(0, 8).toUpperCase();
+        await alert(env as any, { uid: o.user_id ?? null, email: o.customer_email, kind: "order_placed", title: `We received your order ${no}`, body: `${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}. We'll email you when it's paid, printed and shipped.`, emailText: `Hello ${o.customer_name || ""},\n\nThank you for your order ${no}: ${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}.\n\nWe'll email you when it's paid, printed and shipped.\n\nArtisan Murals`, link: "/account?view=orders" });
+        await alertOwners(env as any, { kind: "order", title: `New order ${no}`, body: `${o.customer_name || o.customer_email}: ${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}`, link: "/admin#orders" });
+      }
+      return j({ ok: true, alerted: fresh.length });
+    }
     if (p === "public/settings") {
       const s = await getSettings(env);
       const out: any = {};
@@ -396,8 +412,8 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     if (body.notify && log.length && o.customer_email) {
       const n: any = await DB.prepare(`SELECT * FROM order_requests WHERE id = ?`).bind(o.id).first();
       const tl = trackingUrl(n.carrier, n.tracking_number);
-      await queueEmail(env, o.customer_email, `Your Artisan Mural order: ${STATUS_LABEL[n.status]}`, `Hello ${o.customer_name},\n\nYour order (${o.design_slug}) is now: ${STATUS_LABEL[n.status]}.${n.tracking_number ? `\nTracking: ${n.carrier ?? ""} ${n.tracking_number}${tl ? `\n${tl}` : ""}` : ""}\n\nThank you,\nArtisan Mural`, "order_update");
-      await addEvent(env, o.id, "email", `Customer email queued (test mode, not sent) to ${o.customer_email}`, who.uid);
+      await alert(env as any, { uid: o.user_id ?? null, email: o.customer_email, kind: "order_update", title: `Your order is ${String(STATUS_LABEL[n.status]).toLowerCase()}`, body: `Order ${String(o.id).slice(0, 8).toUpperCase()}: ${STATUS_LABEL[n.status]}.${n.tracking_number ? ` Tracking: ${n.carrier ?? ""} ${n.tracking_number}${tl ? ` ${tl}` : ""}` : ""}`, emailText: `Hello ${o.customer_name},\n\nYour order ${String(o.id).slice(0, 8).toUpperCase()} is now: ${STATUS_LABEL[n.status]}.${n.tracking_number ? `\n\nTracking: ${n.carrier ?? ""} ${n.tracking_number}${tl ? `\n${tl}` : ""}` : ""}\n\nThank you,\nArtisan Murals`, link: "/account?view=orders" });
+      await addEvent(env, o.id, "email", `Customer emailed and notified (${o.customer_email})`, who.uid);
     }
     return j({ ok: true });
   }
@@ -479,7 +495,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     if (!u) return bad("Design not found", 404);
     await DB.prepare(`UPDATE artwork_uploads SET review_status = ?, review_note = ? WHERE id = ?`).bind(action, body.note || null, mm[1]).run();
     const users = await emailUsers(env); const to = users.get(u.owner_id)?.email;
-    if (to && action !== "pending") await queueEmail(env, to, `Your design "${u.title}" was ${action}`, `Hello,\n\nYour design "${u.title}" was ${action}.${body.note ? `\nNote from the studio: ${body.note}` : ""}\n\nArtisan Mural`, "design_review");
+    if (action !== "pending") await alert(env as any, { uid: u.owner_id, email: to ?? null, kind: "design_review", title: action === "approved" ? `Your design "${u.title}" is live` : `Changes needed: "${u.title}"`, body: action === "approved" ? `The studio approved "${u.title}". It's in the shop now.` : `The studio didn't approve "${u.title}" yet.${body.note ? ` Note from the studio: ${body.note}` : ""} Fix it and send it again.`, link: `/studio?view=designs` });
     return j({ ok: true });
   }
   mm = p.match(/^designs\/u-([0-9a-f-]{36})\/originals$/);
@@ -604,7 +620,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
       if (!["approved", "rejected", "pending", "paused"].includes(body.status)) return bad("Unknown status");
       await DB.prepare(`UPDATE designer_profiles SET status = ?, review_note = ?, reviewed_at = ? WHERE user_id = ?`).bind(body.status, body.note ?? d.review_note ?? null, nowIso(), mm[1]).run();
       const users = await emailUsers(env); const to = users.get(mm[1])?.email;
-      if (to && (body.status === "approved" || body.status === "rejected")) await queueEmail(env, to, `Your designer application was ${body.status}`, `Hello ${d.full_name},\n\nYour Artisan Mural designer application was ${body.status}.${body.note ? `\n${body.note}` : ""}\n\nArtisan Mural`, "designer_review");
+      if (body.status === "approved" || body.status === "rejected" || body.status === "paused") await alert(env as any, { uid: mm[1], email: to ?? null, kind: "designer_review", title: body.status === "approved" ? "You're approved as an Artisan Murals designer" : body.status === "paused" ? "Your designer account is paused" : "Your designer application", body: body.status === "approved" ? `Welcome, ${d.full_name}. Your designer studio is open: upload your designs and answer requests.` : body.status === "paused" ? "Your designs are hidden from the shop for now. Write to the studio with any questions." : `Thank you for applying, ${d.full_name}. We weren't able to approve your application this time.${body.note ? ` ${body.note}` : ""}`, link: body.status === "approved" ? "/studio" : "/become-designer" });
     }
     if (body.trusted !== undefined) await DB.prepare(`UPDATE designer_profiles SET trusted = ? WHERE user_id = ?`).bind(body.trusted ? 1 : 0, mm[1]).run();
     return j({ ok: true });
@@ -631,6 +647,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     // a cash-out the designer requested is settled by this payment
     await DB.prepare(`DELETE FROM designer_payouts WHERE designer_user_id = ? AND status = 'requested'`).bind(body.userId).run();
     await DB.prepare(`INSERT INTO designer_payouts (id, designer_user_id, amount, note, paid_at, created_by, method, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'paid')`).bind(crypto.randomUUID(), body.userId, amount, note, nowIso(), who.uid, method).run();
+    await alert(env as any, { uid: body.userId, kind: "payout", title: `Payout sent: $${Number(amount).toFixed(2)}`, body: `We sent $${Number(amount).toFixed(2)} by ${method}. Thank you for your designs.`, link: "/studio?view=earnings" });
     return j({ ok: true, reference: ref });
   }
   // ----- coupons -----
@@ -682,7 +699,8 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     const cur = (await getSettings(env))[key];
     const next = deepMerge(cur, body.value ?? {});
     for (const f of SECRET_FIELDS[key] ?? []) if (typeof body.value?.[f] === "string" && body.value[f].startsWith("••••")) next[f] = cur[f];
-    if (key === "payments" || key === "payouts" || key === "emails") next.mode = body.value?.mode === "live" ? "test" : next.mode; // live stays off in this preview
+    if (key === "payments" || key === "payouts") next.mode = body.value?.mode === "live" ? "test" : next.mode; // card payments and payouts stay in test mode
+    if (key === "emails" && next.mode === "live" && !(String(next.resendKey || "").length > 10 && /@/.test(next.fromEmail || ""))) return bad("To send real emails, add your Resend API key and a From email on your verified domain first.");
     if (key === "general" && Number(cur.pricePerSqft) !== Number(next.pricePerSqft)) await DB.prepare(`INSERT INTO price_history (id, kind, ref, before, after, by_user) VALUES (?, 'setting', 'pricePerSqft', ?, ?, ?)`).bind(crypto.randomUUID(), JSON.stringify({ price: cur.pricePerSqft }), JSON.stringify({ price: next.pricePerSqft }), who.uid).run();
     await DB.prepare(`INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES (?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by`).bind(key, JSON.stringify(next), nowIso(), who.uid).run();
     try { const { invalidateShopCache } = await import("@/lib/shop.server"); invalidateShopCache(); } catch {}

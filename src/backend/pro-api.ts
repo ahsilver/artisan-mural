@@ -1,6 +1,7 @@
 // Artisan Pro (professional program) + first-order signup codes.
 import type { Who } from "./policies";
 import { getSettings, queueEmail } from "./app-api";
+import { alert, alertOwners } from "./alerts";
 import { signUrl } from "./storage";
 type Env = any;
 const j = (b: any, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json; charset=utf-8" } });
@@ -80,9 +81,10 @@ export async function proRoutes(req: Request, env: Env, who: Who, p: string, m: 
     const u = await userEmail(env, who.uid);
     await DB.prepare(`INSERT INTO pro_applications (id, user_id, email, status, business, role, answers, file_path, file_name) VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?)`).bind(id, who.uid, u?.email ?? who.email ?? null, business, role, JSON.stringify(clean), filePath, fileName).run();
     await DB.prepare(`INSERT INTO customer_terms (user_id, trade, trade_status, company, website, note) VALUES (?, 1, 'pending', ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET trade = 1, trade_status = 'pending', company = excluded.company, website = excluded.website, note = excluded.note, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`).bind(who.uid, business, clean.website || clean.instagram || clean.portfolio || null, `${name} application: ${role}`).run();
+    await alert(env as any, { uid: who.uid, kind: "pro_received", title: `We received your ${name} application`, body: `Thanks, ${business}. We review every application within ${pro.approvalDays || "1–2 business days"}.`, link: "/pro/apply", sendEmail: false });
     if (u?.email) await queueEmail(env, u.email, `We received your ${name} application`, `Thanks for applying to ${name}, ${business}.\n\nWe review every application within ${pro.approvalDays || "1–2 business days"} and will email you as soon as you're approved.`, "pro_received");
     const owner = pro.notifyEmail || s.general?.contactEmail;
-    if (owner) await queueEmail(env, owner, `New ${name} application: ${business}`, `${business} (${role}) applied. Review it in the back office under ${name}.`, "pro_owner_notice");
+    await alertOwners(env as any, { kind: "pro_application", title: `New ${name} application: ${business}`, body: `${business} (${role}) applied. Review it in the back office.`, link: "/admin#pro" });
     return j({ ok: true, id });
   }
   // ---- owner
@@ -105,12 +107,14 @@ export async function proRoutes(req: Request, env: Env, who: Who, p: string, m: 
       const pct = Math.max(0, Math.min(80, Number(body.discountPct ?? pro.discountPct) || 0));
       await DB.prepare(`UPDATE pro_applications SET status = 'approved', decision_note = ?, decided_at = ?, decided_by = ? WHERE id = ?`).bind(note || null, now, who.email ?? who.uid, a.id).run();
       await DB.prepare(`INSERT INTO customer_terms (user_id, trade, trade_status, discount_pct, company) VALUES (?, 1, 'approved', ?, ?) ON CONFLICT(user_id) DO UPDATE SET trade = 1, trade_status = 'approved', discount_pct = excluded.discount_pct, company = COALESCE(customer_terms.company, excluded.company), updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`).bind(a.user_id, pct, a.business).run();
+      await alert(env as any, { uid: a.user_id, kind: "pro_approved", title: `Welcome to ${name}`, body: `You\'re approved. Your ${pct}% professional price is applied automatically when you\'re signed in.`, link: "/pro", sendEmail: false });
       if (a.email) await queueEmail(env, a.email, `Welcome to ${name}`, `Good news, ${a.business}: you're approved for ${name}.\n\nYour ${pct}% professional discount is applied automatically in your cart and at checkout when you're signed in${pro.freeSamples ? ", and samples are free" : ""}.${note ? `\n\n${note}` : ""}`, "pro_approved");
       return j({ ok: true });
     }
     if (body.action === "decline") {
       await DB.prepare(`UPDATE pro_applications SET status = 'declined', decision_note = ?, decided_at = ?, decided_by = ? WHERE id = ?`).bind(note || null, now, who.email ?? who.uid, a.id).run();
       await DB.prepare(`UPDATE customer_terms SET trade_status = 'rejected', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE user_id = ? AND trade_status != 'approved'`).bind(a.user_id).run();
+      await alert(env as any, { uid: a.user_id, kind: "pro_declined", title: `Your ${name} application`, body: "We weren\'t able to approve your application this time. You can reply with more details about your business.", link: "/pro", sendEmail: false });
       if (a.email) await queueEmail(env, a.email, `Your ${name} application`, `Thank you for applying to ${name}, ${a.business}. We weren't able to approve the application at this time.${note ? `\n\n${note}` : ""}\n\nYou're welcome to reply with more details about your business.`, "pro_declined");
       return j({ ok: true });
     }

@@ -120,7 +120,7 @@ export async function communityRoutes(req: Request, env: Env, who: Who, p: strin
     await env.DB.prepare(`INSERT INTO projects (id, kind, customer_id, customer_name, customer_email, designer_slug, designer_user_id, design_slug, title, brief, status) VALUES (?, 'message', ?, ?, ?, ?, ?, ?, ?, ?, 'message')`).bind(id, who.uid ?? "guest", name, email, pr.slug, pr.user_id, designSlug, title, text.slice(0, 3000)).run();
     await env.DB.prepare(`INSERT INTO project_messages (id, project_id, designer_user_id, sender_id, sender_role, body, attachments) VALUES (?, ?, ?, ?, 'customer', ?, '[]')`).bind(crypto.randomUUID(), id, pr.user_id, who.uid ?? "guest", text.slice(0, 3000)).run();
     const key = `p.${id}.${pr.user_id}`;
-    await notify(env, pr.user_id, "message", `New message from ${name}`, text.slice(0, 140), `/dashboard?view=messages&c=${key}`);
+    await notify(env, pr.user_id, "message", `New message from ${name}`, text.slice(0, 140), `/dashboard?view=messages&c=${key}`, false);
     await testEmail(env, await emailOf(env, pr.user_id), `New message from ${name} on Artisan Mural`, `Hello ${pr.name},\n\n${name} wrote to you:\n\n"${text.slice(0, 600)}"\n\nReply from your designer portal, Messages tab.`, "designer_contact");
     for (const a of await admins(env)) await notify(env, a, "message", `${name} wrote to ${pr.name}`, text.slice(0, 140), `/admin#messages:${key}`);
     if (!who.uid) await testEmail(env, email, `Your message to ${pr.name}`, `Hello ${name},\n\nWe passed your message to ${pr.name}. When they reply we will email you. Sign in or create an account with this email to see the whole conversation under Account > Messages.`, "designer_contact_receipt");

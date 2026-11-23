@@ -53,6 +53,7 @@ function Checkout() {
     setBusy(true); setError("");
     try {
       const r = await create({ data: { items: lines.map(l => ({ design: l.design, finish: l.finish, selection: l.selection, ...(l.name ? { name: l.name } : {}) })), name: v("name"), phone: v("phone"), address: [v("address"), v("city"), v("state"), v("postal"), v("country")].filter(Boolean).join(", "), notes: v("notes") } });
+      void fetch("/backend/orders-placed", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cartId: (r as any)?.cartId }) }).catch(() => {});
       let fin: any = null;
       try { fin = await api("account/finalize", { body: { cartId: r.cartId, coupon: appliedCoupon, state: v("state"), useCredit } }); } catch {} if (fin?.firstOrder) try { localStorage.removeItem("am-welcome-code"); localStorage.setItem("am-popup-hide-until", String(Date.now() + 365 * 864e5)); } catch {}
       cart.clear(); setPlaced({ total: fin ? fin.due : r.total, email: r.email }); window.scrollTo({ top: 0 });

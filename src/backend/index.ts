@@ -1,3 +1,4 @@
+import { deliverOutbox } from "./alerts";
 // Backend entry: database REST, accounts, files — served from the same site.
 import { handleRest } from "./pgrest";
 import { handleAuth, userFromToken } from "./auth";
@@ -36,6 +37,8 @@ export async function handleBackend(req: Request, env: any, origin: string): Pro
     else if (p.startsWith("/storage/v1/")) res = await handleStorage(req, env, who);
     else res = await handleApp(req, env, who, origin);
   }
+  // send queued emails (real sending when the owner turned it on, otherwise kept as test copies)
+  if (req.method !== "GET" && req.method !== "HEAD" && !p.startsWith("/storage/v1/")) { try { await deliverOutbox(env); } catch {} }
   const h = new Headers(res.headers);
   for (const [k, v] of Object.entries(CORS)) h.set(k, v);
   return new Response(res.body, { status: res.status, headers: h });

@@ -2,6 +2,7 @@
 import type { Who } from "./policies";
 import { signUrl } from "./storage";
 import { getSettings } from "./app-api";
+import { alert, alertOwners } from "./alerts";
 import { imageDims } from "@/lib/image-dims";
 import { planParts, partRange, verifyCopy, builtSize, tiffDpi } from "@/lib/drive-verify";
 import { readTiff } from "@/lib/tiff";
@@ -138,6 +139,15 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
     const myOrders = [...jobOrders, ...orderRows].filter((o) => !seen.has(o.id) && seen.add(o.id)).sort((a, b) => (a.created_at < b.created_at ? 1 : -1)).map((o) => ({ id: o.id, design: titleOf.get(o.design_slug) ?? (o.project_id ? projs.find((x) => x.id === o.project_id)?.title ?? "Custom design" : o.design_slug), finish: finNames.get(o.finish) ?? o.finish, color: parseJ(o.selection, {})?.colorName ?? null, sqft: o.square_feet, status: o.status, at: o.created_at, projectId: o.project_id, dueAt: o.due_at, royalty: o.design_slug.startsWith("u-") && titleOf.has(o.design_slug) ? r2n(Number(o.square_feet) * rate) : 0, fee: o.project_id ? net(projs.find((x) => x.id === o.project_id) ?? {}) : 0 }));
     return j({ email: who.email, profile: prof ? { ...prof, styles: parseJ(prof.styles, []), portfolio_links: parseJ(prof.portfolio_links, []), trusted: !!prof.trusted } : null, slug: acc?.slug ?? null, designs, totals: { live: designs.filter((d) => d.review === "approved").length, pending: designs.filter((d) => d.review === "pending" && d.submittedAt).length, drafts: designs.filter((d) => !d.submittedAt).length, sqft: r2n(totalSqft), earned: r2n(earned), royalties: r2n(royalties), jobsEarned: r2n(jobsEarned), jobsPending: r2n(jobsPending), commission: comm, paid: r2n(Number(paid?.t ?? 0)), owed: r2n(earned - Number(paid?.t ?? 0) - Number((paid as any)?.rq ?? 0)), requested: r2n(Number((paid as any)?.rq ?? 0)), credit: r2n(Number(credit?.t ?? 0)), rate: Math.round(rate * 100) }, payouts: payHist, orders: myOrders, rules: { targetDpi: rules.targetDpi, minDpi: rules.minDpi, maxUploadGb: rules.maxUploadGb } });
   }
+  if (p === "applied" && m === "POST") {
+    const prof: any = await DB.prepare(`SELECT full_name, status FROM designer_profiles WHERE user_id = ?`).bind(who.uid).first();
+    if (!prof) return bad("No application found", 404);
+    const done: any = await DB.prepare(`SELECT 1 x FROM notifications WHERE user_id = ? AND kind = 'designer_applied'`).bind(who.uid).first();
+    if (done) return j({ ok: true, already: true });
+    await alert(env as any, { uid: who.uid, kind: "designer_applied", title: "We received your designer application", body: `Thank you, ${prof.full_name}. The studio approves every designer personally, usually within 2 business days.`, link: "/become-designer" });
+    await alertOwners(env as any, { kind: "designer_application", title: `New designer application: ${prof.full_name}`, body: "Review it in the back office under Designers.", link: "/admin#designers" });
+    return j({ ok: true });
+  }
   if (p === "cashout" && m === "POST") {
     const amount = r2n(Number(body.amount));
     const me = await (await designerRoutes(req, env, who, "me", "GET", {}, url)).json() as any;
@@ -151,6 +161,8 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
     const min = Number(s.payouts?.minimumPayout) || 0;
     if (amount < min) return bad(`The minimum cash-out is $${min.toFixed(2)}.`);
     await DB.prepare(`INSERT INTO designer_payouts (id, designer_user_id, amount, note, paid_at, created_by, method, status) VALUES (?, ?, ?, ?, ?, ?, 'PayPal', 'requested')`).bind(crypto.randomUUID(), who.uid, amount, "Cash-out requested (PayPal, test mode)", nowIso(), who.uid).run();
+    await alert(env as any, { uid: who.uid, kind: "payout_requested", title: `Cash-out requested: $${amount.toFixed(2)}`, body: "We'll send it with the next payout and email you when it's paid.", link: "/studio?view=earnings" });
+    await alertOwners(env as any, { kind: "payout_requested", title: `Payout requested: $${amount.toFixed(2)}`, body: `${who.email ?? "A designer"} asked to cash out.`, link: "/admin#payouts" });
     return j({ ok: true, requested: true });
   }
   if (p === "profile" && m === "POST") {
@@ -232,6 +244,8 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
     const auto = prof?.trusted && prof?.status === "approved" && settings.designerRules.autoApproveTrusted;
     await DB.prepare(`UPDATE artwork_uploads SET submitted_at = ?, status = 'ready', review_status = ? WHERE id = ?`).bind(nowIso(), auto ? "approved" : "pending", u.id).run();
     try { const { invalidateShopCache } = await import("@/lib/shop.server"); invalidateShopCache(); } catch {}
+    await alert(env as any, { uid: who.uid, kind: "design_submitted", title: auto ? `"${u.title}" is live` : `We received "${u.title}"`, body: auto ? "Your design went straight into the shop (you're a trusted designer)." : "The studio checks the file and room pictures, usually within 2 business days. You'll hear from us either way.", link: "/studio?view=designs" });
+    if (!auto) await alertOwners(env as any, { kind: "design_review", title: `New design to review: ${u.title}`, body: "A designer sent a design for review.", link: "/admin#designs" });
     return j({ ok: true, approved: !!auto });
   }
   // ---- files ----

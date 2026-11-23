@@ -133,7 +133,7 @@ async function storeSend(env: Env, who: Who, t: any, text: string, atts: any[], 
     const userRead = t.user_id ? (await one(env, `SELECT read_at FROM chat_reads WHERE user_id = ? AND conv = ?`, t.user_id, key))?.read_at : null;
     const alreadyWaiting = t.last_from === "store" && t.last_at && (!userRead || userRead < t.last_at); // one email per unread batch
     const base = t.user_role === "designer" ? "/dashboard?view=messages" : "/account?view=messages";
-    if (t.user_id) await notify(env, t.user_id, "message", `You have a new message from ${store}`, lastBody, `${base}&c=${key}`);
+    if (t.user_id) await notify(env, t.user_id, "message", `You have a new message from ${store}`, lastBody, `${base}&c=${key}`, false);
     if (!alreadyWaiting && t.user_email) await testEmail(env, t.user_email, `You have a new message from ${store}`, `Hello ${t.user_name || ""},\n\nYou have a new message from ${store}${t.order_id ? ` about your order #${short(t.order_id)}` : ""}:\n\n"${lastBody}"\n\nReply on the website: ${env.PUBLIC_ORIGIN}${base}&c=${key}\n\n${store}`, "store_message");
   } else {
     for (const a of await admins(env)) await notify(env, a, "message", `New message from ${t.user_name || t.user_email || "a customer"}`, lastBody, `/admin#messages:${key}`);

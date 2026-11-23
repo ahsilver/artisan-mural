@@ -3,6 +3,7 @@
 // the order waits on the designer, the designer delivers the final file, the owner prints. Payments + emails are test mode.
 import type { Who } from "./policies";
 import { signUrl } from "./storage";
+import { alert, alertOwners, queueMail } from "./alerts";
 import { getSettings } from "./app-api";
 import { quote as priceQuote } from "./account-api";
 import { findContactDetails, CONTACT_BLOCKED_MESSAGE } from "@/lib/contact-guard";
@@ -45,12 +46,13 @@ async function designThumb(env: Env, slug: string | null) {
   return null;
 }
 const signed = async (env: Env, key: string | null, ttl = 3600, download?: string) => { if (!key) return null; const i = key.indexOf("/"); return env.PUBLIC_ORIGIN + "/storage/v1" + (await signUrl(env, key.slice(0, i), key.slice(i + 1), ttl)) + (download != null ? "&download=" + encodeURIComponent(download) : ""); };
-export async function notify(env: Env, uid: string, kind: string, title: string, body: string, link: string) {
-  await env.DB.prepare(`INSERT INTO notifications (id, user_id, kind, title, body, link) VALUES (?, ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), uid, kind, title, body, link).run();
+/** In-site notification and (unless the caller already emails this person) an email for the same event. */
+export async function notify(env: Env, uid: string, kind: string, title: string, body: string, link: string, email = true) {
+  await alert(env as any, { uid, kind, title, body, link, sendEmail: email });
 }
 export async function testEmail(env: Env, to: string | null, subject: string, text: string, kind: string) {
   if (!to) return;
-  await env.DB.prepare(`INSERT INTO email_outbox (id, to_addr, subject, html, text, kind) VALUES (?, ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), to, subject, `<p>${esc(text)}</p>`, text, kind).run();
+  await queueMail(env as any, to, subject, text, kind);
 }
 async function emailOf(env: Env, uid: string) { const u: any = await env.DB.prepare(`SELECT email FROM auth_users WHERE id = ?`).bind(uid).first(); return u?.email ?? null; }
 async function admins(env: Env) { return ((await env.DB.prepare(`SELECT user_id FROM user_roles WHERE role = 'admin'`).all()).results ?? []).map((r: any) => r.user_id as string); }
@@ -197,7 +199,7 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
     const link = `/dashboard?view=requests&project=${id}`;
     const targets = designer ? [designer.uid] : ((await DB.prepare(`SELECT user_id FROM designer_profiles WHERE status = 'approved'`).all()).results ?? []).map((r: any) => r.user_id).filter((x: string) => x !== uid);
     for (const t of targets) {
-      await notify(env, t, "request", kind === "edit" ? `New change request: ${title}` : designer ? `New custom request: ${title}` : `New open custom request: ${title}`, brief.slice(0, 140), link);
+      await notify(env, t, "request", kind === "edit" ? `New change request: ${title}` : designer ? `New custom request: ${title}` : `New open custom request: ${title}`, brief.slice(0, 140), link, false);
       await testEmail(env, await emailOf(env, t), kind === "edit" ? `New change request on Artisan Mural: ${title}` : `New custom design request: ${title}`, `Hello,\n\n${name} sent ${designer ? "you" : "all designers"} a ${kind === "edit" ? "change request" : "custom design request"}:\n\n"${brief.slice(0, 500)}"\n\nOpen it and send your price and how many days you need:\n${origin}${link}\n\nArtisan Mural`, "project_request");
     }
     return j({ id });
@@ -255,7 +257,7 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
     await touch(env, pr.id, "brief = ?, room = ?, wall_size = ?, attachments = ?", brief.slice(0, 3000), room || null, size || null, JSON.stringify(atts));
     const text = ["::form " + JSON.stringify({ room, change, wallSize: size, notes })].join("");
     await DB.prepare(`INSERT INTO project_messages (id, project_id, designer_user_id, sender_id, sender_role, body, attachments) VALUES (?, ?, ?, ?, 'customer', ?, ?)`).bind(crypto.randomUUID(), pr.id, pr.designer_user_id, uid, text, JSON.stringify(atts)).run();
-    await notify(env, pr.designer_user_id, "request", `New request: ${pr.title}`, change.slice(0, 140), `/dashboard?view=messages&c=p.${pr.id}.${pr.designer_user_id}`);
+    await notify(env, pr.designer_user_id, "request", `New request: ${pr.title}`, change.slice(0, 140), `/dashboard?view=messages&c=p.${pr.id}.${pr.designer_user_id}`, false);
     await testEmail(env, await emailOf(env, pr.designer_user_id), `New request on Artisan Mural: ${pr.title}`, `Hello,\n\n${pr.customer_name} sent you a request:\n\n"${change.slice(0, 500)}"\nRoom: ${room || "-"}\nWall: ${size || "-"}\n\nReply in the chat:\n${origin}/dashboard?view=messages&c=p.${pr.id}.${pr.designer_user_id}\n\nArtisan Mural`, "project_request");
     return j({ ok: true });
   }
@@ -289,7 +291,7 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
     await DB.prepare(`INSERT INTO project_quotes (id, project_id, designer_user_id, designer_slug, fee, days, note) VALUES (?, ?, ?, ?, ?, ?, ?)`).bind(qid, pr.id, uid, d.slug, fee, days, note || null).run();
     await touch(env, pr.id, "status = 'quoted'");
     const link = `/projects/${pr.id}`;
-    await notify(env, pr.customer_id, "quote", `${d.name} came back with a price`, `$${fee.toFixed(2)} for the design work, ready in ${days} day${days === 1 ? "" : "s"}. Review and approve it.`, link);
+    await notify(env, pr.customer_id, "quote", `${d.name} came back with a price`, `$${fee.toFixed(2)} for the design work, ready in ${days} day${days === 1 ? "" : "s"}. Review and approve it.`, link, false);
     await testEmail(env, pr.customer_email, `${d.name} came back with a price for "${pr.title}"`, `Hello ${pr.customer_name},\n\n${d.name} sent a price for your request "${pr.title}":\n\nDesign work: $${fee.toFixed(2)}\nReady in: ${days} day${days === 1 ? "" : "s"} after payment${note ? `\nNote: ${note}` : ""}\n\nApprove it, enter your wall size and pay for the printing and the design together:\n${origin}${link}\n\nArtisan Mural`, "project_quote");
     return j({ ok: true, id: qid });
   }
@@ -348,9 +350,10 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
     await touch(env, pr.id, "status = 'in_progress', paid_at = ?, due_at = ?, order_id = ?", now, due, oid);
     const d = pr.designer_user_id ? await designerOf(env, pr.designer_user_id) : null;
     if (pr.designer_user_id) {
-      await notify(env, pr.designer_user_id, "paid", `Paid, start work: ${pr.title}`, `The customer paid. Deliver the final file by ${fmtDay(due)}.`, `/dashboard?view=requests&project=${pr.id}`);
+      await notify(env, pr.designer_user_id, "paid", `Paid, start work: ${pr.title}`, `The customer paid. Deliver the final file by ${fmtDay(due)}.`, `/dashboard?view=requests&project=${pr.id}`, false);
       await testEmail(env, await emailOf(env, pr.designer_user_id), `Paid: start "${pr.title}" (due ${fmtDay(due)})`, `Hello ${d?.name ?? ""},\n\nThe customer paid for "${pr.title}". Please make the final file and upload it in your designer page by ${fmtDay(due)}.\nWall: ${w} x ${h} ${unit} (${sqft} sq ft).\n\n${origin}/dashboard?view=requests&project=${pr.id}\n\nArtisan Mural`, "project_paid");
     }
+    if (pr.customer_id && pr.customer_id !== "guest") await notify(env, pr.customer_id, "paid", `Payment received: ${pr.title}`, "Thank you. The designer has started; we\'ll tell you when it\'s ready.", `/projects/${pr.id}`, false);
     await testEmail(env, pr.customer_email, `Order confirmed: ${pr.title}`, `Hello ${pr.customer_name},\n\nThank you, your payment of $${q.due.toFixed(2)} is confirmed (test mode, no real charge).\nPrinting: $${pp.printing.toFixed(2)} (${sqft} sq ft, ${pp.finishName})\nDesign work: $${fee.toFixed(2)}\n\n${d?.name ?? "The designer"} is working on it and will be done by ${fmtDay(due)}. Then we print and ship.\n\n${origin}/projects/${pr.id}\n\nArtisan Mural`, "project_receipt");
     for (const a of await admins(env)) await notify(env, a, "order", `New paid design order: ${pr.title}`, `Waiting on ${d?.name ?? "designer"}, due ${fmtDay(due)}`, `/admin#jobs`);
     return j({ ok: true, orderId: oid, dueAt: due, total: q.due });
@@ -386,7 +389,7 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
       if (key) await DB.prepare(`INSERT INTO order_files (id, order_id, bucket, path, label, created_by) VALUES (?, ?, 'project-files', ?, ?, ?)`).bind(crypto.randomUUID(), pr.order_id, key.slice("project-files/".length), `Final file from designer: ${name}`, uid).run();
     }
     for (const a of await admins(env)) await notify(env, a, "ready", `Ready to print: ${pr.title}`, "The designer delivered the final file.", `/admin#orders`);
-    await notify(env, pr.customer_id, "delivered", `Your design is finished: ${pr.title}`, "The designer finished. We're getting it ready to print.", `/projects/${pr.id}`);
+    await notify(env, pr.customer_id, "delivered", `Your design is finished: ${pr.title}`, "The designer finished. We're getting it ready to print.", `/projects/${pr.id}`, false);
     await testEmail(env, pr.customer_email, `Your design is finished: ${pr.title}`, `Hello ${pr.customer_name},\n\nThe designer finished your design. We're getting it ready to print, and we'll email you the tracking number when it ships.\n\n${origin}/projects/${pr.id}\n\nArtisan Mural`, "project_delivered");
     return j({ ok: true });
   }
