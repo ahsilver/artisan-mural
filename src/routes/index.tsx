@@ -85,7 +85,7 @@ function Hero({ live, home }: { live: Design[]; home: any }) {
         <div className="fade" />
       </div>
       <div className={"slide" + (i === 2 ? " on" : "")}>
-        <Link className="slide-link s3split" to="/custom-request" aria-label="See how changes work">
+        <Link className="slide-link s3split" to="/changes" aria-label="See how changes work">
           <span className="s3a"><img src="/p/img/forest-before.webp" alt="A forest mural, original" /><em>Original</em></span>
           <span className="s3b"><img src="/p/img/forest-after.webp" alt="The same mural with the dark tree removed by the designer" loading="lazy" /><em>Tree removed for you</em></span>
         </Link>
@@ -272,7 +272,7 @@ function Home() {
             <img src="/p/img/forest-after.webp" alt="" loading="lazy" />
             <div className="cb-txt"><span className="k">Made-to-order changes</span><b>Love it, but want one thing changed?</b><p>Our designers can change any design for your wall. Free to ask.</p></div>
             <ol className="cb-steps"><li>Pick a design</li><li>Tell the designer</li><li>Approve the proof</li></ol>
-            <Link className="btn btn-wine" to="/custom-request">How it works</Link>
+            <Link className="btn btn-wine" to="/changes">How it works</Link>
           </div>
         </section>
       )}

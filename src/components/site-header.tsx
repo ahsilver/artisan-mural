@@ -132,11 +132,13 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
               </details>
             ))}
             <Link to="/browse" onClick={onClose} className={row}>New arrivals</Link>
+            <Link to="/materials" onClick={onClose} className={row}>Our materials</Link>
           </div>
           <div className={sec}>
             <p className={k}>Made for you</p>
             <Link to="/custom-request" onClick={onClose} className={row}>Your own image</Link>
             <Link to="/custom-request" onClick={onClose} className={row}>Post a request</Link>
+            <Link to="/changes" onClick={onClose} className={row}>Changes to a design</Link>
             <Link to="/designers" onClick={onClose} className={row}>Designers</Link>
           </div>
           <div className={sec}>

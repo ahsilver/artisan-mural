@@ -16,6 +16,7 @@ import { Route as AdminClassicRouteImport } from './routes/admin-classic'
 import { Route as BecomeDesignerRouteImport } from './routes/become-designer'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as CartRouteImport } from './routes/cart'
+import { Route as ChangesRouteImport } from './routes/changes'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as CustomRequestRouteImport } from './routes/custom-request'
@@ -23,6 +24,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DesignerLoginRouteImport } from './routes/designer-login'
 import { Route as DesignerUploadRouteImport } from './routes/designer-upload'
 import { Route as HomeSampleRouteImport } from './routes/home-sample'
+import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SellRouteImport } from './routes/sell'
@@ -77,6 +79,11 @@ const CartRoute = CartRouteImport.update({
   path: '/cart',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChangesRoute = ChangesRouteImport.update({
+  id: '/changes',
+  path: '/changes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
@@ -110,6 +117,11 @@ const DesignerUploadRoute = DesignerUploadRouteImport.update({
 const HomeSampleRoute = HomeSampleRouteImport.update({
   id: '/home-sample',
   path: '/home-sample',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MaterialsRoute = MaterialsRouteImport.update({
+  id: '/materials',
+  path: '/materials',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MessagesRoute = MessagesRouteImport.update({
@@ -211,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/become-designer': typeof BecomeDesignerRoute
   '/browse': typeof BrowseRoute
   '/cart': typeof CartRoute
+  '/changes': typeof ChangesRoute
   '/checkout': typeof CheckoutRoute
   '/compare': typeof CompareRoute
   '/custom-request': typeof CustomRequestRoute
@@ -218,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/designer-login': typeof DesignerLoginRoute
   '/designer-upload': typeof DesignerUploadRoute
   '/home-sample': typeof HomeSampleRoute
+  '/materials': typeof MaterialsRoute
   '/messages': typeof MessagesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sell': typeof SellRoute
@@ -245,6 +259,7 @@ export interface FileRoutesByTo {
   '/become-designer': typeof BecomeDesignerRoute
   '/browse': typeof BrowseRoute
   '/cart': typeof CartRoute
+  '/changes': typeof ChangesRoute
   '/checkout': typeof CheckoutRoute
   '/compare': typeof CompareRoute
   '/custom-request': typeof CustomRequestRoute
@@ -252,6 +267,7 @@ export interface FileRoutesByTo {
   '/designer-login': typeof DesignerLoginRoute
   '/designer-upload': typeof DesignerUploadRoute
   '/home-sample': typeof HomeSampleRoute
+  '/materials': typeof MaterialsRoute
   '/messages': typeof MessagesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sell': typeof SellRoute
@@ -280,6 +296,7 @@ export interface FileRoutesById {
   '/become-designer': typeof BecomeDesignerRoute
   '/browse': typeof BrowseRoute
   '/cart': typeof CartRoute
+  '/changes': typeof ChangesRoute
   '/checkout': typeof CheckoutRoute
   '/compare': typeof CompareRoute
   '/custom-request': typeof CustomRequestRoute
@@ -287,6 +304,7 @@ export interface FileRoutesById {
   '/designer-login': typeof DesignerLoginRoute
   '/designer-upload': typeof DesignerUploadRoute
   '/home-sample': typeof HomeSampleRoute
+  '/materials': typeof MaterialsRoute
   '/messages': typeof MessagesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sell': typeof SellRoute
@@ -316,6 +334,7 @@ export interface FileRouteTypes {
     | '/become-designer'
     | '/browse'
     | '/cart'
+    | '/changes'
     | '/checkout'
     | '/compare'
     | '/custom-request'
@@ -323,6 +342,7 @@ export interface FileRouteTypes {
     | '/designer-login'
     | '/designer-upload'
     | '/home-sample'
+    | '/materials'
     | '/messages'
     | '/reset-password'
     | '/sell'
@@ -350,6 +370,7 @@ export interface FileRouteTypes {
     | '/become-designer'
     | '/browse'
     | '/cart'
+    | '/changes'
     | '/checkout'
     | '/compare'
     | '/custom-request'
@@ -357,6 +378,7 @@ export interface FileRouteTypes {
     | '/designer-login'
     | '/designer-upload'
     | '/home-sample'
+    | '/materials'
     | '/messages'
     | '/reset-password'
     | '/sell'
@@ -384,6 +406,7 @@ export interface FileRouteTypes {
     | '/become-designer'
     | '/browse'
     | '/cart'
+    | '/changes'
     | '/checkout'
     | '/compare'
     | '/custom-request'
@@ -391,6 +414,7 @@ export interface FileRouteTypes {
     | '/designer-login'
     | '/designer-upload'
     | '/home-sample'
+    | '/materials'
     | '/messages'
     | '/reset-password'
     | '/sell'
@@ -419,6 +443,7 @@ export interface RootRouteChildren {
   BecomeDesignerRoute: typeof BecomeDesignerRoute
   BrowseRoute: typeof BrowseRoute
   CartRoute: typeof CartRoute
+  ChangesRoute: typeof ChangesRoute
   CheckoutRoute: typeof CheckoutRoute
   CompareRoute: typeof CompareRoute
   CustomRequestRoute: typeof CustomRequestRoute
@@ -426,6 +451,7 @@ export interface RootRouteChildren {
   DesignerLoginRoute: typeof DesignerLoginRoute
   DesignerUploadRoute: typeof DesignerUploadRoute
   HomeSampleRoute: typeof HomeSampleRoute
+  MaterialsRoute: typeof MaterialsRoute
   MessagesRoute: typeof MessagesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SellRoute: typeof SellRoute
@@ -497,6 +523,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CartRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/changes': {
+      id: '/changes'
+      path: '/changes'
+      fullPath: '/changes'
+      preLoaderRoute: typeof ChangesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/checkout': {
       id: '/checkout'
       path: '/checkout'
@@ -544,6 +577,13 @@ declare module '@tanstack/react-router' {
       path: '/home-sample'
       fullPath: '/home-sample'
       preLoaderRoute: typeof HomeSampleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/materials': {
+      id: '/materials'
+      path: '/materials'
+      fullPath: '/materials'
+      preLoaderRoute: typeof MaterialsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/messages': {
@@ -683,6 +723,7 @@ const rootRouteChildren: RootRouteChildren = {
   BecomeDesignerRoute: BecomeDesignerRoute,
   BrowseRoute: BrowseRoute,
   CartRoute: CartRoute,
+  ChangesRoute: ChangesRoute,
   CheckoutRoute: CheckoutRoute,
   CompareRoute: CompareRoute,
   CustomRequestRoute: CustomRequestRoute,
@@ -690,6 +731,7 @@ const rootRouteChildren: RootRouteChildren = {
   DesignerLoginRoute: DesignerLoginRoute,
   DesignerUploadRoute: DesignerUploadRoute,
   HomeSampleRoute: HomeSampleRoute,
+  MaterialsRoute: MaterialsRoute,
   MessagesRoute: MessagesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SellRoute: SellRoute,
