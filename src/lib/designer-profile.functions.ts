@@ -21,11 +21,13 @@ const applySchema = z.object({
   bio: z.string().trim().min(20).max(1500),
   styles: z.array(z.string().trim().min(1).max(40)).max(10),
   portfolio: z.array(z.string().trim().url().max(500)).max(5),
+  /** The rest of the preview's application (city, links, experience, tools, custom work, payout preference, samples). Only the studio sees it. */
+  application: z.record(z.string().max(40), z.union([z.string().max(1500), z.boolean(), z.array(z.string().max(500)).max(12)])).optional(),
 });
 
 /** Sends a designer application; it always starts as pending until the studio approves it. Payout details are asked later, once a design is approved. */
 export const applyAsDesigner = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator(i => applySchema.parse(i)).handler(async ({ data, context }) => {
-  const { error } = await context.supabase.from("designer_profiles").insert({ user_id: context.userId, full_name: data.fullName, studio_name: data.studioName || null, country: data.country, bio: data.bio, styles: data.styles, portfolio_links: data.portfolio, status: "pending" });
+  const { error } = await context.supabase.from("designer_profiles").insert({ user_id: context.userId, full_name: data.fullName, studio_name: data.studioName || null, country: data.country, bio: data.bio, styles: data.styles, portfolio_links: data.portfolio, application: data.application ?? null, status: "pending" });
   if (error) throw new Error(error.code === "23505" ? "You have already applied." : "Could not send your application.");
   return { success: true };
 });

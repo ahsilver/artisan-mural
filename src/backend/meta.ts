@@ -232,6 +232,7 @@ export const META: Record<string,{pk:string;cols:Record<string,ColKind>;rels:Rel
  "designer_profiles": {
   "pk": "user_id",
   "cols": {
+   "application": "json",
    "bio": "text",
    "country": "text",
    "created_at": "text",

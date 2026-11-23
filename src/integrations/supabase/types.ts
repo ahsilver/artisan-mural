@@ -490,6 +490,7 @@ export type Database = {
       }
       designer_profiles: {
         Row: {
+          application: Json | null
           bio: string
           country: string
           created_at: string
@@ -506,6 +507,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          application?: Json | null
           bio: string
           country: string
           created_at?: string
@@ -522,6 +524,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          application?: Json | null
           bio?: string
           country?: string
           created_at?: string

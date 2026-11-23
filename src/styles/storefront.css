@@ -2549,3 +2549,13 @@
 .am .auth-forgot{justify-self:end;margin-top:-4px;border:0;background:none;font:600 13px var(--f-body);color:var(--ink);text-decoration:underline;cursor:pointer;padding:0}
 .am .rq-ok.err{color:#B03A2E}
 .am .own-signin .signin h1,.am .rq-card .signin h1{font-size:24px}
+/* pro + designer application pages */
+.am .pro-apply-pg .apply-form{max-width:760px;margin:12px auto 0}
+.am .af-more{justify-self:start;border:0;background:none;padding:0;font:600 13.5px var(--f-body);color:var(--ink);text-decoration:underline;cursor:pointer}
+.am .af-file{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;height:48px;padding:0 12px;border:1.5px dashed var(--line);background:var(--paper);font-size:13px;color:var(--ink-2);overflow:hidden}
+.am .af-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.am .af-file button{border:0;background:none;cursor:pointer;font-size:14px}
+.am .af-grid textarea{padding:10px 12px}
+.am .sa-page .sl-apply{margin-top:8px}
+.am .sa-acc form{display:grid;gap:12px}
+@media (max-width:860px){.am .sa-acc,.am .sa-grid{grid-template-columns:1fr}}
