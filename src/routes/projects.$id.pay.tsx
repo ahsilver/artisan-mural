@@ -1,13 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, ArrowLeft, Lock } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { SignInPage } from "@/components/auth-panel";
 import { useSession } from "@/hooks/use-session";
 import { papi, money } from "@/components/projects";
 
 export const Route = createFileRoute("/projects/$id/pay")({
-  head: () => ({ meta: [{ title: "Wall size and payment — Artisan Mural" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Wall size and payment — Artisan Murals" }, { name: "robots", content: "noindex" }] }),
   component: Pay,
 });
 
@@ -21,57 +19,55 @@ function Pay() {
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   useEffect(() => { if (session) papi(`projects/${id}`).then((x) => { setP(x); if (x.wallSize) { const m = String(x.wallSize).match(/(\d+(?:\.\d+)?)\s*[x×by]+\s*(\d+(?:\.\d+)?)/i); if (m) setF((v) => ({ ...v, width: m[1], height: m[2] })); } }).catch((e) => setErr(e.message)); }, [session?.user?.id, id]);
   useEffect(() => { if (!session || !p || p.status !== "approved") return; const t = setTimeout(() => papi(`projects/${id}/price`, { width: Number(f.width), height: Number(f.height), unit: f.unit, finish: f.finish, state: f.state }).then((r) => { setPrice(r); if (!f.finish && r.finish) setF((v) => ({ ...v, finish: r.finish })); }).catch(() => {}), 250); return () => clearTimeout(t); }, [f.width, f.height, f.unit, f.finish, f.state, p?.status]);
-  if (loading) return <Loader2 className="mx-auto my-20 animate-spin" />;
+  const shell = (children: React.ReactNode) => <div className="am"><div className="pg crumbs-row"><nav className="crumbs" aria-label="Breadcrumb"><Link to="/projects">My requests</Link><span>/</span><Link to="/projects/$id" params={{ id }}>{p?.title ?? "Request"}</Link><span>/</span><b>Pay</b></nav></div>{children}</div>;
+  if (loading) return shell(<p className="pg hint">Loading…</p>);
   if (!session) return <SignInPage kicker="Payment" title="Sign in to pay" sub="Sign in with the account you used for this request." />;
-  if (!p) return err ? <p className="mx-auto max-w-xl px-6 py-12 text-destructive">{err}</p> : <Loader2 className="mx-auto my-20 animate-spin" />;
-  if (p.status !== "approved") return <div className="mx-auto max-w-xl px-6 py-12"><p>{p.status === "in_progress" || p.status === "delivered" ? "This request is already paid." : "Approve a price first."}</p><Link to="/projects/$id" params={{ id }} className="mt-3 inline-block text-sm underline">Back to the request</Link></div>;
-  const q = price?.quote; const inp = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
+  if (!p) return shell(<section className="pg">{err ? <p className="rq-ok err">{err}</p> : <p className="hint">Loading…</p>}</section>);
+  if (p.status !== "approved") return shell(<section className="pg"><div className="sa-done"><b>{p.status === "in_progress" || p.status === "delivered" ? "This request is already paid." : "Approve a price first."}</b><Link className="btn optline btn-sm" to="/projects/$id" params={{ id }}>Back to the request</Link></div></section>);
+  const q = price?.quote;
   const accepted = p.quotes.find((x: any) => x.status === "accepted");
   async function pay(e: React.FormEvent) {
     e.preventDefault(); setErr(""); setBusy(true);
     try { await papi(`projects/${id}/pay`, { ...f, width: Number(f.width), height: Number(f.height) }); await navigate({ to: "/projects/$id", params: { id }, search: { paid: 1 } as any }); } catch (x: any) { setErr(x.message); setBusy(false); }
   }
-  return <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10">
-    <Link to="/projects/$id" params={{ id }} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />Back to the request</Link>
-    <h1 className="mt-4 text-3xl leading-tight sm:text-5xl">Your wall size</h1>
-    <p className="mt-2 text-sm text-muted-foreground">{p.title}. Enter the wall to print. You pay the printing and {accepted?.designer ?? "the designer"}'s work together.</p>
-    <form onSubmit={pay} className="mt-8 grid gap-8 lg:grid-cols-[1fr_380px]">
-      <div className="space-y-6">
-        <fieldset><legend className="text-lg font-medium">Wall measurements</legend>
-          <div className="mt-3 grid grid-cols-[1fr_1fr_90px] gap-3">
-            <div><label htmlFor="w" className="text-sm">Width</label><input id="w" required inputMode="decimal" className={inp + " mt-1"} value={f.width} onChange={(e) => setF({ ...f, width: e.target.value })} /></div>
-            <div><label htmlFor="h" className="text-sm">Height</label><input id="h" required inputMode="decimal" className={inp + " mt-1"} value={f.height} onChange={(e) => setF({ ...f, height: e.target.value })} /></div>
-            <div><label htmlFor="u" className="text-sm">Unit</label><select id="u" className={inp + " mt-1"} value={f.unit} onChange={(e) => setF({ ...f, unit: e.target.value })}><option value="ft">feet</option><option value="in">inches</option><option value="cm">cm</option></select></div>
-          </div>
-          {price?.sqft > 0 && <p className="mt-2 text-sm text-muted-foreground">{price.sqft} sq ft to print</p>}
-        </fieldset>
-        <fieldset><legend className="text-lg font-medium">Finish</legend>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">{(price?.finishes ?? []).map((m: any) => <label key={m.id} className={`flex cursor-pointer items-center justify-between rounded-md border px-3 py-2 text-sm ${f.finish === m.id ? "border-primary bg-accent/40" : "border-input"}`}><span><input type="radio" name="finish" className="mr-2" checked={f.finish === m.id} onChange={() => setF({ ...f, finish: m.id })} />{m.name}</span><span className="text-xs text-muted-foreground">{m.standard || !m.adj ? "Standard" : `${m.adj > 0 ? "+" : "−"}$${Math.abs(m.adj).toFixed(2)}/sq ft`}</span></label>)}</div>
-        </fieldset>
-        <fieldset><legend className="text-lg font-medium">Shipping</legend>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <div><label htmlFor="n" className="text-sm">Full name</label><input id="n" required className={inp + " mt-1"} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoComplete="name" /></div>
-            <div><label htmlFor="ph" className="text-sm">Phone (for delivery)</label><input id="ph" className={inp + " mt-1"} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} autoComplete="tel" /></div>
-            <div className="sm:col-span-2"><label htmlFor="a" className="text-sm">Address</label><textarea id="a" required rows={2} className={inp + " mt-1"} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} autoComplete="street-address" /></div>
-            <div><label htmlFor="st" className="text-sm">State</label><input id="st" maxLength={2} className={inp + " mt-1 uppercase"} value={f.state} onChange={(e) => setF({ ...f, state: e.target.value })} placeholder="NY" /></div>
-          </div>
-        </fieldset>
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
+  return shell(
+    <form className="pg co-wrap" onSubmit={pay}>
+      <div className="co-main">
+        <div className="co-head"><h1>Your wall &amp; payment</h1><span className="co-secure"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>Secure checkout</span></div>
+        <p className="hint">{p.title}. You pay the printing and {accepted?.designer ?? "the designer"}'s work together. The designer starts as soon as you pay.</p>
+        <section className="co-step"><header><span className="n">1</span><h2>Wall measurements</h2></header><div className="co-body">
+          <div className="co-grid"><label className="cf"><span>Width</span><input required inputMode="decimal" value={f.width} onChange={set("width")} /></label><label className="cf"><span>Height</span><input required inputMode="decimal" value={f.height} onChange={set("height")} /></label>
+            <label className="cf w2"><span>Unit</span><select value={f.unit} onChange={set("unit")}><option value="ft">feet</option><option value="in">inches</option><option value="cm">cm</option><option value="m">meters</option></select></label></div>
+          {price?.sqft > 0 && <p className="hint">{price.sqft} sq ft to print</p>}
+        </div></section>
+        <section className="co-step"><header><span className="n">2</span><h2>Paper</h2></header><div className="co-body">
+          <div className="co-opts" role="radiogroup" aria-label="Paper">{(price?.finishes ?? []).map((m: any) => <button key={m.id} type="button" role="radio" aria-checked={f.finish === m.id} onClick={() => setF({ ...f, finish: m.id })}><b>{m.name}</b><small>{m.adj ? `+${money(m.adj)} / sq ft` : "Included in the price"}</small></button>)}</div>
+        </div></section>
+        <section className="co-step"><header><span className="n">3</span><h2>Shipping</h2></header><div className="co-body">
+          <div className="co-grid"><label className="cf"><span>Full name</span><input required value={f.name} onChange={set("name")} autoComplete="name" /></label><label className="cf"><span>Phone <small>(for delivery)</small></span><input value={f.phone} onChange={set("phone")} autoComplete="tel" /></label>
+            <label className="cf w2"><span>Address</span><textarea required rows={2} value={f.address} onChange={set("address")} autoComplete="street-address" /></label>
+            <label className="cf"><span>State</span><input maxLength={2} value={f.state} onChange={set("state")} placeholder="NY" /></label></div>
+        </div></section>
+        <section className="co-step"><header><span className="n">4</span><h2>Payment</h2></header><div className="co-body">
+          <div className="co-grid"><label className="cf w2"><span>Card number</span><input required inputMode="numeric" autoComplete="off" placeholder="4242 4242 4242 4242" value={f.card} onChange={set("card")} /></label></div>
+          <p className="co-test">Test mode: no card is charged.</p>
+          {err && <p className="co-err" role="alert">{err}</p>}
+          <button type="submit" className="btn btn-wine big" disabled={busy || !(price?.sqft > 0)}>{busy ? "Paying…" : `Pay ${money(q?.due ?? 0)}`}</button>
+        </div></section>
       </div>
-      <aside className="h-fit rounded-lg border border-border p-5 lg:sticky lg:top-24">
-        <h2 className="text-2xl">Summary</h2>
-        <dl className="mt-4 space-y-2 text-sm">
-          <div className="flex justify-between gap-3"><dt>Printing{price?.sqft > 0 ? ` (${price.sqft} sq ft × ${money(price.unit)})` : ""}<span className="block text-xs text-muted-foreground">{price?.finishName}</span></dt><dd>{money(price?.printing)}</dd></div>
-          <div className="flex justify-between gap-3"><dt>Design work<span className="block text-xs text-muted-foreground">{accepted?.designer}, ready in {p.days} day{p.days === 1 ? "" : "s"}</span></dt><dd>{money(p.fee)}</dd></div>
-          {q?.special > 0 && <div className="flex justify-between"><dt>Trade price</dt><dd>−{money(q.special)}</dd></div>}
-          {q && <div className="flex justify-between"><dt>Shipping</dt><dd>{q.shipping ? money(q.shipping) : "Free"}</dd></div>}
-          {q?.tax > 0 && <div className="flex justify-between"><dt>{q.taxLabel}</dt><dd>{money(q.tax)}</dd></div>}
-          <div className="flex justify-between border-t border-border pt-3 text-base font-semibold"><dt>Total</dt><dd>{money(q?.due ?? 0)}</dd></div>
-        </dl>
-        <div className="mt-5"><label htmlFor="card" className="text-sm">Card</label><input id="card" required className={inp + " mt-1"} inputMode="numeric" autoComplete="off" placeholder="4242 4242 4242 4242" value={f.card} onChange={(e) => setF({ ...f, card: e.target.value })} /><p className="mt-1 text-xs text-muted-foreground">Test mode: use 4242 4242 4242 4242. No real money is taken.</p></div>
-        {err && <p className="mt-3 text-sm text-destructive" role="alert">{err}</p>}
-        <Button type="submit" className="mt-4 w-full" disabled={busy || !(price?.sqft > 0)}>{busy ? <><Loader2 className="animate-spin" />Paying…</> : <><Lock />Pay {money(q?.due ?? 0)}</>}</Button>
-        <p className="mt-2 text-xs text-muted-foreground">After payment the designer starts. Your order shows "Waiting on designer" until the final file is ready, then we print.</p>
-      </aside>
+      <aside className="co-side"><div className="co-sumcard">
+        <h2>Order summary</h2>
+        <div className="co-rows">
+          <div><span>Printing{price?.sqft > 0 ? ` · ${price.sqft} sq ft × ${money(price.unit)}` : ""}{price?.finishName ? <small> · {price.finishName}</small> : null}</span><b>{money(price?.printing)}</b></div>
+          <div><span>Design work · {accepted?.designer}, {p.days} day{p.days === 1 ? "" : "s"}</span><b>{money(p.fee)}</b></div>
+          {q?.special > 0 && <div><span>Trade price</span><b>−{money(q.special)}</b></div>}
+          <div><span>Delivery</span><b>{q ? (q.shipping ? money(q.shipping) : "Free") : "—"}</b></div>
+          {q?.tax > 0 && <div><span>{q.taxLabel}</span><b>{money(q.tax)}</b></div>}
+          <div className="tot"><span>Total</span><b>{money(q?.due ?? 0)}</b></div>
+        </div>
+        <p className="co-trust">After payment the designer starts. Your order shows "Waiting on designer" until the final file is ready, then we print.</p>
+      </div></aside>
     </form>
-  </div>;
+  );
 }
