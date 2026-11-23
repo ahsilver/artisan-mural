@@ -7,7 +7,7 @@ function ProName() { const p = useProSettings(); return <>{p.name}</>; }
 
 const COLS: { title: string; links: { to: string; label: React.ReactNode }[] }[] = [
   { title: "Shop", links: [{ to: "/browse", label: "All designs" }, { to: "/browse", label: "New arrivals" }, { to: "/designers", label: "Designers" }, { to: "/materials", label: "Our materials" }, { to: "/changes", label: "Changes to any design" }] },
-  { title: "Made for you", links: [{ to: "/custom-request", label: "Your own image" }, { to: "/custom-request", label: "Post a request" }, { to: "/pro", label: <><ProName /> for professionals</> }] },
+  { title: "Made for you", links: [{ to: "/own", label: "Your own image" }, { to: "/custom-request", label: "Post a request" }, { to: "/pro", label: <><ProName /> for professionals</> }] },
   { title: "Designers", links: [{ to: "/sell", label: "Sell your art" }, { to: "/designers/how-it-works", label: "How it works & FAQ" }, { to: "/account", label: "Sign in / Your studio" }] },
   { title: "Help", links: [{ to: "/account", label: "My account" }, { to: "/messages", label: "Messages" }, { to: "/cart", label: "Cart" }] },
 ];

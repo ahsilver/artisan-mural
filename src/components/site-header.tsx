@@ -31,7 +31,7 @@ const GROUPS: Group[] = [
   { key: "designers", label: "Designers", items: () => [{ label: "All designers", to: "/designers" }, { label: "How it works for designers", to: "/designers/how-it-works" }, { label: "Sell your art", to: "/sell" }] },
 ];
 const NAV_RIGHT = [
-  { to: "/custom-request", label: "Your own image" },
+  { to: "/own", label: "Your own image" },
   { to: "/custom-request", label: "Post a request" },
   { to: "/designers", label: "Designers" },
   { to: "/pro", label: "Artisan Pro" },
@@ -136,7 +136,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
           </div>
           <div className={sec}>
             <p className={k}>Made for you</p>
-            <Link to="/custom-request" onClick={onClose} className={row}>Your own image</Link>
+            <Link to="/own" onClick={onClose} className={row}>Your own image</Link>
             <Link to="/custom-request" onClick={onClose} className={row}>Post a request</Link>
             <Link to="/changes" onClick={onClose} className={row}>Changes to a design</Link>
             <Link to="/designers" onClick={onClose} className={row}>Designers</Link>

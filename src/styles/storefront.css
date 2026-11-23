@@ -2506,3 +2506,9 @@
 .am .rq-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.am .rq-thumbs span{position:relative}.am .rq-thumbs img{width:64px;height:64px;object-fit:cover;border-radius:6px}
 .am .rq-thumbs button{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:12px;line-height:1;cursor:pointer}
 .am .rq-signin{max-width:560px}.am .up-err{color:#B03A2E;font-size:13px}
+.am .own-guides i{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed rgba(255,255,255,.8)}
+.am .own-signin{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.am .own-wall{position:relative;width:100%;max-height:min(560px,62svh);overflow:hidden;background:var(--soft);border-radius:8px;cursor:grab;user-select:none}
+.am .own-wall:active{cursor:grabbing}
+.am .own-art{position:absolute;inset:0}
+.am .own-guides{position:absolute;inset:0;pointer-events:none}

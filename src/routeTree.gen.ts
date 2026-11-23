@@ -26,6 +26,7 @@ import { Route as DesignerUploadRouteImport } from './routes/designer-upload'
 import { Route as HomeSampleRouteImport } from './routes/home-sample'
 import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as OwnRouteImport } from './routes/own'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SellRouteImport } from './routes/sell'
 import { Route as StudioRouteImport } from './routes/studio'
@@ -127,6 +128,11 @@ const MaterialsRoute = MaterialsRouteImport.update({
 const MessagesRoute = MessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnRoute = OwnRouteImport.update({
+  id: '/own',
+  path: '/own',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -233,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/home-sample': typeof HomeSampleRoute
   '/materials': typeof MaterialsRoute
   '/messages': typeof MessagesRoute
+  '/own': typeof OwnRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sell': typeof SellRoute
   '/studio': typeof StudioRoute
@@ -269,6 +276,7 @@ export interface FileRoutesByTo {
   '/home-sample': typeof HomeSampleRoute
   '/materials': typeof MaterialsRoute
   '/messages': typeof MessagesRoute
+  '/own': typeof OwnRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sell': typeof SellRoute
   '/studio': typeof StudioRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/home-sample': typeof HomeSampleRoute
   '/materials': typeof MaterialsRoute
   '/messages': typeof MessagesRoute
+  '/own': typeof OwnRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sell': typeof SellRoute
   '/studio': typeof StudioRoute
@@ -344,6 +353,7 @@ export interface FileRouteTypes {
     | '/home-sample'
     | '/materials'
     | '/messages'
+    | '/own'
     | '/reset-password'
     | '/sell'
     | '/studio'
@@ -380,6 +390,7 @@ export interface FileRouteTypes {
     | '/home-sample'
     | '/materials'
     | '/messages'
+    | '/own'
     | '/reset-password'
     | '/sell'
     | '/studio'
@@ -416,6 +427,7 @@ export interface FileRouteTypes {
     | '/home-sample'
     | '/materials'
     | '/messages'
+    | '/own'
     | '/reset-password'
     | '/sell'
     | '/studio'
@@ -453,6 +465,7 @@ export interface RootRouteChildren {
   HomeSampleRoute: typeof HomeSampleRoute
   MaterialsRoute: typeof MaterialsRoute
   MessagesRoute: typeof MessagesRoute
+  OwnRoute: typeof OwnRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SellRoute: typeof SellRoute
   StudioRoute: typeof StudioRoute
@@ -591,6 +604,13 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/messages'
       preLoaderRoute: typeof MessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/own': {
+      id: '/own'
+      path: '/own'
+      fullPath: '/own'
+      preLoaderRoute: typeof OwnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -733,6 +753,7 @@ const rootRouteChildren: RootRouteChildren = {
   HomeSampleRoute: HomeSampleRoute,
   MaterialsRoute: MaterialsRoute,
   MessagesRoute: MessagesRoute,
+  OwnRoute: OwnRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SellRoute: SellRoute,
   StudioRoute: StudioRoute,

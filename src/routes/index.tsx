@@ -185,7 +185,7 @@ function Home() {
       <div className="pg">
         {on("hero") && <Hero live={live} home={home} />}
         <nav className="qrow" aria-label="Quick links">
-          <Link to="/custom-request"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z M4 15l5-4 4 3 3-2 4 3 M15 9.5h.01" /></svg></span>Your own image</Link>
+          <Link to="/own"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z M4 15l5-4 4 3 3-2 4 3 M15 9.5h.01" /></svg></span>Your own image</Link>
           <Link to="/custom-request"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></span>Post a request</Link>
           <Link to="/designers"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21c0-4 3-6 7-6s7 2 7 6 M17 11a3 3 0 1 0 0-6 M22 21c0-3-2-5-5-5.5" /></svg></span>Designers</Link>
           <Link to="/pro"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c.6 4.6 2.4 6.4 7 7-4.6.6-6.4 2.4-7 7-.6-4.6-2.4-6.4-7-7 4.6-.6 6.4-2.4 7-7z" /></svg></span>Artisan Pro</Link>
