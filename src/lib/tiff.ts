@@ -46,6 +46,13 @@ export async function readTiff(read: Reader): Promise<TiffInfo> {
   if (tags[34675]) { const t = tags[34675]; info.icc = await read(t.off, t.count); }
   if (info.planar !== 1) throw new Error("This TIFF stores colors in separate planes; please re-save it as 'interleaved'.");
   if (![1, 5, 8, 32946, 32773].includes(info.compression)) throw new Error(`This TIFF compression (${info.compression}) isn't supported yet. Please upload a JPG preview.`);
+  // uncompressed files often keep the whole picture in one huge block: every row is at a known place, so read row by row
+  if (info.compression === 1 && info.rps > 1) {
+    const rowBytes = info.width * info.spp * (info.bps / 8);
+    const offs: number[] = [], cnts: number[] = [];
+    for (let st = 0; st < info.offsets.length; st++) { const rows = Math.min(info.rps, info.height - st * info.rps); for (let r = 0; r < rows; r++) { offs.push(info.offsets[st]! + r * rowBytes); cnts.push(rowBytes); } }
+    if (offs.length === info.height) { info.offsets = offs; info.counts = cnts; info.rps = 1; }
+  }
   return info;
 }
 
@@ -165,8 +172,11 @@ export async function tiffPreview(read: Reader, maxSide = 2000, onProgress?: (f:
 }
 
 /** Full-resolution crop written as an uncompressed TIFF (keeps color mode, DPI and ICC profile), streamed out in parts. */
-export async function tiffCrop(read: Reader, box: { x: number; y: number; w: number; h: number }, sink: (chunk: Uint8Array, last: boolean) => Promise<void>, onProgress?: (f: number) => void) {
+/** blendX: the pixels past the right edge of the box (the start of the next repeat in the designer's file) fade into the
+ *  first blendX pixels of the box, so the copies overlap softly and join with no line ("one on top of the other"). */
+export async function tiffCrop(read: Reader, box: { x: number; y: number; w: number; h: number }, sink: (chunk: Uint8Array, last: boolean) => Promise<void>, onProgress?: (f: number) => void, opts: { blendX?: number } = {}) {
   const info = await readTiff(read);
+  if (opts.blendX && info.bps !== 8) throw new Error("Soft blending works on 8-bit files. Please send this design as an 8-bit TIFF.");
   const x0 = Math.max(0, Math.round(box.x)), y0 = Math.max(0, Math.round(box.y));
   const w = Math.min(info.width - x0, Math.round(box.w)), h = Math.min(info.height - y0, Math.round(box.h));
   const spp = info.spp; const dataLen = w * h * spp;
@@ -188,7 +198,17 @@ export async function tiffCrop(read: Reader, box: { x: number; y: number; w: num
     for (let st = s; st <= e; st++) {
       const off = info.offsets[st] - info.offsets[s];
       const { rows, data, rowLen } = await decodeStrip(info, raw.subarray(off, off + info.counts[st]), st);
-      for (let r = 0; r < rows; r++) { const y = st * info.rps + r; if (y < y0 || y >= y0 + h) continue; await push(data.subarray(r * rowLen + x0 * spp, r * rowLen + (x0 + w) * spp)); rowsDone++; }
+      for (let r = 0; r < rows; r++) {
+        const y = st * info.rps + r; if (y < y0 || y >= y0 + h) continue;
+        const row = data.subarray(r * rowLen + x0 * spp, r * rowLen + (x0 + w) * spp);
+        const ov = opts.blendX ? Math.min(opts.blendX, info.width - (x0 + w), w) : 0;
+        if (ov > 0) {
+          const out = row.slice(); const past = data.subarray(r * rowLen + (x0 + w) * spp, r * rowLen + (x0 + w + ov) * spp);
+          for (let x = 0; x < ov; x++) { const t = x / ov; for (let c = 0; c < spp; c++) { const i = x * spp + c; out[i] = Math.round(past[i]! * (1 - t) + row[i]! * t); } }
+          await push(out);
+        } else await push(row);
+        rowsDone++;
+      }
     }
     if (onProgress) onProgress(rowsDone / h);
     s = e + 1;

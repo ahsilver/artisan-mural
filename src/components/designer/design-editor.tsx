@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MatchLabel } from "./match-info";
+import { RepeatAligner, type RepeatFit } from "./repeat-aligner";
+import { applyRepeatFit } from "@/lib/repeat-fix";
 import { X, UploadCloud } from "lucide-react";
 import { api, Msg, Field, Pill, useSaver } from "@/components/bo/common";
 import { uploadFile, driveImport, driveFolder, makePreview, previewFromStored, fmtBytes, readDims } from "@/lib/designer-files";
@@ -551,6 +553,19 @@ function RepeatStep({ design, onChanged }: { design: any; onChanged: () => void 
   const block = async () => { try { await api(`designer/uploads/${design.id}`, { body: { meta: { ...meta, repeatCheck: { confirmed: false, verdict: "bad", lr: res?.lr, tb: res?.tb, style, at: new Date().toISOString() } } } }); onChanged(); } catch { /* the block still shows; submit is refused by the server too */ } };
   useEffect(() => { if (verdict === "bad" && (meta.repeatCheck?.confirmed || meta.repeatCheck?.verdict !== "bad")) void block(); }, [verdict]);
   const toMural = () => s.run(async () => { await api(`designer/uploads/${design.id}`, { body: { kind: "mural", repeat: "none", meta: { ...meta, repeatChosen: true, repeatCheck: null } } }); onChanged(); }, "Changed to mural");
+  const [align, setAlign] = useState(false);
+  const [prog, setProg] = useState<{ t: string; f: number } | null>(null);
+  const saveFit = async (fit: RepeatFit) => {
+    setProg({ t: "Saving…", f: 0 });
+    try { await applyRepeatFit(design, fit, (t, f = 0) => setProg({ t, f })); setAlign(false); setRes(null); s.setMsg({ ok: true, text: fit.w < 0.999 || fit.h < 0.999 ? "Saved. Your print file now holds exactly one repeat; the original is kept." : "Saved. The repeat is confirmed." }); onChanged(); }
+    catch (e: any) { s.setMsg({ ok: false, text: e.message || "Could not save the repeat." }); }
+    setProg(null);
+  };
+  if (align) return <div className="de-box" data-testid="repeat-aligner"><div className="de-h">Line up the repeat</div>
+    <Msg m={s.msg} />
+    <RepeatAligner src={design.colors[0].preview} mode={style === "horizontal" ? "sideways" : style === "halfdrop" ? "halfdrop" : "straight"} initial={meta.repeatFit} busy={!!prog} onSave={(f) => void saveFit(f)} onCancel={() => setAlign(false)} />
+    {prog && <div style={{ marginTop: 10 }}><div className="bo-sub">{prog.t}{prog.f > 0 && prog.f < 1 ? ` · ${Math.floor(prog.f * 100)}%` : ""}</div><div className="bo-prog"><i style={{ width: `${Math.max(3, prog.f * 100)}%` }} /></div><div className="bo-sub" style={{ marginTop: 4 }}>Big print files take a few minutes. Keep this page open.</div></div>}
+  </div>;
   return <div className="de-box" data-testid="repeat-step"><div className="de-h">Seamless check{meta.repeatCheck?.confirmed ? <span className="de-ok">✓</span> : null}</div>
     <p className="bo-sub" style={{ marginTop: -4 }}>We compare the left edge with the right edge{style !== "horizontal" ? " and the top with the bottom" : ""}{style === "halfdrop" ? " (the right edge against the left edge moved down half the tile)" : ""}, colour and thin lines, to make sure the tiles join without a visible line.</p>
     <Msg m={s.msg} />
@@ -563,7 +578,7 @@ function RepeatStep({ design, onChanged }: { design: any; onChanged: () => void 
       <div className="bo-sub" style={{ marginTop: 4 }} data-testid="tiled-caption">{style === "halfdrop" ? "4 tiles, the right column shifted down half a tile (half-drop). Look for lines where they meet." : "4 tiles side by side. Look for lines where they meet."}{verdict && verdict !== "ok" ? " Red / orange dashes mark the seams that don't join." : ""}</div>
       {verdict === "borderline" && <label className="bo-row" style={{ marginTop: 8, gap: 8, alignItems: "center" }}><input type="checkbox" checked={looked} onChange={(e) => setLooked(e.target.checked)} data-testid="repeat-looked" /> <span>I checked the 2×2 picture</span></label>}
     </div>}
-    <div className="bo-row"><button className="bo-btn" disabled={s.busy} onClick={run}>{res ? "Check again" : "Run repeat check"}</button>
+    <div className="bo-row"><button className="bo-btn pri" disabled={s.busy} onClick={() => setAlign(true)} data-testid="repeat-align">Line it up by hand</button><button className="bo-btn" disabled={s.busy} onClick={run}>{res ? "Check again" : "Run repeat check"}</button>
       {res && verdict === "ok" && <button className="bo-btn pri" onClick={() => confirm(false)}>Confirm: it repeats</button>}
       {res && verdict === "borderline" && <button className="bo-btn pri" disabled={!looked} onClick={() => confirm(true)} data-testid="repeat-confirm-looked">Confirm: it repeats</button>}
       {res && verdict !== "ok" && <button className="bo-btn" onClick={toMural} data-testid="repeat-to-mural">Make it a mural instead</button>}</div>
