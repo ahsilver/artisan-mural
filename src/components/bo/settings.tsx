@@ -87,7 +87,7 @@ export function Settings() {
     {tab === "finishes" ? <Finishes /> : <Group key={tab} name={tab} value={data.settings[tab]} onSaved={reload} />}
   </div>;
 }
-function Group({ name, value, onSaved }: { name: string; value: any; onSaved: () => void }) {
+export function Group({ name, value, onSaved }: { name: string; value: any; onSaved: () => void }) {
   const g = GROUPS[name];
   const [v, setV] = useState<any>(value ?? {});
   const s = useSaver();
@@ -104,7 +104,7 @@ function Group({ name, value, onSaved }: { name: string; value: any; onSaved: ()
     <button className="bo-btn pri" disabled={s.busy} onClick={() => s.run(async () => { await api(`admin/settings/${name}`, { body: { value: v } }); onSaved(); })}>Save {g.title.toLowerCase()}</button>
   </div>;
 }
-function Finishes() {
+export function Finishes() {
   const { data, error, reload } = useApi<any>("admin/materials");
   const s = useSaver();
   const [rows, setRows] = useState<any[]>([]);
@@ -180,5 +180,16 @@ export function Homepage() {
     <div className="bo-card" style={{ maxWidth: 760 }}><h2>Featured designs</h2><div className="bo-sub" style={{ marginBottom: 10 }}>Pick the designs shown first. Empty = newest designs.</div>
       <div className="bo-row" style={{ gap: 6 }}>{all.map((d) => { const on = (v.featuredSlugs ?? []).includes(d.slug); return <button key={d.slug} className={"bo-btn sm" + (on ? " pri" : "")} onClick={() => set(["featuredSlugs"], on ? v.featuredSlugs.filter((x: string) => x !== d.slug) : [...(v.featuredSlugs ?? []), d.slug])}>{d.title}</button>; })}</div>
     </div>
+  </div>;
+}
+
+/** Prices & materials: the price per square foot and every paper (price add-on, sample size, on/off). */
+export function PricesMaterials() {
+  const { data, error, reload } = useApi<any>("admin/settings");
+  if (error) return <Msg m={{ text: error }} />;
+  if (!data) return <div className="bo-sub">Loading…</div>;
+  return <div><div className="bo-top"><h1>Prices &amp; materials</h1><span className="bo-sub">The base price per square foot and the add-on for each paper. Every price on the site and in orders comes from here.</span></div>
+    <Group name="general" value={data.settings.general} onSaved={reload} />
+    <Finishes />
   </div>;
 }

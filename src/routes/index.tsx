@@ -46,10 +46,11 @@ function Hero({ live, home }: { live: Design[]; home: any }) {
   const samples = useMemo(() => daily(live.filter((d) => d.image)).slice(0, 8), [live]);
   const featured = useMemo(() => daily(live.filter((d) => d.mockups?.length), 7)[0], [live]);
   const h = home.hero ?? {};
+  const hs: any[] = Array.isArray(h.slides) ? h.slides : [];
   const slides = [
-    { k: h.kicker || "Original designs by independent artists", t: h.title || "Every wall. Your story.", p: h.subtitle || "Murals and wallpaper drawn by independent artists, printed to the exact size of your wall." },
-    { k: featured ? `Today's featured design · ${featured.title}` : "Today's featured design", t: "One scene, wall to wall.", p: "Printed to the exact size of your wall and split into numbered panels, ready to hang." },
-    { k: "Don't love a detail?", t: "Our designers will change it.", p: "Remove an animal, change a color, make it bigger. Chat with the designer before you order, free on every mural." },
+    { k: hs[0]?.kicker || h.kicker || "Original designs by independent artists", t: hs[0]?.title || h.title || "Every wall. Your story.", p: hs[0]?.text || h.subtitle || "Murals and wallpaper drawn by independent artists, printed to the exact size of your wall." },
+    { k: hs[1]?.kicker || (featured ? `Today's featured design · ${featured.title}` : "Today's featured design"), t: hs[1]?.title || "One scene, wall to wall.", p: hs[1]?.text || "Printed to the exact size of your wall and split into numbered panels, ready to hang." },
+    { k: hs[2]?.kicker || "Don't love a detail?", t: hs[2]?.title || "Our designers will change it.", p: hs[2]?.text || "Remove an animal, change a color, make it bigger. Chat with the designer before you order, free on every mural." },
   ];
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -79,15 +80,17 @@ function Hero({ live, home }: { live: Design[]; home: any }) {
         <div className="fade" />
       </div>
       <div className={"slide" + (i === 1 ? " on" : "")}>
-        {featured
+        {hs[1]?.image
+          ? <a className="slide-link" href={hs[1]?.link || "/browse"}><img src={hs[1].image} alt="" loading="lazy" /></a>
+          : featured
           ? <Link className="slide-link" to="/design/$slug" params={{ slug: featured.slug }}><img src={room(featured, 1)} alt={`${featured.title} in a room`} loading="lazy" /></Link>
           : <Link className="slide-link" to="/browse"><img src={COVER("living-room")} alt="" loading="lazy" /></Link>}
         <div className="fade" />
       </div>
       <div className={"slide" + (i === 2 ? " on" : "")}>
         <Link className="slide-link s3split" to="/changes" aria-label="See how changes work">
-          <span className="s3a"><img src="/p/img/forest-before.webp" alt="A forest mural, original" /><em>Original</em></span>
-          <span className="s3b"><img src="/p/img/forest-after.webp" alt="The same mural with the dark tree removed by the designer" loading="lazy" /><em>Tree removed for you</em></span>
+          <span className="s3a"><img src={hs[2]?.before || "/p/img/forest-before.webp"} alt="A forest mural, original" /><em>Original</em></span>
+          <span className="s3b"><img src={hs[2]?.after || "/p/img/forest-after.webp"} alt="The same mural with the dark tree removed by the designer" loading="lazy" /><em>Tree removed for you</em></span>
         </Link>
         <div className="fade" />
       </div>
@@ -156,6 +159,9 @@ function Home() {
   registerShop(shop);
   const home = (site as any)?.homepage ?? {};
   const on = (k: string) => home.sections?.[k] !== false;
+  const duo: any = home.duo ?? {};
+  const tiles: any[] = Array.isArray(home.tiles) ? home.tiles : [];
+  const rooms: any[] = Array.isArray(home.roomTiles) ? home.roomTiles : [];
   const live = liveDesigns(shop);
   const roomed = live.filter((d) => d.mockups?.length);
   const withRoom = roomed.length >= 6 ? roomed : live; // until designs have room pictures, use the wallpaper itself
@@ -196,8 +202,8 @@ function Home() {
       {on("duo") && (
         <section className="pg duo-top" aria-label="Artisan Pro and selling your art">
           <div className="duo2">
-            <Link className="d2" to="/pro"><img src={COVER("hotel")} alt="" loading="lazy" /><span className="d2-txt"><span className="k">For design professionals</span><b>Artisan Pro</b><small>Trade pricing, free samples and one specialist for every project.</small></span><span className="btn btn-wine">Apply</span></Link>
-            <Link className="d2" to="/sell"><img src={big ? flatPic(big) : COVER("living-room")} alt="" loading="lazy" /><span className="d2-txt"><span className="k">For artists</span><b>Sell your designs</b><small>We print and ship to order. You earn on every sale.</small></span><span className="btn btn-wine">Apply</span></Link>
+            <Link className="d2" to="/pro"><img src={duo.pro?.image || COVER("hotel")} alt="" loading="lazy" /><span className="d2-txt"><span className="k">{duo.pro?.kicker || "For design professionals"}</span><b>{duo.pro?.title || "Artisan Pro"}</b><small>{duo.pro?.text || "Trade pricing, free samples and one specialist for every project."}</small></span><span className="btn btn-wine">{duo.pro?.cta || "Apply"}</span></Link>
+            <Link className="d2" to="/sell"><img src={duo.sell?.image || (big ? flatPic(big) : COVER("living-room"))} alt="" loading="lazy" /><span className="d2-txt"><span className="k">{duo.sell?.kicker || "For artists"}</span><b>{duo.sell?.title || "Sell your designs"}</b><small>{duo.sell?.text || "We print and ship to order. You earn on every sale."}</small></span><span className="btn btn-wine">{duo.sell?.cta || "Apply"}</span></Link>
           </div>
         </section>
       )}
@@ -205,7 +211,7 @@ function Home() {
       {on("look") && withRoom.length > 0 && (
         <div className="pg sec">
           <section className="g-cat" aria-label="Shop by look">
-            {looks.map((l) => <Tile key={l.title} to="/browse" search={l.search} img={room(l.d)} title={l.title} sub={l.sub} />)}
+            {looks.map((l, k) => <Tile key={l.title} to="/browse" search={l.search} img={tiles[k]?.image || room(l.d)} title={tiles[k]?.title || l.title} sub={tiles[k]?.sub || l.sub} />)}
           </section>
         </div>
       )}
@@ -214,10 +220,10 @@ function Home() {
         <section className="sec pg">
           <div className="head"><Mark /><h2>Wallpaper for Every Room</h2></div>
           <div className="g-app">
-            <Tile className="tile w7" to="/browse" search={{ room: "Living room" }} img={COVER("living-room")} title="Living room" />
-            <Tile className="tile w5" to="/browse" search={{ room: "Bedroom" }} img={COVER("bedroom")} title="Bedroom" />
-            <Tile className="tile w4" to="/browse" search={{ room: "Kitchen" }} img={COVER("bathroom")} title="Kitchen & bath" />
-            <Tile className="tile w8" to="/browse" search={{ room: "Commercial" }} img={COVER("restaurant")} title="Hotels & restaurants" />
+            <Tile className="tile w7" to="/browse" search={{ room: "Living room" }} img={rooms[0]?.image || COVER("living-room")} title={rooms[0]?.title || "Living room"} />
+            <Tile className="tile w5" to="/browse" search={{ room: "Bedroom" }} img={rooms[1]?.image || COVER("bedroom")} title={rooms[1]?.title || "Bedroom"} />
+            <Tile className="tile w4" to="/browse" search={{ room: "Kitchen" }} img={rooms[2]?.image || COVER("bathroom")} title={rooms[2]?.title || "Kitchen & bath"} />
+            <Tile className="tile w8" to="/browse" search={{ room: "Commercial" }} img={rooms[3]?.image || COVER("restaurant")} title={rooms[3]?.title || "Hotels & restaurants"} />
           </div>
           <nav className="room-strip" aria-label="More rooms">
             <Link to="/browse" search={{ room: "Dining room" }}>Dining</Link><Link to="/browse" search={{ room: "Kitchen" }}>Kitchen</Link>
@@ -237,7 +243,7 @@ function Home() {
             </div>
             <div className="ph"><img src={split ? room(split, 2) : COVER("living-room")} alt={split ? `${split.title} in a room` : ""} loading="lazy" /></div>
           </div>
-          {withRoom.length > 0 && <div className="g-look">{moods.map((m) => <Tile key={m.title} to="/browse" search={m.search} img={room(m.d)} title={m.title} />)}</div>}
+          {withRoom.length > 0 && <div className="g-look">{moods.map((m, k) => <Tile key={m.title} to="/browse" search={m.search} img={tiles[6 + k]?.image || room(m.d)} title={tiles[6 + k]?.title || m.title} />)}</div>}
         </section>
       )}
 

@@ -8,22 +8,27 @@ import { roomLabels, getTaxonomy } from "@/lib/design-taxonomy";
 import { useSession } from "@/hooks/use-session";
 import { NotificationBell } from "@/components/projects";
 import { BrandLogo } from "@/components/brand-logo";
+import { loadSite } from "@/lib/site-settings";
 
 /** Room photos used as pictures in the menu (built-in sample rooms). */
 const ROOM_PIC: Record<string, string> = {
   Bedroom: "bedroom-1", "Living room": "living-1", "Kids & nursery": "kids-1", "Dining room": "dining-1", Kitchen: "kitchen-1",
   Bathroom: "bathroom-1", "Hallway & stairs": "entry-1", "Office & study": "office-1", Commercial: "lobby-1",
 };
-const roomPic = (r: string) => `/s/rooms/${ROOM_PIC[r] ?? "living-1"}-t-v1.jpg`;
+/** Pictures the owner chose in the back office (Menu pictures), by menu label. */
+let MENU_PICS: Record<string, string> = {};
+const roomPic = (r: string) => MENU_PICS[r] || `/s/rooms/${ROOM_PIC[r] ?? "living-1"}-t-v1.jpg`;
+export const MENU_PIC_LABELS = ["All designs", "Murals", "Repeating patterns", "Made for you", ...Object.keys(ROOM_PIC)];
+export const defaultMenuPic = (label: string) => `/s/rooms/${ROOM_PIC[({ "All designs": "Living room", Murals: "Bedroom", "Repeating patterns": "Dining room", "Made for you": "Office & study" } as Record<string, string>)[label] ?? label] ?? "living-1"}-t-v1.jpg`;
 
 type Item = { label: string; search?: Record<string, string>; to?: string; pic?: string };
 type Group = { key: string; label: string; items: () => Item[] };
 const GROUPS: Group[] = [
   { key: "type", label: "Type", items: () => [
-    { label: "All designs", search: {}, pic: roomPic("Living room") },
-    { label: "Murals", search: { kind: "mural" }, pic: roomPic("Bedroom") },
-    { label: "Repeating patterns", search: { kind: "repeating" }, pic: roomPic("Dining room") },
-    { label: "Made for you", to: "/custom-request", pic: roomPic("Office & study") },
+    { label: "All designs", search: {}, pic: MENU_PICS["All designs"] || roomPic("Living room") },
+    { label: "Murals", search: { kind: "mural" }, pic: MENU_PICS["Murals"] || roomPic("Bedroom") },
+    { label: "Repeating patterns", search: { kind: "repeating" }, pic: MENU_PICS["Repeating patterns"] || roomPic("Dining room") },
+    { label: "Made for you", to: "/custom-request", pic: MENU_PICS["Made for you"] || roomPic("Office & study") },
   ] },
   { key: "rooms", label: "Rooms", items: () => roomLabels.map((r) => ({ label: r, search: { room: r }, pic: roomPic(r) })) },
   { key: "style", label: "Style", items: () => getTaxonomy().styles.slice(0, 16).map((c) => ({ label: c, search: { category: c } })) },
@@ -160,6 +165,8 @@ export function SiteHeader() {
   const [mega, setMega] = useState(false);
   const { session } = useSession();
   const count = useCart().length;
+  const [, setPicsReady] = useState(0);
+  useEffect(() => { loadSite().then((st: any) => { const m = st?.homepage?.menuPictures; if (m && typeof m === "object") { MENU_PICS = m; setPicsReady((n) => n + 1); } }).catch(() => {}); }, []);
   const megaRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!mega) return;
