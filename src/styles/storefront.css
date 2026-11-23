@@ -2515,3 +2515,12 @@
 .am .pro-applycard{display:grid;gap:12px;padding:22px;border:1px solid var(--line)}
 .am .pro-need{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink-2);display:grid;gap:4px}
 .am .sl-apply-cta{display:grid;gap:12px;justify-items:start}
+.am .msgs-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px}
+.am .msgs-page{padding-bottom:40px}
+.am .acc-nav button{display:flex;justify-content:space-between;width:100%;padding:12px 14px;border:0;border-bottom:1px solid var(--line);background:none;font:500 13.5px/1.2 var(--f-body);color:var(--ink);text-align:left;cursor:pointer}
+.am .acc-nav button:last-child{border-bottom:0}
+.am .acc-nav button[aria-current="true"]{background:#201D1D;color:#fff}
+.am .acc-main h2{font:400 26px/1.15 var(--f-display);margin:0 0 12px}
+.am .acc-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px}
+.am .acc-signin{max-width:480px}
+@media (max-width:860px){.am .acc-nav{display:flex!important;overflow-x:auto;border:0;gap:6px;padding-bottom:6px}.am .acc-nav button{flex:none;width:auto;border:1px solid var(--line);border-radius:999px;padding:8px 14px;white-space:nowrap}}

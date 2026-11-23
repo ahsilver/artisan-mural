@@ -461,7 +461,7 @@ function ColorRow({ design, color, index, onChanged, getId, rules, onLocal, onFi
         {needPreview && <div className="bo-msg" style={{ marginTop: 8 }}>Your print file is saved ({fmtBytes(needPreview.size)}). This file type is too big to preview in the browser, so please add a JPG of the same design for the shop picture:
           <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "block", marginTop: 6 }} onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; try { const p = await makePreview(f, await readDims(f)); await attach(needPreview, p); setNeedPreview(null); } catch (er: any) { setErr(er.message); } }} /></div>}
         {err && <div className="bo-msg bad" style={{ marginTop: 8 }}>{err}</div>}
-        {info && !err && <div className="bo-msg" data-testid="import-check" style={{ marginTop: 8, background: "#eef7fc", color: "#082635" }}>{info}</div>}
+        {info && !err && <div className="bo-msg" data-testid="import-check" style={{ marginTop: 8, background: "#eef7fc", color: "#201D1D" }}>{info}</div>}
         {warn && !err && <div className="bo-msg" data-testid="dpi-warn" style={{ marginTop: 8, background: "#fff8e6", color: "#7a5300" }}>{warn}</div>}
   </div>;
 }

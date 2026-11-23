@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { LogOut } from "lucide-react";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
 import { AuthPanel } from "@/components/auth-panel";
 import { GuestMessages } from "@/components/guest-messages";
 import { Messenger } from "@/components/messenger";
@@ -18,8 +16,8 @@ function Messages() {
   if (loading) return <p className="px-8 py-20 text-sm text-muted-foreground">Loading conversations…</p>;
   if (!session) return signIn ? <div className="mx-auto max-w-lg px-6 py-12"><AuthPanel /></div> : <GuestMessages activeId={conversation} onSignIn={() => setSignIn(true)} />;
   const c = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("c") : null;
-  return <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
-    <div className="mb-4 flex items-center justify-between"><h1 className="text-3xl">Messages</h1><Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()}><LogOut />Sign out</Button></div>
-    <Messenger initialKey={c} urlMode="search" emptyText="No messages yet. Chats with designers and with Artisan Mural show up here." />
-  </div>;
+  return <div className="am"><div className="pg crumbs-row"><nav className="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/account">My account</a><span>/</span><b>Messages</b></nav></div><section className="pg msgs-page">
+    <div className="pg-head msgs-head"><div><span className="k">Your conversations</span><h1>Messages</h1></div><button type="button" className="btn optline btn-sm" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
+    <Messenger initialKey={c} urlMode="search" emptyText="No messages yet. Chats with designers and with Artisan Murals show up here." />
+  </section></div>;
 }

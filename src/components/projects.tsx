@@ -30,7 +30,7 @@ export async function attachFile(file: File): Promise<Att> {
 export const money = (n: any) => (Number(n) || 0).toLocaleString("en-US", { style: "currency", currency: "USD" });
 export const day = (s?: string | null) => (s ? new Date(s).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "");
 export const when = (s?: string | null) => (s ? new Date(s).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "");
-const TONE: Record<string, string> = { requested: "bg-amber-100 text-amber-900", quoted: "bg-sky-100 text-sky-900", approved: "bg-sky-100 text-sky-900", in_progress: "bg-amber-100 text-amber-900", delivered: "bg-emerald-100 text-emerald-900", cancelled: "bg-stone-200 text-stone-700" };
+const TONE: Record<string, string> = { requested: "bg-amber-100 text-amber-900", quoted: "bg-[#F0EADF] text-[#201D1D]", approved: "bg-[#F0EADF] text-[#201D1D]", in_progress: "bg-amber-100 text-amber-900", delivered: "bg-emerald-100 text-emerald-900", cancelled: "bg-stone-200 text-stone-700" };
 const CUSTOMER_LABEL: Record<string, string> = { requested: "Waiting for the designer's price", quoted: "Price received", approved: "Approved: enter your wall size and pay", in_progress: "Paid: designer is working", delivered: "Design finished: getting ready to print", cancelled: "Cancelled" };
 export function StatusPill({ status, label, customer }: { status: string; label?: string; customer?: boolean }) {
   return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${TONE[status] ?? "bg-stone-100 text-stone-700"}`}>{customer ? CUSTOMER_LABEL[status] ?? label : label ?? status}</span>;
@@ -149,7 +149,7 @@ export function BriefForm({ projectId, onDone, who }: { projectId: string; onDon
   const [atts, setAtts] = useState<Att[]>([]);
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   const warn = findContactDetails([f.room, f.change, f.notes, f.size].join(" "));
-  const inp = "w-full rounded-md border border-[#cfe6f5] bg-white px-3 py-2 text-[16px] sm:text-sm outline-none focus:border-[#8EC6E7] focus:ring-2 focus:ring-[#8EC6E7]/40";
+  const inp = "w-full rounded-md border border-[#E4DED3] bg-white px-3 py-2 text-[16px] sm:text-sm outline-none focus:border-[#D3C3A2] focus:ring-2 focus:ring-[#D3C3A2]/40";
   async function submit(e: React.FormEvent) {
     e.preventDefault(); if (busy || warn) return; setBusy(true); setErr("");
     const wallSize = f.w && f.h ? `${f.w} × ${f.h} ${f.unit}` : f.size;
@@ -182,7 +182,7 @@ export function NotificationBell() {
   if (!session) return null;
   return <div className="relative">
     <button type="button" aria-label={`Notifications, ${data.unread} unread`} className="relative flex items-center" onClick={() => { setOpen(!open); if (!open) void load(); }}>
-      <Bell className="size-[18px]" />{data.unread > 0 && <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-clay px-1 text-[10px] text-white">{data.unread}</span>}
+      <Bell className="size-[18px]" />{data.unread > 0 && <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#B03A2E] px-1 text-[10px] font-bold text-white">{data.unread}</span>}
     </button>
     {open && <><div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
       <div className="fixed right-2 top-[64px] z-50 w-[min(360px,calc(100vw-16px))] rounded-md border border-border bg-background shadow-paper sm:absolute sm:right-0 sm:top-8">

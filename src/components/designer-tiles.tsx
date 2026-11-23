@@ -72,7 +72,7 @@ export function VersionSwitch({ v, raised = false }: { v?: string; raised?: bool
   const cur = v === "a" ? "a" : "b";
   const other = cur === "a" ? "b" : "a";
   return (
-    <div className={`fixed right-3 z-50 flex items-center gap-2 rounded-full bg-[#082635]/92 py-1 pr-1 pl-3 text-[11px] font-medium text-white shadow-lift backdrop-blur ${raised ? "bottom-20 lg:bottom-5" : "bottom-5"}`} data-testid="version-switch">
+    <div className={`fixed right-3 z-50 flex items-center gap-2 rounded-full bg-[#201D1D]/92 py-1 pr-1 pl-3 text-[11px] font-medium text-white shadow-lift backdrop-blur ${raised ? "bottom-20 lg:bottom-5" : "bottom-5"}`} data-testid="version-switch">
       <span>{cur === "a" ? "Designers A – current" : "Designers B – new"}</span>
       <a href={`?v=${other}`} className="rounded-full bg-primary px-2.5 py-1 text-primary-foreground">See {other.toUpperCase()}</a>
     </div>
