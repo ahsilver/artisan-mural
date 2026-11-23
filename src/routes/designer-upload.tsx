@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { AuthPanel } from "@/components/auth-panel";
 import { useSession } from "@/hooks/use-session";
-import { DesignerNav } from "@/components/designer-nav";
+import { StudioUpload, QUEUE_KEY } from "@/components/storefront/studio-upload";
 import { api, useApi } from "@/components/bo/common";
 import { DesignEditor } from "@/components/designer/design-editor";
 
@@ -32,18 +31,27 @@ function DesignerUpload() {
   const d = me.data;
   const found = d && id ? d.designs.find((x: any) => x.id === id) : null;
   const design = found ?? NEW;
-  return <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8">
-    <DesignerNav />
-    <div className="mb-5 mt-5"><p className="text-eyebrow text-clay">{found ? "Edit design" : "Add a design"}</p><h1 className="mt-1 text-2xl sm:text-3xl">{found ? found.title : "Add a new design"}</h1></div>
-    {loading || !ready ? <Loader2 className="animate-spin" aria-label="Loading your studio" />
-      : !session ? <AuthPanel />
-      : me.error ? <p className="text-sm text-destructive">{me.error}</p>
-      : !d ? <Loader2 className="animate-spin" aria-label="Loading your designs" />
-      : !d.profile ? <div className="soft-panel max-w-xl"><h2 className="text-2xl">Set up your designer profile first</h2><p className="mt-2 text-sm text-muted-foreground">It takes a minute. Then you can add designs here.</p><a className="mt-4 inline-block underline" href="/dashboard">Set up my profile</a></div>
-      : id && !found ? <div className="soft-panel max-w-xl"><h2 className="text-2xl">This design isn't here anymore</h2><a className="mt-4 inline-block underline" href="/designer-upload">Add a new design</a></div>
-      : <div className="bo dp" style={{ background: "transparent", minHeight: 0, ["--de-top" as any]: "84px" }}>
-          {d.profile.status === "pending" && <div className="bo-msg" style={{ marginBottom: 12 }}>The studio is reviewing your application. You can already add designs; they go live after approval.</div>}
-          <DesignEditor key="form" page design={design} rules={d.rules} ensure={ensure} onChanged={me.reload} onClose={() => { window.location.href = "/studio?view=designs"; }} />
-        </div>}
+  const [queue, setQueue] = useState<string[]>([]);
+  useEffect(() => { try { setQueue(JSON.parse(sessionStorage.getItem(QUEUE_KEY) || "[]")); } catch {} }, []);
+  const next = () => { const [n, ...rest] = queue; try { sessionStorage.setItem(QUEUE_KEY, JSON.stringify(rest)); } catch {} window.location.href = `/designer-upload?id=${n}`; };
+  const nextTitle = queue.length && d ? d.designs.find((x: any) => x.id === queue[0])?.title : null;
+  return <div className="am">
+    <div className="pg crumbs-row"><nav className="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/studio">Designer studio</a><span>/</span><a href="/studio?view=designs">My designs</a><span>/</span><b>{found ? found.title : "Add a design"}</b></nav></div>
+    <section className="pg acc studio de-page">
+      <div className="pg-head acc-head"><div><span className="k">{found ? (found.submittedAt ? "Edit design" : "New design · draft") : "Add a design"}</span><h1>{found ? found.title : "Add a new design"}</h1><p>Check the picture, size, repeat and rooms, then send it for review. Everything saves as you go.</p></div>
+        <div className="up-row"><a className="btn optline btn-sm" href="/studio?view=designs">My designs</a>{queue.length > 0 && <button type="button" className="btn btn-wine btn-sm" onClick={next}>Next design{nextTitle ? `: ${nextTitle}` : ""} ({queue.length} left)</button>}</div></div>
+      {queue.length > 0 && <div className="up-queue" role="status"><b>{queue.length} more design{queue.length > 1 ? "s" : ""} waiting</b><span>{(d?.designs ?? []).filter((x: any) => queue.includes(x.id)).slice(0, 6).map((x: any) => x.title).join(" · ")}</span><small>Their pictures are already added. Finish this one, then press Next design.</small></div>}
+      {loading || !ready ? <p className="hint">Loading your studio…</p>
+        : !session ? <AuthPanel designer />
+        : me.error ? <p className="rq-ok err">{me.error}</p>
+        : !d ? <p className="hint">Loading your designs…</p>
+        : !d.profile ? <div className="sa-done"><b>Apply to sell first</b><p>Tell us about you and your work. Once the studio approves you, you can add designs here.</p><a className="btn btn-wine btn-sm" href="/become-designer">Start my application</a></div>
+        : id && !found ? <div className="sa-done"><b>This design isn't here anymore</b><a className="btn btn-wine btn-sm" href="/studio?view=upload">Add a new design</a></div>
+        : !id && d.profile.status === "approved" ? <StudioUpload rules={d.rules} />
+        : <div className="bo dp de-new" style={{ minHeight: 0, ["--de-top" as any]: "84px" }}>
+            {d.profile.status === "pending" && <div className="bo-msg" style={{ marginBottom: 12 }}>The studio is reviewing your application. Designs go live after approval.</div>}
+            <DesignEditor key="form" page design={design} rules={d.rules} ensure={ensure} onChanged={me.reload} onClose={() => { window.location.href = "/studio?view=designs"; }} />
+          </div>}
+    </section>
   </div>;
 }
