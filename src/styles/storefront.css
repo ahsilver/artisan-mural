@@ -2697,3 +2697,7 @@
 .am .pj-cancel{justify-self:start;color:var(--ink-2)}
 @media (max-width:640px){.am .pj-head{grid-template-columns:84px 1fr}.am .pj-head img,.am .req-ph{width:84px}.am .req{grid-template-columns:84px 1fr}.am .req img{width:84px}.am .req>.btn{grid-column:1/-1}}
 .am .cf textarea{width:100%;border:1px solid var(--line);border-radius:6px;background:#fff;padding:10px 12px;font:inherit;font-size:14px}
+.am .co-form{display:grid;gap:14px}
+.am .co-sumcard h2 small{font:500 13px var(--f-body);color:var(--ink-2)}
+.am .co-promo-msg.err{color:#B03A2E}
+.am .co-placed{max-width:560px;margin:0 auto}
