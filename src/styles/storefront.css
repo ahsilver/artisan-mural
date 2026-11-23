@@ -2497,3 +2497,12 @@
 .am .ci.ci-big img{width:auto;aspect-ratio:auto;object-fit:initial}
 .am .ci.ci-big .ci-act{flex-direction:row;align-items:center;justify-content:flex-start}
 @media (max-width:640px){.am .ci.ci-big{grid-template-columns:110px minmax(0,1fr)!important}.am .ci.ci-big>strong{grid-column:2}}
+/* request page: designer picker + attachments */
+.am .rq-des{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;text-align:left;border:1px solid var(--line);border-radius:10px;background:var(--paper);padding:6px 10px 6px 6px;margin-top:8px;cursor:pointer;color:var(--ink)}
+.am .rq-des img{width:56px;height:44px;object-fit:cover;border-radius:6px}
+.am .rq-des span{display:grid}.am .rq-des small{color:var(--ink-2);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.am .rq-des em{font-style:normal;font-size:11.5px;font-weight:700}
+.am .rq-des.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink) inset}
+.am .rq-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.am .rq-thumbs span{position:relative}.am .rq-thumbs img{width:64px;height:64px;object-fit:cover;border-radius:6px}
+.am .rq-thumbs button{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:12px;line-height:1;cursor:pointer}
+.am .rq-signin{max-width:560px}.am .up-err{color:#B03A2E;font-size:13px}
