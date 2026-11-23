@@ -1,17 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { plainError } from "@/lib/original-source";
-import { DesignerAuthShell, AuthHeading, AuthInput, AuthButton, AuthNotice } from "@/components/designer-auth-shell";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Set a new password | Artisan Mural" },
-      { name: "description", content: "Choose a new password for your Artisan Mural account." },
-      { property: "og:title", content: "Set a new password | Artisan Mural" },
-      { property: "og:description", content: "Choose a new password for your Artisan Mural account." },
+      { title: "Set a new password | Artisan Murals" },
+      { name: "description", content: "Choose a new password for your Artisan Murals account." },
+      { property: "og:title", content: "Set a new password | Artisan Murals" },
+      { property: "og:description", content: "Choose a new password for your Artisan Murals account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -51,26 +49,21 @@ function ResetPasswordPage() {
   }
 
   return (
-    <DesignerAuthShell eyebrow="Artisan Mural" title="Beautiful walls, made for you." benefits={false}>
-      <AuthHeading eyebrow="Your account" title="Set a new password" sub={ready ? "Choose a new password for your Artisan Mural account." : undefined} />
+    <div className="am"><section className="pg auth-page"><div className="signin">
+      <span className="k">Your account</span><h1>Set a new password</h1>
       {ready ? (
-        <form onSubmit={submit} className="space-y-4">
-          <AuthInput label="New password" name="password" required minLength={8} type="password" autoComplete="new-password" placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <AuthNotice text={notice} tone={/updated/i.test(notice) ? "ok" : "error"} />
-          <AuthButton type="submit" busy={busy}>{busy ? "Please wait…" : "Save new password"}</AuthButton>
+        <form onSubmit={submit}>
+          <p>Choose a new password for your Artisan Murals account.</p>
+          <label className="rqf"><span>New password</span><input name="password" required minLength={8} type="password" autoComplete="new-password" placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+          <button className="btn btn-wine big" type="submit" disabled={busy}>{busy ? "Please wait…" : "Save new password"}</button>
+          {notice && <p className={"rq-ok" + (/updated/i.test(notice) ? "" : " err")} role="status">{notice}</p>}
         </form>
       ) : (
-        <div className="space-y-5">
-          <p className="text-[15px] leading-relaxed text-muted-foreground">
-            This page opens from the password-reset link we email you. If you landed here directly,
-            request a fresh link from the sign-in page.
-          </p>
-          <Button asChild variant="outline" className="h-12 w-full rounded-xl">
-            <Link to="/account">Back to sign in</Link>
-          </Button>
-          <p className="text-center text-sm"><Link to="/designer-login" className="text-muted-foreground underline underline-offset-4 hover:text-foreground">Designer? Sign in here</Link></p>
-        </div>
+        <>
+          <p>This page opens from the password-reset link we email you. If you landed here directly, ask for a fresh link: tap Forgot password on the sign-in page.</p>
+          <Link className="btn optline" to="/account">Back to sign in</Link>
+        </>
       )}
-    </DesignerAuthShell>
+    </div></section></div>
   );
 }

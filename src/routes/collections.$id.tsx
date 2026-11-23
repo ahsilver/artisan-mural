@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { DesignCard } from "@/components/design-card";
+import { StoreCard } from "@/components/storefront/card";
 import { designerBySlug, liveDesigns, registerShop, type Designer } from "@/lib/catalog";
 import { ensureShop } from "@/lib/shop";
 
@@ -14,28 +14,30 @@ export const Route = createFileRoute("/collections/$id")({
     return { shop, collection, items, designer: designer as Designer | null };
   },
   head: ({ loaderData }) => {
-    if (!loaderData) return { meta: [{ title: "Collection not found — Artisan Mural" }, { name: "description", content: "This Artisan Mural wallpaper collection is unavailable." }, { property: "og:title", content: "Collection not found — Artisan Mural" }, { property: "og:description", content: "This wallpaper collection is unavailable." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] };
+    if (!loaderData) return { meta: [{ title: "Collection not found — Artisan Murals" }, { name: "description", content: "This Artisan Murals wallpaper collection is unavailable." }, { property: "og:title", content: "Collection not found — Artisan Murals" }, { property: "og:description", content: "This wallpaper collection is unavailable." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] };
     const { collection, designer } = loaderData;
-    const title = `${collection.title}${designer ? ` by ${designer.name}` : ""} — Artisan Mural`;
+    const title = `${collection.title}${designer ? ` by ${designer.name}` : ""} — Artisan Murals`;
     const description = collection.description || `A wallpaper collection${designer ? ` by ${designer.name}` : ""}, printed to your exact wall.`;
     return { meta: [{ title }, { name: "description", content: description }, { property: "og:title", content: title }, { property: "og:description", content: description }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] };
   },
   component: CollectionPage,
 });
 
+/** The approved preview's collection page: three room pictures, the name and story, then every design as a shop card. */
 function CollectionPage() {
   const { shop, collection, items, designer } = Route.useLoaderData();
   registerShop(shop); // designer names on the cards match between server and browser
+  const strip = [...items, ...items].slice(0, 3).map((d) => d.mockups?.[0] ?? d.image);
   return (
-    <div className="collection-backdrop"><div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-8">
-      <p className="text-eyebrow text-clay">Collection</p>
-      <h1 className="mt-3 max-w-2xl text-4xl sm:text-5xl">{collection.title}</h1>
-      {designer && <p className="mt-3 text-sm text-muted-foreground">by <Link to="/designers/$slug" params={{ slug: designer.slug }} className="text-foreground underline underline-offset-4">{designer.name}</Link></p>}
-      {collection.description && <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">{collection.description}</p>}
-      <p className="mt-10 text-xs text-muted-foreground">{items.length} {items.length === 1 ? "design" : "designs"}</p>
-      <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-7 pb-24 sm:gap-7 lg:grid-cols-3">
-        {items.map(d => <DesignCard key={d.slug} design={d} />)}
-      </div>
-    </div></div>
+    <div className="am">
+      <div className="pg crumbs-row"><nav className="crumbs" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><Link to="/designers">Designers</Link><span>/</span>{designer ? <><Link to="/designers/$slug" params={{ slug: designer.slug }}>{designer.name}</Link><span>/</span></> : null}<b>{collection.title}</b></nav></div>
+      <section className="pg">
+        <div className="cl-hero">
+          <div className="cl-strip">{strip.map((u, i) => <img key={i} src={u} alt="" loading={i ? "lazy" : undefined} />)}</div>
+          <div className="cl-copy"><span className="k">Collection</span><h1>{collection.title}</h1>{collection.description && <p>{collection.description}</p>}<p className="cl-by">{designer ? <>by <Link to="/designers/$slug" params={{ slug: designer.slug }}>{designer.name}</Link> · </> : null}<span>{items.length} {items.length === 1 ? "design" : "designs"}</span></p></div>
+        </div>
+        <div className="g-prod shopgrid">{items.map((d) => <StoreCard key={d.slug} d={d} />)}</div>
+      </section>
+    </div>
   );
 }

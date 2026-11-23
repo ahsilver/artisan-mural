@@ -2701,3 +2701,7 @@
 .am .co-sumcard h2 small{font:500 13px var(--f-body);color:var(--ink-2)}
 .am .co-promo-msg.err{color:#B03A2E}
 .am .co-placed{max-width:560px;margin:0 auto}
+.am .hiw-side{display:grid;gap:10px;align-content:start}
+.am .hiw-list{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink-2);display:grid;gap:4px}
+.am .hiw-group{display:grid;gap:6px;margin-top:10px}
+.am .hiw-group h3{margin:0;font:700 11px/1 var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}

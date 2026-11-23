@@ -1,9 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Camera, Loader2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { designBySlug, designerBySlug, materials, money, designRate } from "@/lib/catalog";
+import { designBySlug, designerBySlug, materials, money, designRate, registerShop } from "@/lib/catalog";
+import { ensureShop } from "@/lib/shop";
 import { useCompare } from "@/lib/compare";
-import { initialWall } from "@/lib/wall-selection";
 import { useMyRooms } from "@/lib/my-rooms";
 import { CornerTapper, RoomRender, addRoomPhoto, useLoadedRoom } from "@/components/try-on-wall";
 import { MyRoomsPicker, SampleRoomsRow } from "@/components/my-rooms-picker";
@@ -11,43 +10,40 @@ import { useState } from "react";
 
 export const Route = createFileRoute("/compare")({
   head: () => ({ meta: [
-    { title: "Compare wallpaper designs — Artisan Mural" },
+    { title: "Compare wallpaper designs — Artisan Murals" },
     { name: "description", content: "Compare wallpaper designs side by side: style, colors, rooms, finishes and price per square foot." },
-    { property: "og:title", content: "Compare wallpaper designs — Artisan Mural" },
+    { property: "og:title", content: "Compare wallpaper designs — Artisan Murals" },
     { property: "og:description", content: "See your favorite wallpaper designs side by side before you order." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },
   ] }),
+  loader: ({ context }) => ensureShop(context.queryClient),
   component: ComparePage,
 });
 
+/** The approved preview's comparison: one table, a column per design (picture, room, type, designer, colors, style, price). */
 function ComparePage() {
+  registerShop(Route.useLoaderData());
   const { list, remove } = useCompare();
-  const items = list.map(designBySlug).filter(d => !!d);
-  const rows: [string, (d: (typeof items)[number]) => React.ReactNode][] = [
-    ["Type", d => d.kind === "mural" ? "Mural — one scene" : "Repeating pattern"],
-    ["Designer", d => designerBySlug(d.designer)?.name],
-    ["Colors", d => d.palette],
-    ["Style", d => d.categories.join(", ")],
-    ["Best for", d => d.room.join(", ")],
-    ["Price", d => `${money(designRate(d))} / sq ft`],
-    ["Finishes", () => `${materials.length} to choose from`],
-  ];
-  return <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8">
-    <p className="text-eyebrow text-primary">Side by side</p>
-    <h1 className="mt-2 text-4xl sm:text-5xl">Compare designs</h1>
-    {items.length > 0 && <OnYourWall items={items} />}
-    {items.length === 0 ? <div className="soft-panel mt-8 text-center"><p>You haven't picked any designs yet.</p><Button asChild className="mt-4"><Link to="/browse">Browse designs</Link></Button></div> :
-    <div className="mt-8 -mx-5 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
-      <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(220px, 1fr))` }}>
-        {items.map(d => <div key={d.slug} className="soft-panel flex flex-col">
-          <div className="relative"><img src={d.image} alt={d.title} className="aspect-4/5 w-full rounded-lg object-cover" /><button type="button" aria-label={`Remove ${d.title}`} onClick={() => remove(d.slug)} className="absolute top-2 right-2 rounded-full bg-background/90 p-1.5"><X className="h-4 w-4" /></button></div>
-          <h2 className="mt-4 text-2xl">{d.title}</h2>
-          <dl className="mt-3 flex-1 space-y-3 text-sm">{rows.map(([label, fn]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-0.5">{fn(d)}</dd></div>)}</dl>
-          <div className="mt-5 grid gap-2"><Button asChild><Link to="/design/$slug" params={{ slug: d.slug }}>View & order</Link></Button><Button asChild variant="outline"><Link to="/design/$slug/preview" params={{ slug: d.slug }} search={{ ...initialWall, view: "room" }}><Camera />See in my room</Link></Button></div>
-        </div>)}
-      </div>
-    </div>}
+  const items = list.map(designBySlug).filter((d) => !!d) as NonNullable<ReturnType<typeof designBySlug>>[];
+  const row = (h: string, f: (d: (typeof items)[number]) => React.ReactNode) => <tr><th>{h}</th>{items.map((d) => <td key={d.slug}>{f(d)}</td>)}</tr>;
+  return <div className="am">
+    <div className="pg crumbs-row"><nav className="crumbs" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><Link to="/browse">Shop</Link><span>/</span><b>Compare</b></nav></div>
+    <section className="pg">
+      <div className="dir-head"><div><span className="k">Side by side</span><h1>Compare designs</h1><p>{items.length ? `${items.length} design${items.length > 1 ? "s" : ""} side by side. Tick "Compare" on up to 4 designs in the shop.` : 'Nothing to compare yet. Tick "Compare" under any design in the shop.'}</p></div><Link className="btn optline" to="/browse">Add more designs</Link></div>
+      {items.length > 0 && <div className="cmp-wrap"><table className="cmp"><tbody>
+        {row("Design", (d) => <><Link to="/design/$slug" params={{ slug: d.slug }}><img src={d.image} alt="" /><b>{d.title}</b></Link><br /><button type="button" className="rm" onClick={() => remove(d.slug)}>Remove</button></>)}
+        {row("In a room", (d) => (d.mockups?.[0] ? <img src={d.mockups[0]} alt="" /> : <small>Room pictures coming soon</small>))}
+        {row("Type", (d) => (d.kind === "mural" ? <>Mural<br /><small>One scene, sized to your wall</small></> : <>Repeating pattern<br /><small>Covers any wall</small></>))}
+        {row("Designer", (d) => { const x = designerBySlug(d.designer); return x ? <><Link to="/designers/$slug" params={{ slug: x.slug }}>{x.name}</Link>{x.reviews ? <><br /><small>★ {x.rating.toFixed(1)}</small></> : null}</> : d.designer; })}
+        {row("Colors", (d) => d.palette || "—")}
+        {row("Style", (d) => d.categories.join(", ") || "—")}
+        {row("Best for", (d) => d.room.join(", ") || "—")}
+        {row("Price", (d) => <>{money(designRate(d))} / sq ft<br /><small>{materials.length} papers to choose from</small></>)}
+        {row("", (d) => <div className="up-row"><Link className="btn btn-wine btn-sm" to="/design/$slug" params={{ slug: d.slug }}>View &amp; order</Link></div>)}
+      </tbody></table></div>}
+      {items.length > 0 && <OnYourWall items={items} />}
+    </section>
   </div>;
 }
 
