@@ -1,3 +1,4 @@
+import { sharpenCanvas } from "@/lib/tiff";
 import type { Design, ThumbPic, ThumbSet } from "@/lib/catalog";
 import { STATIC_PICS } from "@/lib/static-pics.gen";
 
@@ -32,7 +33,9 @@ export function pic(design: Pick<Design, "slug" | "thumbs">, src: string | undef
   if (!t || !p) return src === GEN_ROOM ? undefined : staticPic(src, widths.includes(1400) ? [720, 1080, 1440] : widths);
   const ws = p.w.filter((w) => widths.includes(w));
   const use = ws.length ? ws : [Math.max(...p.w)];
-  return { src: fileUrl(design.slug, t, p, use[Math.min(1, use.length - 1)]), srcSet: use.map((w) => `${fileUrl(design.slug, t, p, w)} ${w}w`).join(", "), lq: p.lq, ar: p.ar, small: true };
+  // the full shop picture (2400–3200 px) is the top choice in the set, so big and sharp screens get it — like the sample site
+  const full = /^(https?:|\/)/.test(src) && src !== GEN_ROOM ? `, ${src} 2400w` : "";
+  return { src: fileUrl(design.slug, t, p, use[use.length - 1]!), srcSet: use.map((w) => `${fileUrl(design.slug, t, p, w)} ${w}w`).join(", ") + full, lq: p.lq, ar: p.ar, small: true };
 }
 /** Built-in pictures (sample designs, hero, showcase): small WebP versions made at build time in /s/. */
 export function staticPic(url: string | undefined, widths?: number[]): Pic | undefined {
@@ -90,6 +93,7 @@ function scaled(im: HTMLImageElement | HTMLCanvasElement, w: number): HTMLCanvas
   }
   const c = document.createElement("canvas"); c.width = w; c.height = h;
   const x = c.getContext("2d")!; x.imageSmoothingQuality = "high"; x.drawImage(cur, 0, 0, w, h);
+  sharpenCanvas(c, 0.3); // shrinking softens; a light unsharp mask keeps cards crisp
   return c;
 }
 function encode(c: HTMLCanvasElement, q: number): Promise<Blob> {
@@ -136,7 +140,7 @@ export async function buildThumbs(design: Design, token: string, onStep?: (done:
       const ws = ALL_W.filter((w) => w <= nw * 1.05);
       if (!ws.length) ws.push(Math.min(nw, 320));
       for (const w of ws) {
-        const blob = await encode(scaled(im, w), w >= 1000 ? 0.8 : 0.74);
+        const blob = await encode(scaled(im, w), w >= 1000 ? 0.88 : 0.85);
         const r = await fetch(`/backend/thumbs/put?slug=${encodeURIComponent(design.slug)}&file=${k}-${w}`, { method: "POST", headers: { ...auth, "content-type": blob.type }, body: blob });
         if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? "upload failed");
         files++;

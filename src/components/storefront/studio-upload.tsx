@@ -87,11 +87,16 @@ export function StudioUpload({ rules }: { rules: any }) {
   }
 
   /** groups: [[main, colorway, …], …] — each group becomes one design. */
+  function closeDrive() { setStack([]); setLink(""); setErr(""); setSel((s) => s.filter((id) => local.some((p: any) => p.key === id))); }
+  function removeLocal(key: string) { setLocal((l) => l.filter((p: any) => p.key !== key)); setSel((s) => s.filter((x) => x !== key)); }
+  const stop = useRef(false);
   async function make(groups: Pick[][]) {
+    stop.current = false;
     setErr("");
     const made: string[] = [];
     try {
       for (let g = 0; g < groups.length; g++) {
+        if (stop.current) break;
         const grp = groups[g]!; const title = niceName(grp[0]!.name);
         const step = groups.length > 1 ? `Design ${g + 1} of ${groups.length}: ${title}` : title;
         setWork({ label: "Starting…", frac: 0, step });
@@ -103,6 +108,7 @@ export function StudioUpload({ rules }: { rules: any }) {
           else await importLocal(id, p.file, cw, i === 0, rules, say);
         }
       }
+      if (!made.length) { setWork(null); return; }
       try { sessionStorage.setItem(QUEUE_KEY, JSON.stringify(made.slice(1))); } catch {}
       window.location.href = `/designer-upload?id=${made[0]}`;
     } catch (e: any) {
@@ -123,6 +129,7 @@ export function StudioUpload({ rules }: { rules: any }) {
       <p className="up-prog"><span className="up-spin" aria-hidden="true" />{work.label}{work.frac > 0 && work.frac < 1 ? ` · ${Math.floor(work.frac * 100)}%` : ""}</p>
       <div className="up-bar"><i style={{ width: `${Math.max(3, Math.min(100, work.frac * 100))}%` }} /></div>
       <small>Your full print file is copied into private storage, byte for byte. Big TIFFs take a minute or two. Keep this page open.</small>
+      <button type="button" className="btn optline btn-sm up-stop" onClick={() => { stop.current = true; setWork((w) => (w ? { ...w, step: w.step + " · stopping after this file…" } : w)); }}>Stop</button>
     </div>
   );
 
@@ -153,7 +160,7 @@ export function StudioUpload({ rules }: { rules: any }) {
       {err && <p className="up-gdl-msg err" role="alert">{err}</p>}
 
       {cur && <div className="up-gdf">
-        <div className="up-gdf-h"><div className="up-crumbs">{stack.map((s, i) => i < stack.length - 1 ? <span key={s.id}><button type="button" className="up-crumb" onClick={() => void openFolder(s.id, s.name)}>{s.name}</button><span>›</span></span> : <b key={s.id}>{s.name}</b>)}</div><a href={`https://drive.google.com/drive/folders/${cur.id}`} target="_blank" rel="noopener noreferrer">Open in Drive ↗</a></div>
+        <div className="up-gdf-h"><div className="up-crumbs">{stack.map((s, i) => i < stack.length - 1 ? <span key={s.id}><button type="button" className="up-crumb" onClick={() => void openFolder(s.id, s.name)}>{s.name}</button><span>›</span></span> : <b key={s.id}>{s.name}</b>)}</div><span className="up-gdf-acts"><a href={`https://drive.google.com/drive/folders/${cur.id}`} target="_blank" rel="noopener noreferrer">Open in Drive ↗</a><button type="button" className="up-x" aria-label="Close this Google Drive folder" title="Close" onClick={closeDrive}>✕</button></span></div>
         {tiffIds.length > 0 && tiffReady < tiffIds.length && <p className="up-prog" role="status"><span className="up-spin" aria-hidden="true" />Making pictures of your designs… <b>{tiffReady} of {tiffIds.length} ready</b>. Big print files take a few seconds each. You can keep choosing while they load.</p>}
         {drivePics.length > 0 && <div className="up-selbar"><button type="button" className="up-link" onClick={() => setSel((s) => (allOn ? s.filter((x) => !drivePics.some((f) => f.id === x)) : [...new Set([...s, ...drivePics.map((f) => f.id)])]))}>{allOn ? "Clear selection" : `Select all in this folder (${drivePics.length})`}</button><small>Tap pictures to choose them. You can choose in several folders.</small></div>}
         {busy && !files ? <p className="up-gdl-msg"><span className="up-spin" aria-hidden="true" />Opening your folder in Google Drive…</p>
@@ -174,6 +181,7 @@ export function StudioUpload({ rules }: { rules: any }) {
         <button key={p.key} type="button" className={"up-file up-th" + (sel.includes(p.key) ? " on" : "")} aria-pressed={sel.includes(p.key)} onClick={() => toggle(p.key)}>
           {p.url ? <img src={p.url} alt="" /> : <span className="up-ext">{extOf(p.name)}<small>Picture made when you continue</small></span>}
           <em>{sel.includes(p.key) ? "✓ Selected" : "Select"}</em><small title={p.name}>{p.name}</small>
+          <span role="button" tabIndex={0} className="up-x up-x-file" aria-label={`Remove ${p.name}`} title="Remove" onClick={(e) => { e.stopPropagation(); removeLocal(p.key); }} onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); removeLocal(p.key); } }}>✕</span>
         </button>))}</div>}
 
       {!cur && !local.length && <p className="hint">Tip: paste one Drive folder with all your designs. You'll see them as pictures, open sub-folders here, and make many designs at once.</p>}

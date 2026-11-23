@@ -38,8 +38,9 @@ function daily<T>(list: T[], salt = 0): T[] {
   const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
   const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j]!, a[i]!]; } return a;
 }
-const room = (d?: Design, k = 0) => (d ? pic(d, d.mockups?.[k] ?? d.mockups?.[0] ?? d.image)?.src ?? d.image : undefined);
-const flatPic = (d: Design) => pic(d, d.image, [720, 1080])?.src ?? d.image;
+// big pictures use the full shop picture so they stay sharp on large and high-density screens (as on the sample site)
+const room = (d?: Design, k = 0) => (d ? d.mockups?.[k] ?? d.mockups?.[0] ?? d.image : undefined);
+const flatPic = (d: Design) => d.image;
 const has = (d: Design, words: string[]) => [...d.categories, ...d.room, ...(d.tags ?? [])].some((c) => words.some((w) => String(c).toLowerCase().includes(w)));
 
 function Hero({ live, home }: { live: Design[]; home: any }) {

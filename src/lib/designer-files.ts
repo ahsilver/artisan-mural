@@ -119,7 +119,7 @@ export async function dominantColor(src: string | Blob): Promise<string | null> 
 export async function signedUrl(key: string) { return (await api("designer/files/url", { body: { key } })).url as string; }
 
 /** Low-res product picture (2000 px) made in the browser from the original. */
-export async function makePreview(file: Blob, dims?: { width: number; height: number } | null, maxSide = 2000): Promise<Blob> {
+export async function makePreview(file: Blob, dims?: { width: number; height: number } | null, maxSide = 3200): Promise<Blob> {
   const canvas = document.createElement("canvas"); const ctx = canvas.getContext("2d")!;
   let bmp: ImageBitmap;
   if (file.type === "image/tiff" || /\.tiff?$/i.test((file as File).name ?? "")) {
@@ -147,8 +147,11 @@ export async function makePreview(file: Blob, dims?: { width: number; height: nu
   } else bmp = await createImageBitmap(file);
   const s = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
   canvas.width = Math.round(bmp.width * s); canvas.height = Math.round(bmp.height * s);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+  const shrunk = s < 1 || bmp.width > canvas.width;
   ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height); bmp.close();
-  return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("Could not make the product picture."))), "image/jpeg", 0.86));
+  const { crispJpeg } = await import("@/lib/tiff");
+  return crispJpeg(canvas, shrunk || (dims ? Math.max(dims.width, dims.height) > maxSide : false));
 }
 export const fmtBytes = (n: number) => n >= 1024 ** 3 ? (n / 1024 ** 3).toFixed(2) + " GB" : n >= 1024 ** 2 ? (n / 1024 ** 2).toFixed(1) + " MB" : Math.round(n / 1024) + " KB";
 
@@ -169,7 +172,7 @@ export async function previewFromStored(key: string, mime: string, size: number,
         } catch (e) { if (a >= 4) throw e; await new Promise((res) => setTimeout(res, 1000 * a)); }
       }
     };
-    return (await tiffPreview(urlReader(url), 2000, onProgress, readMany)).blob;
+    return (await tiffPreview(urlReader(url), 3200, onProgress, readMany)).blob;
   }
   if (size < 300 * 1024 * 1024 && /image\/(jpeg|png|webp)/.test(mime)) { const blob = await (await fetch(url)).blob(); return makePreview(new File([blob], "x", { type: mime }), dims); }
   return null;

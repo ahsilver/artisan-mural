@@ -46,6 +46,52 @@ function ChangeForm({ projectId, who, onDone, onSkip }: { projectId: string; who
   );
 }
 
+/** Price inside the chat. Designer: "Send a price" (amount, days, note). Customer: the price as an offer card with
+ *  Approve / Decline; once approved, a Pay button (the request's pay page: wall size, paper, design + print together). */
+function PricePanel({ projectId, onChange }: { projectId: string; onChange: () => void }) {
+  const [pr, setPr] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const [fee, setFee] = useState(""); const [days, setDays] = useState(""); const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
+  const load = useCallback(() => papi(`projects/${projectId}`).then(setPr).catch(() => setPr(null)), [projectId]);
+  useEffect(() => { void load(); const i = setInterval(load, 15000); return () => clearInterval(i); }, [load]);
+  if (!pr) return null;
+  const money = (n: any) => (Number(n) || 0).toLocaleString("en-US", { style: "currency", currency: "USD" });
+  const act = async (path: string, body: any) => { setBusy(true); setErr(""); try { await papi(`projects/${projectId}/${path}`, body); setOpen(false); setFee(""); setDays(""); setNote(""); await load(); onChange(); } catch (x: any) { setErr(x.message || "Something went wrong."); } setBusy(false); };
+  const quotes: any[] = pr.quotes ?? [];
+  const sent = quotes.filter((q) => q.status === "sent");
+  const accepted = quotes.find((q) => q.status === "accepted");
+  const designer = pr.myRole === "designer";
+  const canQuote = designer && ["requested", "quoted"].includes(pr.status);
+  return (
+    <div className="ct-price">
+      {pr.status === "approved" && accepted && (designer
+        ? <div className="offer"><span className="ot">Price approved</span><span className="op">{money(accepted.fee)}</span><p>The customer approved your price. Work starts when they pay; you'll get a notification and an email.</p></div>
+        : <div className="offer"><span className="ot">Price approved</span><span className="op">{money(accepted.fee)}</span><p>Next: enter your wall size and paper, then pay the design and the print together. The designer starts as soon as you pay.</p><div className="ob"><a className="btn btn-wine btn-sm" href={`/projects/${projectId}/pay`}>Pay {money(accepted.fee)} + print</a></div></div>)}
+      {pr.status === "in_progress" && <div className="offer"><span className="ot">Paid ✓</span><p>{designer ? `Deliver the final file${pr.order?.dueAt ? ` by ${new Date(pr.order.dueAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}.` : "The designer is working on it. You'll get a notification when it's ready."}</p></div>}
+      {pr.status === "delivered" && <div className="offer"><span className="ot">Finished ✓</span><p>{designer ? "Delivered. The studio prepares it for printing." : "Your design is finished. We're getting it ready to print."}</p></div>}
+      {(pr.status === "requested" || pr.status === "quoted") && sent.map((q) => (
+        <div key={q.id} className="offer">
+          <span className="ot">{designer ? "Your price · waiting for the customer" : `Price offer from ${q.designer}`}</span>
+          <span className="op">{money(q.fee)}</span>
+          <p>Ready in {q.days} day{Number(q.days) === 1 ? "" : "s"}.{q.note ? ` ${q.note}` : ""} Printing is priced separately by your wall size.</p>
+          {!designer && <div className="ob"><button type="button" className="btn btn-wine btn-sm" disabled={busy} onClick={() => void act("approve", { quote: q.id })}>Approve price</button><button type="button" className="btn btn-sm optline" disabled={busy} onClick={() => void act("decline", { quote: q.id })}>Decline</button></div>}
+        </div>
+      ))}
+      {canQuote && (open ? (
+        <form className="offer ct-quote" onSubmit={(e) => { e.preventDefault(); const f = Number(fee), d = Number(days); if (!(f > 0)) { setErr("Enter your price."); return; } if (!(d >= 1)) { setErr("How many days will it take?"); return; } void act("quote", { fee: f, days: Math.round(d), note: note.trim() }); }}>
+          <span className="ot">{sent.length ? "Send a new price" : "Send a price"}</span>
+          <div className="chg-row"><label><span className="sr">Price in dollars</span><input type="number" min={1} step={1} inputMode="decimal" placeholder="Price ($)" value={fee} onChange={(e) => setFee(e.target.value)} /></label><label><span className="sr">Days</span><input type="number" min={1} max={120} step={1} inputMode="numeric" placeholder="Ready in (days)" value={days} onChange={(e) => setDays(e.target.value)} /></label></div>
+          <label><span className="sr">What's included</span><textarea rows={2} maxLength={600} placeholder="What's included (optional), e.g. one sketch, two rounds of changes" value={note} onChange={(e) => setNote(e.target.value)} /></label>
+          {pr.commissionPct != null && Number(fee) > 0 && <p>You receive {money(Number(fee) * (1 - pr.commissionPct / 100))} after the {pr.commissionPct}% commission.</p>}
+          <div className="ob"><button className="btn btn-wine btn-sm" type="submit" disabled={busy}>{busy ? "Sending…" : "Send price to the customer"}</button><button type="button" className="btn btn-sm optline" onClick={() => setOpen(false)}>Cancel</button></div>
+        </form>
+      ) : <button type="button" className="btn btn-wine btn-sm ct-quote-btn" onClick={() => setOpen(true)}>{sent.length ? "Change my price" : "Send a price"}</button>)}
+      {err && <p className="ct-note err" role="alert">{err}</p>}
+    </div>
+  );
+}
+
 export function StoreChat({ initialKey, emptyText = "No messages yet. Chats with designers and with Artisan Murals show up here." }: { initialKey?: string | null; emptyText?: string }) {
   const [convs, setConvs] = useState<Conv[] | null>(null);
   const [key, setKey] = useState<string | null>(initialKey ?? null);
@@ -113,6 +159,7 @@ export function StoreChat({ initialKey, emptyText = "No messages yet. Chats with
                 );
               })}
             </div>
+            {t.projectId && !(t.needsBrief && !skip[key]) && <PricePanel projectId={t.projectId} onChange={() => { void loadThread(key); void loadList(); }} />}
             {t.needsBrief && t.projectId && !skip[key] ? (
               <ChangeForm projectId={t.projectId} who={t.name} onDone={() => { void loadThread(key); void loadList(); }} onSkip={() => setSkip((s) => ({ ...s, [key]: true }))} />
             ) : t.canWrite ? (

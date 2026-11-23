@@ -12,6 +12,10 @@ export function cardPics(d: Design): string[] {
   const list = rooms.length ? [rooms[0]!, d.image, ...rooms.slice(1, 3)] : [d.image];
   return list.map((u) => pic(d, u)?.src ?? u);
 }
+const CARD_SIZES = "(max-width: 640px) 50vw, (max-width: 1100px) 33vw, 25vw";
+const setOf = (d: Design, u: string) => pic(d, u)?.srcSet;
+
+const cardSrc = (d: Design) => { const rooms = (d.mockups ?? []).filter(Boolean); return rooms.length ? [rooms[0]!, d.image, ...rooms.slice(1, 3)] : [d.image]; };
 
 /** Storefront design card: room picture, plain wallpaper on hover, picture dots, save, designer and price. */
 export function StoreCard({ d }: { d: Design }) {
@@ -24,8 +28,8 @@ export function StoreCard({ d }: { d: Design }) {
   return (
     <article className={"card" + (hover && vs.length > 1 ? " flat-on" : "")}>
       <Link className="im" to="/design/$slug" params={{ slug: d.slug }} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-        <img src={vs[i]} alt={d.title} loading="lazy" />
-        {vs.length > 1 && <img className="im-flat" src={hover ? flat : undefined} alt="" aria-hidden="true" />}
+        <img src={vs[i]} srcSet={setOf(d, cardSrc(d)[i] ?? d.image)} sizes={CARD_SIZES} alt={d.title} loading="lazy" />
+        {vs.length > 1 && <img className="im-flat" src={hover ? flat : undefined} srcSet={hover ? setOf(d, d.image) : undefined} sizes={CARD_SIZES} alt="" aria-hidden="true" />}
       </Link>
       <button type="button" className="fav" aria-pressed={fav} aria-label={`Save ${d.title}`} onClick={() => setFav((v) => !v)}><Ico id="i-heart" /></button>
       {vs.length > 1 && (

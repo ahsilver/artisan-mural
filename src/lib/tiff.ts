@@ -102,9 +102,29 @@ function toRgb(info: TiffInfo, s: Uint8Array, i: number, out: Uint8ClampedArray,
 
 /** Low-res picture from a TIFF of any size (reads only the rows it needs). */
 export type ReadMany = (ranges: [number, number][]) => Promise<Uint8Array[]>;
+/** Shop pictures: big enough to stay crisp on large screens, a light unsharp mask after shrinking (shrinking softens
+ *  detail), and high JPEG quality — the same treatment the sample site's pictures had. The print file is never touched. */
+export const SHOP_PICTURE_SIDE = 3200;
+export function sharpenCanvas(c: HTMLCanvasElement, amount = 0.45) {
+  const g = c.getContext("2d")!; const w = c.width, h = c.height; if (w < 3 || h < 3) return;
+  const img = g.getImageData(0, 0, w, h); const s = img.data; const o = new Uint8ClampedArray(s.length);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 4;
+    if (x === 0 || y === 0 || x === w - 1 || y === h - 1) { o[i] = s[i]!; o[i + 1] = s[i + 1]!; o[i + 2] = s[i + 2]!; o[i + 3] = s[i + 3]!; continue; }
+    for (let k = 0; k < 3; k++) {
+      const blur = (s[i - 4 + k]! + s[i + 4 + k]! + s[i - w * 4 + k]! + s[i + w * 4 + k]! + 4 * s[i + k]!) / 8;
+      o[i + k] = s[i + k]! + amount * (s[i + k]! - blur);
+    }
+    o[i + 3] = s[i + 3]!;
+  }
+  img.data.set(o); g.putImageData(img, 0, 0);
+}
+export const crispJpeg = (c: HTMLCanvasElement, sharpen = true): Promise<Blob> => { if (sharpen) sharpenCanvas(c); return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("Could not make the picture."))), "image/jpeg", 0.92)); };
+
 export async function tiffPreview(read: Reader, maxSide = 2000, onProgress?: (f: number) => void, readMany?: ReadMany): Promise<{ blob: Blob; width: number; height: number }> {
   const info = await readTiff(read);
-  const step = Math.max(1, Math.ceil(Math.max(info.width, info.height) / maxSide));
+  // read a little more detail than needed (whole-number step at or above the target), then shrink smoothly to the exact size
+  const step = Math.max(1, Math.floor(Math.max(info.width, info.height) / maxSide));
   const ow = Math.floor(info.width / step), oh = Math.floor(info.height / step);
   const img = new ImageData(ow, oh);
   let done = 0;
@@ -116,10 +136,10 @@ export async function tiffPreview(read: Reader, maxSide = 2000, onProgress?: (f:
     // average every row of this strip that falls inside the output pixel (no extra reading), so fine texture doesn't turn into streaks
     const s0 = strip * info.rps, rowsInStrip = Math.min(info.rps, info.height - s0);
     const ya = Math.max(s0, j * step), yb = Math.min(s0 + rowsInStrip, (j + 1) * step);
-    const rows: number[] = []; const rStep = Math.max(1, Math.ceil((yb - ya) / 6));
+    const rows: number[] = []; const rStep = Math.max(1, Math.ceil((yb - ya) / 8));
     for (let yy = ya; yy < yb; yy += rStep) rows.push((yy - s0) * rowLen);
     if (!rows.length) rows.push((y - s0) * rowLen);
-    const n = Math.min(step, 6);
+    const n = Math.min(step, 8);
     for (let x = 0; x < ow; x++) {
       let R = 0, G = 0, B = 0, c = 0;
       for (const r0 of rows) for (let q = 0; q < n; q++) { const sx = x * step + Math.floor(((q + 0.5) * step) / n); toRgb(info, data, r0 + sx * info.spp, tmp, 0); R += tmp[0]; G += tmp[1]; B += tmp[2]; c++; }
@@ -137,8 +157,10 @@ export async function tiffPreview(read: Reader, maxSide = 2000, onProgress?: (f:
     const work = async () => { while (k < oh) { const j = k++; const st = Math.floor(rowOf(j) / info.rps); await processRow(j, await read(info.offsets[st], info.counts[st])); } };
     await Promise.all(Array.from({ length: 16 }, work));
   }
-  const c = document.createElement("canvas"); c.width = ow; c.height = oh; c.getContext("2d")!.putImageData(img, 0, 0);
-  const blob: Blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("Could not make the preview."))), "image/jpeg", 0.86));
+  let c = document.createElement("canvas"); c.width = ow; c.height = oh; c.getContext("2d")!.putImageData(img, 0, 0);
+  const k = maxSide / Math.max(ow, oh);
+  if (k < 1) { const d = document.createElement("canvas"); d.width = Math.round(ow * k); d.height = Math.round(oh * k); const g = d.getContext("2d")!; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; g.drawImage(c, 0, 0, d.width, d.height); c = d; }
+  const blob: Blob = await crispJpeg(c, step > 1 || k < 1);
   return { blob, width: info.width, height: info.height };
 }
 
