@@ -11,7 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { designBySlug, money, materials } from "@/lib/catalog";
 import { getMyAccount } from "@/lib/orders.functions";
 import { MyRequests } from "@/components/projects";
-import { Messenger, useUnreadMessages } from "@/components/messenger";
+import { useUnreadMessages } from "@/components/messenger";
+import { StoreChat } from "@/components/storefront/chat";
 import { getMyDesignerProfile } from "@/lib/designer-profile.functions";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layers, ImagePlus, MessageCircle, Package, BadgeDollarSign, ArrowRight } from "lucide-react";
@@ -63,7 +64,7 @@ function Account() {
       <div className="mt-4 space-y-3">{data.orders.map(o => <div key={o.id} className="soft-panel flex flex-wrap items-center justify-between gap-3"><div><p className="font-medium">{designBySlug(o.design)?.title ?? o.design}</p><p className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}{o.color ? ` · ${o.color}` : ""} · {o.sqft.toFixed(1)} sq ft · {materials.find(m => m.id === o.finish)?.name ?? o.finish}</p>{o.tracking && <p className="mt-1 text-xs"><a className="underline underline-offset-4" href={trackingUrl(o.carrier, o.tracking)!} target="_blank" rel="noreferrer">Track package: {o.carrier ?? ""} {o.tracking}</a></p>}</div><div className="text-right"><p className="font-semibold">{money(o.total)}</p><span className="rounded-full bg-muted px-2.5 py-1 text-[11px] capitalize">{label(o.status)}</span><div className="mt-2"><Button size="sm" variant="outline" onClick={async () => { const r = await api(`account/reorder/${o.id}`, { body: {} }); for (const it of r.items) cart.add(it); navigate({ to: "/cart" }); }}>Order again</Button></div></div></div>)}</div>}
     </div>}
         {tab === "requests" && <MyRequests />}
-        {tab === "messages" && <div><h2>Messages</h2><Messenger initialKey={initC} urlMode="search" emptyText="No messages yet. Chats with designers and with Artisan Murals show up here." /></div>}
+        {tab === "messages" && <div><h2>Messages</h2><div id="view-chat"><StoreChat initialKey={initC} /></div></div>}
         {tab === "rooms" && <AccountRooms />}
         {tab === "credit" && <StoreCredit d={extras.d} />}
         {tab === "addresses" && <Addresses d={extras.d} reload={extras.reload} />}

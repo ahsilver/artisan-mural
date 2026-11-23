@@ -2524,3 +2524,22 @@
 .am .acc-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px}
 .am .acc-signin{max-width:480px}
 @media (max-width:860px){.am .acc-nav{display:flex!important;overflow-x:auto;border:0;gap:6px;padding-bottom:6px}.am .acc-nav button{flex:none;width:auto;border:1px solid var(--line);border-radius:999px;padding:8px 14px;white-space:nowrap}}
+/* real chat additions */
+.am button.thread{font:inherit;color:inherit;cursor:pointer;border-top:0;border-right:0}
+.am .thread.unread b::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#B03A2E;margin-left:6px;vertical-align:middle}
+.am .ct-empty{padding:18px 16px;color:var(--ink-2);font-size:13.5px}
+.am .ct-empty.big{display:grid;place-items:center;height:100%;font-size:14.5px}
+.am .ct-day{align-self:center;font-size:11px;color:#A49C92;margin:10px 0 6px;text-transform:uppercase;letter-spacing:.08em}
+.am .bub.pics{display:grid;gap:4px;padding:4px!important;background:transparent!important}
+.am .bub.pics-2,.am .bub.pics-3,.am .bub.pics-4{grid-template-columns:1fr 1fr}
+.am .bub.pics img{width:100%;max-width:240px;border-radius:14px;display:block}
+.am .bub.chg-sum{display:grid;gap:3px}
+.am .ct-note.err{color:#B03A2E}
+.am .ct-reqs-btn{font-size:12.5px;font-weight:700;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:7px 12px;white-space:nowrap}
+.am .ct-file{display:block;padding:8px 12px;background:#fff;border-radius:12px;font-size:13px;text-decoration:underline}
+.am #view-chat .ct-head > div:not(.ct-reqs){min-width:0;flex:1}
+.am #view-chat .ct-head small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:860px){.am #view-chat .ct-head small a{display:none}.am .ct-reqs-btn{padding:6px 10px;font-size:12px}}
+.am #view-chat .ct-main{min-width:0;grid-template-columns:minmax(0,1fr)}
+.am #view-chat .ct-head{min-width:0}
+@media (max-width:860px){.am #view-chat .chat{overflow:hidden;max-width:100%}}
