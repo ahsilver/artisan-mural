@@ -2740,3 +2740,11 @@
 .am .up-gdt.fold.on .th{border-color:#201D1D;box-shadow:0 0 0 2px #201D1D inset}
 .am .up-gdt.fold.on .fsel{background:#201D1D;color:#fff}
 .am .up-gdt.fold{position:relative}.am .up-gdt.fold .fsel{top:8px;right:8px;left:auto;bottom:auto}
+.am .ra-modal{position:fixed;inset:0;z-index:120;background:rgba(32,29,29,.55);display:grid;place-items:start center;overflow:auto;padding:24px 12px}
+.am .ra-sheet{width:min(1280px,100%);background:var(--paper,#FCFBF8);border-radius:14px;padding:18px 20px 22px;display:grid;gap:12px;box-shadow:0 30px 80px -20px rgba(0,0,0,.5)}
+.am .ra-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.am .ra-head b{font:400 24px/1.2 var(--f-display)}
+.am .ra-sheet .ra-grid{grid-template-columns:minmax(0,1fr) 300px}
+.am .ra-sheet .ra-side canvas{width:300px;height:300px}
+.am .ra-prog{display:grid;gap:6px;font-size:13px}.am .ra-prog small{color:var(--ink-2)}
+@media (max-width:760px){.am .ra-sheet .ra-grid{grid-template-columns:1fr}.am .ra-sheet .ra-side canvas{width:100%;height:auto}}

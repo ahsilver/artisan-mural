@@ -11,10 +11,12 @@ const MAX_WORK = 2000; // the picture we work on (the shop picture is up to 3200
 function gray(img: ImageData) { const g = new Float32Array(img.width * img.height); const d = img.data; for (let i = 0, j = 0; i < g.length; i++, j += 4) g[i] = 0.299 * d[j]! + 0.587 * d[j + 1]! + 0.114 * d[j + 2]!; return g; }
 
 /** How well the copies join: 1 = like any two neighbouring pixel columns (invisible), 2+ = a visible line. */
-function joinScore(g: Float32Array, W: number, H: number, pw: number, ph: number, mode: RepeatMode) {
+function joinScore(g: Float32Array, W: number, H: number, pw: number, ph: number, mode: RepeatMode, blend = false) {
   let base = 0, n = 0; for (let y = 0; y < H; y += 3) for (let x = 0; x < W - 1; x += 3) { base += Math.abs(g[y * W + x]! - g[y * W + x + 1]!); n++; } base = base / n || 1;
   const drop = mode === "halfdrop" ? Math.round(ph / 2) : 0;
-  let s = 0; n = 0; for (let y = 0; y < ph; y++) { const y2 = (y + drop) % ph; s += Math.abs(g[y * W + pw - 1]! - g[y2 * W]!); n++; }
+  // with blend, the next copy starts with the file's own continuation (the strip past the end), faded into the start
+  const nx = blend && pw < W ? pw : 0;
+  let s = 0; n = 0; for (let y = 0; y < ph; y++) { const y2 = (y + drop) % ph; s += Math.abs(g[y * W + pw - 1]! - g[y2 * W + nx]!); n++; }
   const side = s / n / base;
   let top = 0;
   if (mode !== "sideways") { s = 0; n = 0; for (let x = 0; x < pw; x++) { s += Math.abs(g[(ph - 1) * W + x]! - g[x]!); n++; } top = s / n / base; }
@@ -26,20 +28,36 @@ function findRepeat(g: Float32Array, W: number, H: number, mode: RepeatMode) {
   const band = 6;
   let base = 0, n = 0; for (let y = 0; y < H; y += 2) for (let x = 0; x < W - 1; x += 2) { base += Math.abs(g[y * W + x]! - g[y * W + x + 1]!); n++; } base = base / n || 1;
   const bestPeriod = (len: number, other: number, at: (i: number, j: number) => number, drops: number[]) => {
-    let best = { c: Infinity, p: len, d: 0 };
+    let best = { c: Infinity, p: len, d: 0 }; const all: number[] = [];
     for (let p = Math.floor(len * 0.5); p < len - band; p++) for (const d of drops) {
       let s = 0, k = 0;
       for (let j = 0; j < other; j += 2) for (let b = 0; b < band; b++) { s += Math.abs(at(p + b, j) - at(b, (j + d) % other)); k++; }
-      const c = s / k / base; if (c < best.c) best = { c, p, d };
+      const c = s / k / base; all.push(c); if (c < best.c) best = { c, p, d };
     }
-    return best;
+    // compared with the file itself: a true repeat is far better than a typical position (works for soft and sharp files)
+    all.sort((x, y) => x - y); const typical = all[Math.floor(all.length / 2)] || 1;
+    return { ...best, c: best.c / typical };
   };
   const drops = mode === "halfdrop" ? [Math.round(H / 2)] : [0];
   const sx = bestPeriod(W, H, (x, y) => g[y * W + x]!, drops);
-  const w = sx.c < 0.9 ? sx.p : W; // the pattern starts again inside the file: that's the repeat width
+  let w = sx.c < 0.35 ? sx.p : W; // the pattern starts again inside the file: that's the repeat width
+  let blend = false;
+  // no exact repeat inside the file and the edges don't join: overlap the ends where they look most alike and blend them
+  if (w === W) {
+    let edge = 0, k = 0; for (let y = 0; y < H; y += 2) { edge += Math.abs(g[y * W + W - 1]! - g[y * W]!); k++; }
+    if (edge / k / base > 1.6) {
+      let bestOv = 0, bestC = Infinity;
+      for (let ov = Math.round(W * 0.04); ov <= Math.round(W * 0.25); ov += 2) {
+        let s2 = 0, n2 = 0;
+        for (let y = 0; y < H; y += 4) for (let x = 0; x < ov; x += Math.max(1, Math.floor(ov / 24))) { s2 += Math.abs(g[y * W + W - ov + x]! - g[y * W + x]!); n2++; }
+        const c = s2 / n2; if (c < bestC) { bestC = c; bestOv = ov; }
+      }
+      if (bestOv) { w = W - bestOv; blend = true; }
+    }
+  }
   let h = H;
-  if (mode !== "sideways") { const sy = bestPeriod(H, w, (y, x) => g[y * W + x]!, [0]); if (sy.c < 0.9) h = sy.p; }
-  return { w, h };
+  if (mode !== "sideways") { const sy = bestPeriod(H, w, (y, x) => g[y * W + x]!, [0]); if (sy.c < 0.35) h = sy.p; }
+  return { w, h, blend };
 }
 
 export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCancel }: { src: string; mode: RepeatMode; initial?: Partial<RepeatFit>; busy?: boolean; onSave: (r: RepeatFit) => void; onCancel: () => void }) {
@@ -73,7 +91,7 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
   const tileH = mode === "sideways" ? H : ph;
   const clampW = (v: number) => Math.max(Math.round(W * 0.3), Math.min(W, Math.round(v)));
   const clampH = (v: number) => Math.max(Math.round(H * 0.3), Math.min(H, Math.round(v)));
-  const score = useMemo(() => (img && pw && ph ? joinScore(img.g, W, H, pw, tileH, mode) : null), [img, pw, ph, mode]);
+  const score = useMemo(() => (img && pw && ph ? joinScore(img.g, W, H, pw, tileH, mode, blend) : null), [img, pw, ph, mode, blend]);
 
   // one repeat as it will be printed: with "blend", the strip past the end fades softly into the start
   const tile = useMemo(() => {
@@ -141,7 +159,15 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
     else if (e.key === "ArrowUp" && mode !== "sideways") setPh((v) => clampH(v - step)); else if (e.key === "ArrowDown" && mode !== "sideways") setPh((v) => clampH(v + step)); else used = false;
     if (used) e.preventDefault();
   };
-  const findIt = () => { if (!img) return; const r = findRepeat(img.g, W, H, mode); setPw(r.w); setPh(r.h); setAuto(r.w < W || r.h < H ? `Found it: the pattern starts again ${r.w < W ? `${Math.round((1 - r.w / W) * 100)}% before the right edge` : ""}${r.w < W && r.h < H ? " and " : ""}${r.h < H ? `${Math.round((1 - r.h / H) * 100)}% above the bottom` : ""}. The extra strip is left out.` : "Your file already ends exactly where the pattern starts again."); };
+  const findIt = (quiet = false) => {
+    if (!img) return; const r = findRepeat(img.g, W, H, mode); setPw(r.w); setPh(r.h); setBlend(r.blend);
+    if (r.blend) setAuto(`Your file doesn't repeat by itself, so we overlap the ends by ${Math.round((1 - r.w / W) * 100)}% (where they look most alike) and blend them softly, one on top of the other. Check the join in the magnifier; drag to adjust if you like.`);
+    else if (r.w < W || r.h < H) setAuto(`Found it: the pattern starts again ${r.w < W ? `${Math.round((1 - r.w / W) * 100)}% before the right edge` : ""}${r.w < W && r.h < H ? " and " : ""}${r.h < H ? `${Math.round((1 - r.h / H) * 100)}% above the bottom` : ""}. The extra strip is left out.`);
+    else if (!quiet) setAuto("Your file already ends exactly where the pattern starts again.");
+  };
+  // the first time it opens, it lines itself up (the designer checks and saves, or adjusts by hand)
+  const ran = useRef(false);
+  useEffect(() => { if (img && !ran.current && !initial?.w) { ran.current = true; findIt(true); } }, [img]);
   const word = (v: number) => (v < 1.35 ? ["ok", "Joins perfectly"] : v < 2 ? ["warn", "Small step: check the magnifier"] : ["bad", "Visible line"]);
   if (err) return <p className="rq-ok err">{err}</p>;
   if (!img) return <p className="hint"><span className="up-spin" aria-hidden="true" />Loading the design…</p>;
@@ -161,7 +187,7 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
       <div className="ra-ctl">
         <div className="ra-n"><span>Repeat width</span><button type="button" onClick={() => setPw((v) => clampW(v - 1))} aria-label="Repeat width one pixel less">−</button><b>{pct(pw, W)}</b><button type="button" onClick={() => setPw((v) => clampW(v + 1))} aria-label="Repeat width one pixel more">+</button></div>
         {mode !== "sideways" && <div className="ra-n"><span>Repeat height</span><button type="button" onClick={() => setPh((v) => clampH(v - 1))} aria-label="Repeat height one pixel less">−</button><b>{pct(ph, H)}</b><button type="button" onClick={() => setPh((v) => clampH(v + 1))} aria-label="Repeat height one pixel more">+</button></div>}
-        <button type="button" className="btn optline btn-sm" onClick={findIt}>Find the repeat for me</button>
+        <button type="button" className="btn optline btn-sm" onClick={() => findIt()}>Find the repeat for me</button>
         {pw < W && <label className="sa-check ra-blend"><input type="checkbox" checked={blend} onChange={(e) => setBlend(e.target.checked)} /><span><b>Blend the overlap</b> · the copies lie one on top of the other and fade softly into each other, so no line shows (for designs that weren't drawn to repeat)</span></label>}
         <button type="button" className="up-link" onClick={() => { setPw(W); setPh(H); setAuto(""); }}>Back to the whole file</button>
       </div>

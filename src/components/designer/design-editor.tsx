@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MatchLabel } from "./match-info";
 import { RepeatAligner, type RepeatFit } from "./repeat-aligner";
 import { applyRepeatFit } from "@/lib/repeat-fix";
@@ -198,7 +199,7 @@ export function DesignEditor({ design, rules, onChanged, onClose, ensure, page }
           ? <div className="de-panel"><ColorRow key={"new" + design.colors.length} design={design} color={null} index={design.colors.length} getId={getId} rules={rules} onLocal={setLocalPrev} onFirstFile={(fn) => { if (basicRef.current.title?.trim()) return; const t = niceFileName(fn); setBasic((b: any) => ({ ...b, title: t })); getId().then((id) => id && api(`designer/uploads/${id}`, { body: { title: t } })).catch(() => {}); }} onChanged={() => { setActive(design.colors.length); setAdding(false); onChanged(); }} />
               {design.colors.length < 6 && (design.id ? <DriveFolderPicker design={design} onChanged={onChanged} /> : <p className="bo-sub" style={{ marginTop: 6 }}>Have several colorways in a Google Drive folder? Upload the first one, then import the folder here.</p>)}</div>
           : <div className="de-panel"><ColorRow key={cur.id} design={design} color={cur} index={active} getId={getId} rules={rules} onLocal={setLocalPrev} onChanged={onChanged} /></div>}
-        {det && detType && detType !== rt && !locked && <div className="bo-msg" style={{ marginTop: 8 }}>The edges of your file look like <b>{REPEAT_TYPES.find((x) => x.id === detType)!.title.toLowerCase()}</b>. <button type="button" className="bo-link" onClick={() => chooseType(detType)}>Use that</button></div>}
+        {det && detType && detType !== rt && !locked && !meta.repeatFit && <div className="bo-msg" style={{ marginTop: 8 }}>The edges of your file look like <b>{REPEAT_TYPES.find((x) => x.id === detType)!.title.toLowerCase()}</b>. <button type="button" className="bo-link" onClick={() => chooseType(detType)}>Use that</button></div>}
       </section>
       <section className="de-fields" aria-label="Design details">
         <div className="de-box de-basics"><div className="de-h">Name and repeat</div>
@@ -561,11 +562,11 @@ function RepeatStep({ design, onChanged }: { design: any; onChanged: () => void 
     catch (e: any) { s.setMsg({ ok: false, text: e.message || "Could not save the repeat." }); }
     setProg(null);
   };
-  if (align) return <div className="de-box" data-testid="repeat-aligner"><div className="de-h">Line up the repeat</div>
+  if (align && typeof document !== "undefined") return createPortal(<div className="am"><div className="ra-modal" role="dialog" aria-modal="true" aria-label="Line up the repeat"><div className="ra-sheet" data-testid="repeat-aligner"><div className="ra-head"><b>Line up the repeat · {design.title}</b><button type="button" className="up-x" aria-label="Close" onClick={() => !prog && setAlign(false)}>✕</button></div>
     <Msg m={s.msg} />
     <RepeatAligner src={design.colors[0].preview} mode={style === "horizontal" ? "sideways" : style === "halfdrop" ? "halfdrop" : "straight"} initial={meta.repeatFit} busy={!!prog} onSave={(f) => void saveFit(f)} onCancel={() => setAlign(false)} />
-    {prog && <div style={{ marginTop: 10 }}><div className="bo-sub">{prog.t}{prog.f > 0 && prog.f < 1 ? ` · ${Math.floor(prog.f * 100)}%` : ""}</div><div className="bo-prog"><i style={{ width: `${Math.max(3, prog.f * 100)}%` }} /></div><div className="bo-sub" style={{ marginTop: 4 }}>Big print files take a few minutes. Keep this page open.</div></div>}
-  </div>;
+    {prog && <div className="ra-prog" role="status"><span>{prog.t}{prog.f > 0 && prog.f < 1 ? ` · ${Math.floor(prog.f * 100)}%` : ""}</span><div className="up-bar"><i style={{ width: `${Math.max(3, prog.f * 100)}%` }} /></div><small>Big print files take a few minutes. Keep this page open.</small></div>}
+  </div></div></div>, document.body);
   return <div className="de-box" data-testid="repeat-step"><div className="de-h">Seamless check{meta.repeatCheck?.confirmed ? <span className="de-ok">✓</span> : null}</div>
     <p className="bo-sub" style={{ marginTop: -4 }}>We compare the left edge with the right edge{style !== "horizontal" ? " and the top with the bottom" : ""}{style === "halfdrop" ? " (the right edge against the left edge moved down half the tile)" : ""}, colour and thin lines, to make sure the tiles join without a visible line.</p>
     <Msg m={s.msg} />
