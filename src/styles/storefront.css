@@ -2748,3 +2748,14 @@
 .am .ra-sheet .ra-side canvas{width:300px;height:300px}
 .am .ra-prog{display:grid;gap:6px;font-size:13px}.am .ra-prog small{color:var(--ink-2)}
 @media (max-width:760px){.am .ra-sheet .ra-grid{grid-template-columns:1fr}.am .ra-sheet .ra-side canvas{width:100%;height:auto}}
+/* email templates */
+.am .et-grid{display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px;align-items:start}
+.am .et-list{display:grid;gap:10px}
+.am .et-item{display:grid;gap:2px;width:100%;text-align:left;border:1px solid var(--line);background:#fff;padding:9px 12px;margin-top:4px;cursor:pointer;font:inherit;color:inherit;border-radius:8px}
+.am .et-item b{font-size:13px}.am .et-item small{font-size:11.5px;color:var(--ink-2)}
+.am .et-item.on{border-color:#201D1D;box-shadow:inset 0 0 0 1px #201D1D;background:#F3EEE6}
+.am .et-edit{display:grid;gap:10px;border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff}
+.am .et-edit h3{margin:0;font:400 22px/1.2 var(--f-display)}
+.am .et-edit input,.am .et-edit textarea{width:100%;border:1.5px solid var(--line);background:var(--paper);padding:10px 12px;font:inherit;font-size:14px;line-height:1.5}
+.am .et-prev{display:grid;gap:6px}.am .et-prev iframe{width:100%;height:560px;border:1px solid var(--line);border-radius:8px;background:#F5F2EC}
+@media (max-width:860px){.am .et-grid{grid-template-columns:1fr}}

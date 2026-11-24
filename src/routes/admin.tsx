@@ -11,7 +11,7 @@ import { Overview, Designs, Designers, Payouts, Coupons, Requests, Emails } from
 import { Settings, PricesMaterials } from "@/components/bo/settings";
 import { CustomersCRM, Invoices, Estimates } from "@/components/bo/billing";
 import { DesignJobs, CollectionsEditor } from "@/components/bo/projects";
-import { HomepageEditor, MenuPicturesEditor } from "@/components/bo/storefront-editor";
+import { HomepageEditor, MenuPicturesEditor, EmailTemplatesEditor } from "@/components/bo/storefront-editor";
 import { Messenger, useUnreadMessages } from "@/components/messenger";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,7 +26,7 @@ const GROUPS: [string, [string, string][]][] = [
   ["Sales", [["overview", "Overview"], ["orders", "Orders"], ["print", "Print files"], ["invoices", "Invoices"], ["estimates", "Estimates"], ["customers", "Customers"], ["coupons", "Discount codes"]]],
   ["Designs", [["designs", "Designs"], ["collections", "Collections"], ["jobs", "Design requests"], ["reviews", "Reviews"]]],
   ["Designers", [["designers", "Designers"], ["profiles", "Designer pages"], ["payouts", "Payouts"]]],
-  ["Store", [["homepage", "Homepage & banners"], ["menu", "Menu pictures"], ["prices", "Prices & materials"], ["pro", "Artisan Pro"], ["messages", "Messages"], ["signups", "Email signups"], ["emails", "Emails"], ["settings", "Settings"], ["requests", "Old custom requests"]]],
+  ["Store", [["homepage", "Homepage & banners"], ["menu", "Menu pictures"], ["prices", "Prices & materials"], ["pro", "Artisan Pro"], ["messages", "Messages"], ["signups", "Email signups"], ["templates", "Email templates"], ["emails", "Emails sent"], ["settings", "Settings"], ["requests", "Old custom requests"]]],
 ];
 
 function OwnerLogin() {
@@ -62,7 +62,7 @@ function AdminPage() {
   if (!session) return shell(<div className="bo-login"><OwnerLogin /><AuthPanel kicker="" title="" sub="" /></div>);
   if (!isAdmin) return shell(<div className="sa-done"><b>This page is for the owner.</b><p>You are signed in as {session.user?.email}.</p><button type="button" className="btn optline btn-sm" onClick={() => supabase.auth.signOut()}>Sign out</button></div>);
 
-  const body = { overview: <Overview go={go} />, orders: <Orders />, print: <PrintQueue />, messages: <AdminMessages />, jobs: <DesignJobs />, collections: <CollectionsEditor admin />, designs: <Designs />, designers: <Designers />, profiles: <AdminProfiles />, reviews: <AdminReviews />, payouts: <Payouts />, customers: <CustomersCRM />, pro: <ProProgram />, signups: <EmailSignups />, invoices: <Invoices />, estimates: <Estimates />, coupons: <Coupons />, requests: <Requests />, homepage: <HomepageEditor />, menu: <MenuPicturesEditor />, prices: <PricesMaterials />, settings: <Settings />, emails: <Emails /> }[sec] ?? <Overview go={go} />;
+  const body = { overview: <Overview go={go} />, orders: <Orders />, print: <PrintQueue />, messages: <AdminMessages />, jobs: <DesignJobs />, collections: <CollectionsEditor admin />, designs: <Designs />, designers: <Designers />, profiles: <AdminProfiles />, reviews: <AdminReviews />, payouts: <Payouts />, customers: <CustomersCRM />, pro: <ProProgram />, signups: <EmailSignups />, invoices: <Invoices />, estimates: <Estimates />, coupons: <Coupons />, requests: <Requests />, homepage: <HomepageEditor />, menu: <MenuPicturesEditor />, prices: <PricesMaterials />, settings: <Settings />, emails: <Emails />, templates: <EmailTemplatesEditor /> }[sec] ?? <Overview go={go} />;
   const count = (k: string) => (k === "messages" ? unreadMsgs : badges[k]) || 0;
   return (
     <div className="am" id="view-admin">

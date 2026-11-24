@@ -107,8 +107,7 @@ export async function proRoutes(req: Request, env: Env, who: Who, p: string, m: 
       const pct = Math.max(0, Math.min(80, Number(body.discountPct ?? pro.discountPct) || 0));
       await DB.prepare(`UPDATE pro_applications SET status = 'approved', decision_note = ?, decided_at = ?, decided_by = ? WHERE id = ?`).bind(note || null, now, who.email ?? who.uid, a.id).run();
       await DB.prepare(`INSERT INTO customer_terms (user_id, trade, trade_status, discount_pct, company) VALUES (?, 1, 'approved', ?, ?) ON CONFLICT(user_id) DO UPDATE SET trade = 1, trade_status = 'approved', discount_pct = excluded.discount_pct, company = COALESCE(customer_terms.company, excluded.company), updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`).bind(a.user_id, pct, a.business).run();
-      await alert(env as any, { uid: a.user_id, kind: "pro_approved", title: `Welcome to ${name}`, body: `You\'re approved. Your ${pct}% professional price is applied automatically when you\'re signed in.`, link: "/pro", sendEmail: false });
-      if (a.email) await queueEmail(env, a.email, `Welcome to ${name}`, `Good news, ${a.business}: you're approved for ${name}.\n\nYour ${pct}% professional discount is applied automatically in your cart and at checkout when you're signed in${pro.freeSamples ? ", and samples are free" : ""}.${note ? `\n\n${note}` : ""}`, "pro_approved");
+      await alert(env as any, { uid: a.user_id, kind: "pro_approved", sendEmail: true, tpl: { key: "pro_approved", vars: { name: a.business, pct } }, title: `Welcome to ${name}`, body: `You\'re approved. Your ${pct}% professional price is applied automatically when you\'re signed in.`, link: "/pro" });
       return j({ ok: true });
     }
     if (body.action === "decline") {

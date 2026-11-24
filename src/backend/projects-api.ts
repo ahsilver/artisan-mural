@@ -50,6 +50,14 @@ const signed = async (env: Env, key: string | null, ttl = 3600, download?: strin
 export async function notify(env: Env, uid: string, kind: string, title: string, body: string, link: string, email = true) {
   await alert(env as any, { uid, kind, title, body, link, sendEmail: email });
 }
+/** A ready-written email (owner-editable in Back office → Email templates); falls back to the given text. */
+export async function tplEmail(env: Env, to: string | null, key: string, vars: Record<string, any>, link: string, fallback: [string, string], kind: string) {
+  if (!to) return;
+  const { renderEmail } = await import("./email-templates");
+  const t = await renderEmail(env as any, key, { link: (env as any).PUBLIC_ORIGIN ? (env as any).PUBLIC_ORIGIN + link : link, ...vars });
+  if (t && !t.subject) return;
+  await testEmail(env, to, t?.subject || fallback[0], t?.text || fallback[1], kind);
+}
 export async function testEmail(env: Env, to: string | null, subject: string, text: string, kind: string) {
   if (!to) return;
   await queueMail(env as any, to, subject, text, kind);
@@ -271,7 +279,7 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
     if (!did) return bad("Choose which designer to write to.");
     await DB.prepare(`INSERT INTO project_messages (id, project_id, designer_user_id, sender_id, sender_role, body, attachments) VALUES (?, ?, ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), pr.id, did, uid, role, text.slice(0, 3000), JSON.stringify(atts)).run();
     await touch(env, pr.id, "title = title");
-    if (role === "designer" && pr.customer_id === "guest") await testEmail(env, pr.customer_email, `New reply about "${pr.title}"`, `Hello ${pr.customer_name},\n\nYou have a reply:\n\n"${text.slice(0, 600)}"\n\nSign in or create an account with this email at ${origin}/account?view=messages to answer.`, "designer_reply");
+    if (role === "designer" && pr.customer_id === "guest") await tplEmail(env, pr.customer_email, "new_message", { name: pr.customer_name, from: "Your designer", message: text.slice(0, 600) }, `/account?view=messages&c=p.${pr.id}.${did}`, [`New reply about "${pr.title}"`, `Hello ${pr.customer_name},\n\nYou have a reply:\n\n"${text.slice(0, 600)}"\n\nSign in or create an account with this email at ${origin}/account?view=messages to answer.`], "designer_reply");
     else if (role === "designer") await notify(env, pr.customer_id, "message", `New message about ${pr.title}`, text.slice(0, 140), `/account?view=messages&c=p.${pr.id}.${did}`);
     else await notify(env, did, "message", `New message from ${pr.customer_name}`, text.slice(0, 140), `/dashboard?view=messages&c=p.${pr.id}.${did}`);
     return j({ ok: true });
@@ -292,7 +300,7 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
     await touch(env, pr.id, "status = 'quoted'");
     const link = `/projects/${pr.id}`;
     await notify(env, pr.customer_id, "quote", `${d.name} came back with a price`, `$${fee.toFixed(2)} for the design work, ready in ${days} day${days === 1 ? "" : "s"}. Review and approve it.`, link, false);
-    await testEmail(env, pr.customer_email, `${d.name} came back with a price for "${pr.title}"`, `Hello ${pr.customer_name},\n\n${d.name} sent a price for your request "${pr.title}":\n\nDesign work: $${fee.toFixed(2)}\nReady in: ${days} day${days === 1 ? "" : "s"} after payment${note ? `\nNote: ${note}` : ""}\n\nApprove it, enter your wall size and pay for the printing and the design together:\n${origin}${link}\n\nArtisan Mural`, "project_quote");
+    await tplEmail(env, pr.customer_email, "quote_received", { name: pr.customer_name, designer: d.name, request: pr.title, price: `$${fee.toFixed(2)}`, days }, link, [`${d.name} came back with a price for "${pr.title}"`, `Hello ${pr.customer_name},\n\n${d.name} sent a price for your request "${pr.title}":\n\nDesign work: $${fee.toFixed(2)}\nReady in: ${days} day${days === 1 ? "" : "s"} after payment${note ? `\nNote: ${note}` : ""}\n\nApprove it, enter your wall size and pay for the printing and the design together:\n${origin}${link}\n\nArtisan Mural`], "project_quote");
     return j({ ok: true, id: qid });
   }
 
@@ -358,7 +366,7 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
       await testEmail(env, await emailOf(env, pr.designer_user_id), `Paid: start "${pr.title}" (due ${fmtDay(due)})`, `Hello ${d?.name ?? ""},\n\nThe customer paid for "${pr.title}". Please make the final file and upload it in your designer page by ${fmtDay(due)}.\nWall: ${w} x ${h} ${unit} (${sqft} sq ft).\n\n${origin}/dashboard?view=requests&project=${pr.id}\n\nArtisan Mural`, "project_paid");
     }
     if (pr.customer_id && pr.customer_id !== "guest") await notify(env, pr.customer_id, "paid", `Payment received: ${pr.title}`, "Thank you. The designer has started; we\'ll tell you when it\'s ready.", `/projects/${pr.id}`, false);
-    await testEmail(env, pr.customer_email, `Order confirmed: ${pr.title}`, `Hello ${pr.customer_name},\n\nThank you, your payment of $${q.due.toFixed(2)} is confirmed (test mode, no real charge).\nPrinting: $${pp.printing.toFixed(2)} (${sqft} sq ft, ${pp.finishName})\nDesign work: $${fee.toFixed(2)}\n\n${d?.name ?? "The designer"} is working on it and will be done by ${fmtDay(due)}. Then we print and ship.\n\n${origin}/projects/${pr.id}\n\nArtisan Mural`, "project_receipt");
+    await tplEmail(env, pr.customer_email, "job_paid", { name: pr.customer_name, request: pr.title, total: `$${q.due.toFixed(2)}`, due: fmtDay(due) }, `/projects/${pr.id}`, [`Order confirmed: ${pr.title}`, `Hello ${pr.customer_name},\n\nThank you, your payment of $${q.due.toFixed(2)} is confirmed (test mode, no real charge).\nPrinting: $${pp.printing.toFixed(2)} (${sqft} sq ft, ${pp.finishName})\nDesign work: $${fee.toFixed(2)}\n\n${d?.name ?? "The designer"} is working on it and will be done by ${fmtDay(due)}. Then we print and ship.\n\n${origin}/projects/${pr.id}\n\nArtisan Mural`], "project_receipt");
     for (const a of await admins(env)) await notify(env, a, "order", `New paid design order: ${pr.title}`, `Waiting on ${d?.name ?? "designer"}, due ${fmtDay(due)}`, `/admin#jobs`);
     return j({ ok: true, orderId: oid, dueAt: due, total: q.due });
   }
@@ -394,7 +402,7 @@ export async function projectRoutes(req: Request, env: Env, who: Who, p: string,
     }
     for (const a of await admins(env)) await notify(env, a, "ready", `Ready to print: ${pr.title}`, "The designer delivered the final file.", `/admin#orders`);
     await notify(env, pr.customer_id, "delivered", `Your design is finished: ${pr.title}`, "The designer finished. We're getting it ready to print.", `/projects/${pr.id}`, false);
-    await testEmail(env, pr.customer_email, `Your design is finished: ${pr.title}`, `Hello ${pr.customer_name},\n\nThe designer finished your design. We're getting it ready to print, and we'll email you the tracking number when it ships.\n\n${origin}/projects/${pr.id}\n\nArtisan Mural`, "project_delivered");
+    await tplEmail(env, pr.customer_email, "job_delivered", { name: pr.customer_name, request: pr.title }, `/projects/${pr.id}`, [`Your design is finished: ${pr.title}`, `Hello ${pr.customer_name},\n\nThe designer finished your design. We're getting it ready to print, and we'll email you the tracking number when it ships.\n\n${origin}/projects/${pr.id}\n\nArtisan Mural`], "project_delivered");
     return j({ ok: true });
   }
 

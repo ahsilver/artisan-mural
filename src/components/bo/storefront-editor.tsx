@@ -111,3 +111,49 @@ export function MenuPicturesEditor() {
     <div className="bo-save"><button type="button" className="btn btn-wine" disabled={h.busy} onClick={() => void h.save("Menu pictures")}>{h.busy ? "Saving…" : "Save menu pictures"}</button>{h.msg && <span className="rq-ok">{h.msg}</span>}</div>
   </div>;
 }
+
+/** Every email the site sends, ready-written: read, edit, switch off, preview in the brand style, or send yourself a test. */
+export function EmailTemplatesEditor() {
+  const { data, error, reload } = useApi<any>("admin/email-templates");
+  const [open, setOpen] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ subject: string; body: string; off: boolean }>({ subject: "", body: "", off: false });
+  const [prev, setPrev] = useState<{ subject: string; html: string } | null>(null);
+  const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
+  if (error) return <p className="rq-ok err">{error}</p>;
+  if (!data) return <p className="hint">Loading…</p>;
+  const list: any[] = data.templates;
+  const groups = [...new Set(list.map((t) => t.group))];
+  const pick = async (t: any) => {
+    setOpen(t.key); setMsg("");
+    const d = { subject: t.edit?.subject || t.subject, body: t.edit?.body || t.body, off: !!t.edit?.off }; setDraft(d);
+    setPrev(await api("admin/email-templates/preview", { body: { key: t.key, ...d } }).catch(() => null));
+  };
+  const cur = list.find((t) => t.key === open);
+  const save = async (reset = false) => {
+    if (!cur) return; setBusy(true); setMsg("");
+    try {
+      const all = { ...(Object.fromEntries(list.filter((t) => t.edit).map((t) => [t.key, t.edit]))) };
+      all[cur.key] = reset ? { subject: "", body: "", off: false } : { subject: draft.subject === cur.subject ? "" : draft.subject, body: draft.body === cur.body ? "" : draft.body, off: draft.off };
+      await api("admin/settings/emailTemplates", { body: { value: all } });
+      setMsg(reset ? "Back to the original text ✓" : "Saved ✓ The next email uses this text."); await reload();
+      if (reset) setDraft({ subject: cur.subject, body: cur.body, off: false });
+    } catch (e: any) { setMsg(e.message); }
+    setBusy(false);
+  };
+  return <div className="bo-ed">
+    <div className="st-h"><h2>Email templates</h2></div>
+    <p className="hint">Every email the website sends by itself, already written. Open one to read or change it. Words in double braces, like {"{{name}}"} or {"{{tracking}}"}, are filled in for each customer. The first link becomes the button; write a few words before it, like "Track your package:", and those become the button text.</p>
+    <div className="et-grid">
+      <div className="et-list">{groups.map((g) => <div key={g}><span className="bo-l"><b>{g}</b></span>{list.filter((t) => t.group === g).map((t) => <button key={t.key} type="button" className={"et-item" + (open === t.key ? " on" : "")} onClick={() => void pick(t)}><b>{t.label}{t.edit?.off ? " · off" : t.edit?.subject || t.edit?.body ? " · edited" : ""}</b><small>{t.when}</small></button>)}</div>)}</div>
+      <div className="et-edit">{!cur ? <p className="hint">Choose an email on the left.</p> : <>
+        <h3>{cur.label}</h3><p className="hint">Sent when: {cur.when}. You can use: {cur.vars.map((v: string) => `{{${v}}}`).join(", ")}</p>
+        <label className="rqf"><span>Subject</span><input value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} /></label>
+        <label className="rqf"><span>Text</span><textarea rows={12} value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} /></label>
+        <label className="sa-check"><input type="checkbox" checked={draft.off} onChange={(e) => setDraft({ ...draft, off: e.target.checked })} /><span>Don't send this email (the in-site notification still shows)</span></label>
+        <div className="up-row"><button type="button" className="btn btn-wine btn-sm" disabled={busy} onClick={() => void save()}>Save</button><button type="button" className="btn optline btn-sm" onClick={async () => setPrev(await api("admin/email-templates/preview", { body: { key: cur.key, ...draft } }))}>Preview</button><button type="button" className="btn optline btn-sm" onClick={async () => { try { const r = await api("admin/email-templates/test", { body: { key: cur.key } }); setMsg(`Test sent to ${r.to} ✓ (saved text)`); } catch (e: any) { setMsg(e.message); } }}>Send me a test</button><button type="button" className="up-link" onClick={() => void save(true)}>Back to the original text</button></div>
+        {msg && <p className="rq-ok">{msg}</p>}
+        {prev && <div className="et-prev"><span className="bo-l">Preview · {prev.subject}</span><iframe title="Email preview" srcDoc={prev.html} /></div>}
+      </>}</div>
+    </div>
+  </div>;
+}

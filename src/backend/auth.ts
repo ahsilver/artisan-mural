@@ -112,6 +112,11 @@ export async function handleAuth(req: Request, env: any, origin: string): Promis
       const meta = JSON.stringify(body.data ?? body.options?.data ?? {});
       await db.prepare(`INSERT INTO auth_users (id, email, password_hash, user_metadata, last_sign_in_at) VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))`).bind(id, email, hash, meta).run();
       const u = await db.prepare(`SELECT * FROM auth_users WHERE id = ?`).bind(id).first();
+      try {
+        const { alert } = await import("./alerts");
+        const nm = String((body.data ?? body.options?.data ?? {})?.full_name ?? "").trim() || email.split("@")[0];
+        await alert(env, { uid: id, email, kind: "welcome", title: "Welcome to Artisan Murals", body: "Your account is ready. Browse designs, see them on your wall, or ask a designer for something new.", link: "/browse", tpl: { key: "welcome", vars: { name: nm } } });
+      } catch {}
       return jok(await makeSession(db, secret, u));
     }
     if (path === "token" && req.method === "POST") {

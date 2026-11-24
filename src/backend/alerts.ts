@@ -3,13 +3,20 @@ type Env = { DB: any; PUBLIC_ORIGIN?: string };
 /** One place for "tell someone": an in-site notification (bell) and an email, both for the same event.
  *  Emails go to email_outbox as 'queued'; deliverOutbox() sends them through Resend when the owner has turned real
  *  sending on (Back office → Settings → Emails), otherwise they are kept as test-mode copies. */
-export async function alert(env: Env, o: { uid?: string | null; email?: string | null; kind: string; title: string; body: string; link?: string; sendEmail?: boolean; emailText?: string; emailSubject?: string }) {
+export async function alert(env: Env, o: { uid?: string | null; email?: string | null; kind: string; title: string; body: string; link?: string; sendEmail?: boolean; emailText?: string; emailSubject?: string; tpl?: { key: string; vars: Record<string, any> } }) {
   const link = o.link || "/account";
   if (o.uid && o.uid !== "guest") await env.DB.prepare(`INSERT INTO notifications (id, user_id, kind, title, body, link) VALUES (?, ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), o.uid, o.kind, o.title.slice(0, 200), o.body.slice(0, 500), link).run();
   if (o.sendEmail === false) return;
   let to = o.email ?? null;
   if (!to && o.uid && o.uid !== "guest") { const u: any = await env.DB.prepare(`SELECT email FROM auth_users WHERE id = ?`).bind(o.uid).first(); to = u?.email ?? null; }
   if (!to || !/@/.test(to)) return;
+  if (o.tpl) {
+    // the ready-written email (owner-editable in Back office → Email templates)
+    const { renderEmail } = await import("./email-templates");
+    const t = await renderEmail(env, o.tpl.key, { link: absolute(env, link), ...o.tpl.vars });
+    if (t && !t.subject) return; // the owner switched this email off
+    if (t) { await queueMail(env, to, t.subject, t.text.includes("http") ? t.text : t.text + `\n\n${absolute(env, link)}`, o.kind); return; }
+  }
   await queueMail(env, to, o.emailSubject || o.title, (o.emailText || o.body) + `\n\n${absolute(env, link)}`, o.kind);
 }
 
@@ -30,12 +37,21 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 export function brandHtml(subject: string, text: string): string {
   const urlRe = /(https?:\/\/[^\s]+)/;
   const m = text.match(urlRe); const url = m?.[1];
-  const body = esc(url ? text.replace(url, "").trim() : text).split(/\n{2,}/).map((p) => `<p style="margin:0 0 14px;font:15px/1.6 'Nunito Sans',Arial,sans-serif;color:#201D1D">${p.replace(/\n/g, "<br>")}</p>`).join("");
+  // "Track your package: https://…" becomes a button reading "Track your package"; a bare link becomes "Open"
+  let label = "Open", rest = text;
+  if (url) {
+    const line = text.split("\n").find((l) => l.includes(url)) ?? "";
+    const lead = line.slice(0, line.indexOf(url)).replace(/[:\s]+$/, "").trim();
+    if (lead && lead.length <= 40 && line.trim().endsWith(url)) { label = lead; rest = text.replace(line, ""); }
+    else rest = text.replace(url, "");
+    rest = rest.replace(/\n{3,}/g, "\n\n").trim();
+  }
+  const body = esc(rest).split(/\n{2,}/).map((p) => `<p style="margin:0 0 14px;font:15px/1.6 'Nunito Sans',Arial,sans-serif;color:#201D1D">${p.replace(/\n/g, "<br>").replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#201D1D">$1</a>')}</p>`).join("");
   return `<!doctype html><html><body style="margin:0;background:#F5F2EC"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F2EC;padding:28px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#FCFBF8;border:1px solid #E6E1D8">
 <tr><td style="padding:22px 28px;border-bottom:1px solid #E6E1D8;font:400 22px Fraunces,Georgia,serif;color:#201D1D">Artisan Murals</td></tr>
 <tr><td style="padding:28px 28px 8px"><h1 style="margin:0 0 16px;font:400 26px/1.2 Fraunces,Georgia,serif;color:#201D1D">${esc(subject)}</h1>${body}
-${url ? `<p style="margin:22px 0 8px"><a href="${esc(url)}" style="display:inline-block;background:#201D1D;color:#ffffff;text-decoration:none;font:700 12px 'Nunito Sans',Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;padding:14px 22px">Open</a></p>` : ""}</td></tr>
+${url ? `<p style="margin:22px 0 8px"><a href="${esc(url)}" style="display:inline-block;background:#201D1D;color:#ffffff;text-decoration:none;font:700 12px 'Nunito Sans',Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;padding:14px 22px">${esc(label)}</a></p>` : ""}</td></tr>
 <tr><td style="padding:18px 28px 24px;font:12px/1.5 'Nunito Sans',Arial,sans-serif;color:#6F6A66;border-top:1px solid #E6E1D8">Murals and wallpaper by independent artists, printed to the size of your wall.</td></tr>
 </table></td></tr></table></body></html>`;
 }

@@ -33,6 +33,7 @@ export const DEFAULT_SETTINGS: Record<string, any> = {
   invoices: { businessName: "", address: "", phone: "", email: "", website: "", logoUrl: "", prefix: "INV-", startNumber: 1001, dueDays: 30, taxRate: 0, ratePerSqft: "", footer: "", notes: "Thank you for your business.", estPrefix: "EST-", estStartNumber: 1001, estValidDays: 30, estTerms: "This estimate is valid until the date shown. Final price is confirmed once wall measurements are checked.", estNotes: "" },
   designerFaq: { intro: "", reviewTime: "", faq: DEFAULT_DESIGNER_FAQ },
   taxonomy: { styles: defaultTaxonomy.styles.join("\n"), themes: defaultTaxonomy.themes.join("\n"), rooms: defaultTaxonomy.rooms.join("\n") },
+  emailTemplates: {},
   community: { promoEnabled: true, promoEvery: 12, promoTitle: "Can't find what you like?", promoText: "Get it custom. Tell a designer what you have in mind.", promoCta: "Get it custom", productLineEnabled: true, requestsEnabled: true, reviewsEnabled: true, contactEnabled: true },
 };
 const SECRET_FIELDS: Record<string, string[]> = { payments: ["solaKey", "solaPin"], payouts: ["clientSecret"], ai: ["apiKey"], emails: ["resendKey"] };
@@ -179,7 +180,7 @@ export async function handleApp(req: Request, env: Env, who: Who, origin: string
         if (seen) continue;
         await env.DB.prepare(`INSERT INTO order_events (id, order_id, kind, message, actor) VALUES (?, ?, 'placed_alert', 'Customer and owner notified', NULL)`).bind(crypto.randomUUID(), o.id).run();
         const no = String(o.id).slice(0, 8).toUpperCase();
-        await alert(env as any, { uid: o.user_id ?? null, email: o.customer_email, kind: "order_placed", title: `We received your order ${no}`, body: `${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}. We'll email you when it's paid, printed and shipped.`, emailText: `Hello ${o.customer_name || ""},\n\nThank you for your order ${no}: ${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}.\n\nWe'll email you when it's paid, printed and shipped.\n\nArtisan Murals`, link: "/account?view=orders" });
+        await alert(env as any, { uid: o.user_id ?? null, email: o.customer_email, kind: "order_placed", tpl: { key: "order_placed", vars: { name: o.customer_name || "there", order: no, items: `${Math.round(Number(o.square_feet))} sq ft of wallpaper`, total: `$${Number(o.estimated_total).toFixed(2)}` } }, title: `We received your order ${no}`, body: `${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}. We'll email you when it's paid, printed and shipped.`, emailText: `Hello ${o.customer_name || ""},\n\nThank you for your order ${no}: ${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}.\n\nWe'll email you when it's paid, printed and shipped.\n\nArtisan Murals`, link: "/account?view=orders" });
         await alertOwners(env as any, { kind: "order", title: `New order ${no}`, body: `${o.customer_name || o.customer_email}: ${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}`, link: "/admin#orders" });
       }
       return j({ ok: true, alerted: fresh.length });
@@ -412,7 +413,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     if (body.notify && log.length && o.customer_email) {
       const n: any = await DB.prepare(`SELECT * FROM order_requests WHERE id = ?`).bind(o.id).first();
       const tl = trackingUrl(n.carrier, n.tracking_number);
-      await alert(env as any, { uid: o.user_id ?? null, email: o.customer_email, kind: "order_update", title: `Your order is ${String(STATUS_LABEL[n.status]).toLowerCase()}`, body: `Order ${String(o.id).slice(0, 8).toUpperCase()}: ${STATUS_LABEL[n.status]}.${n.tracking_number ? ` Tracking: ${n.carrier ?? ""} ${n.tracking_number}${tl ? ` ${tl}` : ""}` : ""}`, emailText: `Hello ${o.customer_name},\n\nYour order ${String(o.id).slice(0, 8).toUpperCase()} is now: ${STATUS_LABEL[n.status]}.${n.tracking_number ? `\n\nTracking: ${n.carrier ?? ""} ${n.tracking_number}${tl ? `\n${tl}` : ""}` : ""}\n\nThank you,\nArtisan Murals`, link: "/account?view=orders" });
+      await alert(env as any, { uid: o.user_id ?? null, email: o.customer_email, kind: "order_update", tpl: { key: `order_${n.status}`, vars: { name: o.customer_name || "there", order: String(o.id).slice(0, 8).toUpperCase(), total: `$${Number(n.amount_due ?? n.estimated_total ?? 0).toFixed(2)}`, carrier: n.carrier || "", tracking: n.tracking_number || "", tracking_link: trackingUrl(n.carrier, n.tracking_number) || "" } }, title: `Your order is ${String(STATUS_LABEL[n.status]).toLowerCase()}`, body: `Order ${String(o.id).slice(0, 8).toUpperCase()}: ${STATUS_LABEL[n.status]}.${n.tracking_number ? ` Tracking: ${n.carrier ?? ""} ${n.tracking_number}${tl ? ` ${tl}` : ""}` : ""}`, emailText: `Hello ${o.customer_name},\n\nYour order ${String(o.id).slice(0, 8).toUpperCase()} is now: ${STATUS_LABEL[n.status]}.${n.tracking_number ? `\n\nTracking: ${n.carrier ?? ""} ${n.tracking_number}${tl ? `\n${tl}` : ""}` : ""}\n\nThank you,\nArtisan Murals`, link: "/account?view=orders" });
       await addEvent(env, o.id, "email", `Customer emailed and notified (${o.customer_email})`, who.uid);
     }
     return j({ ok: true });
@@ -495,7 +496,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     if (!u) return bad("Design not found", 404);
     await DB.prepare(`UPDATE artwork_uploads SET review_status = ?, review_note = ? WHERE id = ?`).bind(action, body.note || null, mm[1]).run();
     const users = await emailUsers(env); const to = users.get(u.owner_id)?.email;
-    if (action !== "pending") await alert(env as any, { uid: u.owner_id, email: to ?? null, kind: "design_review", title: action === "approved" ? `Your design "${u.title}" is live` : `Changes needed: "${u.title}"`, body: action === "approved" ? `The studio approved "${u.title}". It's in the shop now.` : `The studio didn't approve "${u.title}" yet.${body.note ? ` Note from the studio: ${body.note}` : ""} Fix it and send it again.`, link: `/studio?view=designs` });
+    if (action !== "pending") await alert(env as any, { uid: u.owner_id, email: to ?? null, kind: "design_review", ...(action === "approved" ? { tpl: { key: "design_live", vars: { name: "", design: u.title } } } : {}), title: action === "approved" ? `Your design "${u.title}" is live` : `Changes needed: "${u.title}"`, body: action === "approved" ? `The studio approved "${u.title}". It's in the shop now.` : `The studio didn't approve "${u.title}" yet.${body.note ? ` Note from the studio: ${body.note}` : ""} Fix it and send it again.`, link: `/studio?view=designs` });
     return j({ ok: true });
   }
   mm = p.match(/^designs\/u-([0-9a-f-]{36})\/originals$/);
@@ -620,7 +621,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
       if (!["approved", "rejected", "pending", "paused"].includes(body.status)) return bad("Unknown status");
       await DB.prepare(`UPDATE designer_profiles SET status = ?, review_note = ?, reviewed_at = ? WHERE user_id = ?`).bind(body.status, body.note ?? d.review_note ?? null, nowIso(), mm[1]).run();
       const users = await emailUsers(env); const to = users.get(mm[1])?.email;
-      if (body.status === "approved" || body.status === "rejected" || body.status === "paused") await alert(env as any, { uid: mm[1], email: to ?? null, kind: "designer_review", title: body.status === "approved" ? "You're approved as an Artisan Murals designer" : body.status === "paused" ? "Your designer account is paused" : "Your designer application", body: body.status === "approved" ? `Welcome, ${d.full_name}. Your designer studio is open: upload your designs and answer requests.` : body.status === "paused" ? "Your designs are hidden from the shop for now. Write to the studio with any questions." : `Thank you for applying, ${d.full_name}. We weren't able to approve your application this time.${body.note ? ` ${body.note}` : ""}`, link: body.status === "approved" ? "/studio" : "/become-designer" });
+      if (body.status === "approved" || body.status === "rejected" || body.status === "paused") await alert(env as any, { uid: mm[1], email: to ?? null, kind: "designer_review", ...(body.status === "approved" ? { tpl: { key: "designer_approved", vars: { name: d.full_name } } } : {}), title: body.status === "approved" ? "You're approved as an Artisan Murals designer" : body.status === "paused" ? "Your designer account is paused" : "Your designer application", body: body.status === "approved" ? `Welcome, ${d.full_name}. Your designer studio is open: upload your designs and answer requests.` : body.status === "paused" ? "Your designs are hidden from the shop for now. Write to the studio with any questions." : `Thank you for applying, ${d.full_name}. We weren't able to approve your application this time.${body.note ? ` ${body.note}` : ""}`, link: body.status === "approved" ? "/studio" : "/become-designer" });
     }
     if (body.trusted !== undefined) await DB.prepare(`UPDATE designer_profiles SET trusted = ? WHERE user_id = ?`).bind(body.trusted ? 1 : 0, mm[1]).run();
     return j({ ok: true });
@@ -742,6 +743,30 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     await DB.prepare(`UPDATE price_history SET undone = 1 WHERE id = ?`).bind(r.id).run();
     try { const { invalidateShopCache } = await import("@/lib/shop.server"); invalidateShopCache(); } catch {}
     return j({ ok: true });
+  }
+  // ----- email templates: every email the site sends, ready-written and editable -----
+  if (p === "email-templates" && m === "GET") {
+    const { EMAIL_TEMPLATES } = await import("./email-templates");
+    const edits = (await getSettings(env)).emailTemplates ?? {};
+    return j({ templates: Object.entries(EMAIL_TEMPLATES).map(([key, t]) => ({ key, ...t, edit: edits[key] ?? null })) });
+  }
+  if (p === "email-templates/preview" && m === "POST") {
+    const { renderEmail, EMAIL_TEMPLATES } = await import("./email-templates");
+    const t0 = EMAIL_TEMPLATES[String(body.key)]; if (!t0) return bad("Unknown email");
+    const sample: Record<string, string> = { name: "Sarah", order: "AM-20417", items: "126 sq ft of wallpaper (Animal Kingdom, linen)", total: "$555.26", carrier: "UPS", tracking: "1Z999AA10123456784", tracking_link: "https://www.ups.com/track?tracknum=1Z999AA10123456784", designer: "Nora Lind", request: "Jungle mural for a kids room", price: "$450.00", days: "7", due: "Mon, Dec 1", from: "Nora Lind", message: "Here is the first sketch, what do you think?", pct: "20", design: "In Harmony", link: (env.PUBLIC_ORIGIN || "") + "/account" };
+    // a draft being edited is previewed as typed, before it's saved
+    const subject = String(body.subject || t0.subject), text = String(body.body || t0.body);
+    const fill = (x: string) => x.replace(/\{\{(\w+)\}\}/g, (_: string, k: string) => sample[k] ?? "");
+    const { brandHtml } = await import("./alerts");
+    return j({ subject: fill(subject), html: brandHtml(fill(subject), fill(text).trim()) });
+  }
+  if (p === "email-templates/test" && m === "POST") {
+    const { renderEmail } = await import("./email-templates"); const { queueMail } = await import("./alerts");
+    const to = who.email; if (!to) return bad("Your account has no email address.");
+    const t = await renderEmail(env as any, String(body.key), { name: "Sarah", order: "AM-20417", items: "126 sq ft of wallpaper", total: "$555.26", carrier: "UPS", tracking: "1Z999AA10123456784", tracking_link: "https://www.ups.com/track?tracknum=1Z999AA10123456784", designer: "Nora Lind", request: "Jungle mural", price: "$450.00", days: "7", due: "Mon, Dec 1", from: "Nora Lind", message: "Hello!", pct: "20", design: "In Harmony", link: (env.PUBLIC_ORIGIN || "") + "/account" });
+    if (!t || !t.subject) return bad("This email is switched off.");
+    await queueMail(env as any, to, "[Test] " + t.subject, t.text, "template_test");
+    return j({ ok: true, to });
   }
   if (p === "outbox") {
     const r = (await DB.prepare(`SELECT id, to_addr, subject, text, kind, status, created_at FROM email_outbox ORDER BY created_at DESC LIMIT 200`).all()).results ?? [];

@@ -3,7 +3,7 @@
 import type { Who } from "./policies";
 import { signUrl } from "./storage";
 import { getSettings } from "./app-api";
-import { notify, testEmail } from "./projects-api";
+import { notify, testEmail, tplEmail } from "./projects-api";
 type Env = any;
 const j = (b: any, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 const bad = (m: string, s = 400) => j({ error: m }, s);
@@ -134,7 +134,7 @@ async function storeSend(env: Env, who: Who, t: any, text: string, atts: any[], 
     const alreadyWaiting = t.last_from === "store" && t.last_at && (!userRead || userRead < t.last_at); // one email per unread batch
     const base = t.user_role === "designer" ? "/dashboard?view=messages" : "/account?view=messages";
     if (t.user_id) await notify(env, t.user_id, "message", `You have a new message from ${store}`, lastBody, `${base}&c=${key}`, false);
-    if (!alreadyWaiting && t.user_email) await testEmail(env, t.user_email, `You have a new message from ${store}`, `Hello ${t.user_name || ""},\n\nYou have a new message from ${store}${t.order_id ? ` about your order #${short(t.order_id)}` : ""}:\n\n"${lastBody}"\n\nReply on the website: ${env.PUBLIC_ORIGIN}${base}&c=${key}\n\n${store}`, "store_message");
+    if (!alreadyWaiting && t.user_email) await tplEmail(env, t.user_email, "new_message", { name: t.user_name || "there", from: store, message: lastBody }, `${base}&c=${key}`, [`You have a new message from ${store}`, `Hello ${t.user_name || ""},\n\nYou have a new message from ${store}${t.order_id ? ` about your order #${short(t.order_id)}` : ""}:\n\n"${lastBody}"\n\nReply on the website: ${env.PUBLIC_ORIGIN}${base}&c=${key}\n\n${store}`], "store_message");
   } else {
     for (const a of await admins(env)) await notify(env, a, "message", `New message from ${t.user_name || t.user_email || "a customer"}`, lastBody, `/admin#messages:${key}`);
   }
