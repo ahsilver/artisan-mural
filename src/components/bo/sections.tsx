@@ -280,6 +280,20 @@ export function Designers() {
   </div>;
 }
 
+/** Square feet printed and royalties per design, from the earnings record (one locked line per paid order). */
+function EarningsRecord() {
+  const { data } = useApi<any>("admin/earnings");
+  const [all, setAll] = useState(false);
+  if (!data) return null;
+  return <div className="bo-card" style={{ marginTop: 14 }}>
+    <div className="bo-top"><h2>What each design earned</h2><button className="bo-btn" onClick={() => downloadCsv("designer-earnings.csv", data.log.map((l: any) => ({ date: l.at, order: l.order, line: l.kind === "sale" ? "sale" : "refund", design: l.design, designer: l.designer, sq_ft: l.sqft, cents_per_sq_ft: l.centsPerSqft, amount: l.amount })))}>Download every line (CSV)</button></div>
+    <div className="bo-sub" style={{ marginBottom: 10 }}>Every paid order of a designer's design adds one line at the rate the designer had at that moment; a cancelled or refunded order adds a minus line. Rates you change later never re-price old orders. Samples earn nothing.</div>
+    {data.byDesign.length === 0 ? <div className="bo-sub">No paid orders of designers' designs yet.</div> : <table className="bo-tbl stack"><thead><tr><th>Design</th><th>Designer</th><th className="num">Orders</th><th className="num">Sq ft printed</th><th className="num">Royalty</th></tr></thead><tbody>{data.byDesign.map((b: any) => <tr key={b.slug}><td>{b.title}</td><td>{b.designer}</td><td className="num" data-l="Orders">{b.orders}</td><td className="num" data-l="Sq ft">{b.sqft.toLocaleString()}</td><td className="num" data-l="Royalty">{money(b.royalty)}</td></tr>)}</tbody></table>}
+    {data.log.length > 0 && <><button className="bo-btn sm" style={{ marginTop: 10 }} onClick={() => setAll(!all)}>{all ? "Hide" : "Show"} every line ({data.log.length})</button>
+      {all && <table className="bo-tbl stack" style={{ marginTop: 8 }}><thead><tr><th>Date</th><th>Order</th><th>Design</th><th>Designer</th><th className="num">Sq ft</th><th className="num">Rate</th><th className="num">Amount</th></tr></thead><tbody>{data.log.map((l: any, i: number) => <tr key={i}><td>{fmtDate(l.at)}</td><td>{l.order}{l.kind === "reversal" ? " · refunded" : ""}</td><td>{l.design}</td><td>{l.designer}</td><td className="num">{l.sqft}</td><td className="num">{money(l.centsPerSqft / 100)}</td><td className="num">{money(l.amount)}</td></tr>)}</tbody></table>}</>}
+  </div>;
+}
+
 export function Payouts() {
   const { data, error, reload } = useApi<any>("admin/payouts");
   const [pay, setPay] = useState<any>(null);
@@ -296,6 +310,7 @@ export function Payouts() {
         {data.rows.map((r: any) => <tr key={r.userId}><td>{r.name}<div className="bo-sub">{r.method ? `${r.method}: ${r.details ?? ""}` : "No payout details yet"}</div></td><td className="num" data-l="Sq ft">{r.sqft}</td><td className="num" data-l="Royalties">{money(r.royalties)}</td><td className="num" data-l="Custom jobs">{money(r.jobs)}</td><td className="num" data-l="Earned">{money(r.earned)}</td><td className="num" data-l="Paid">{money(r.paid)}</td><td className="num" data-l="Owed"><b style={{ fontWeight: 600 }}>{money(r.owed)}</b>{r.requested > 0 && <div><Pill tone="warn">Asked to cash out {money(r.requested)}</Pill></div>}</td><td className="num" data-l="Store credit">{money(r.credit ?? 0)}</td>
           <td><button className="bo-btn sm pri" onClick={() => setPay({ ...r, amount: (r.requested > 0 ? r.requested : Math.max(0, r.owed)).toFixed(2), method: "PayPal", note: "" })}>Mark paid</button></td></tr>)}
       </tbody></table>}
+    <EarningsRecord />
     <div className="bo-card" style={{ marginTop: 14 }}><h2>Payment history</h2>
       {data.history.length ? <table className="bo-tbl stack"><tbody>{data.history.map((h: any) => <tr key={h.id}><td data-l="Date">{fmtDate(h.paid_at)}</td><td>{h.name}</td><td className="num">{money(h.amount)}</td><td className="bo-sub">{h.status === "requested" ? "Requested by designer · " : ""}{h.note}</td></tr>)}</tbody></table> : <div className="bo-sub">No payments yet.</div>}
     </div>

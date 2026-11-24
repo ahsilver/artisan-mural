@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { allDesigners, designerBySlug, liveDesigns, registerShop, type Design } from "@/lib/catalog";
-import { matchRoom, searchableDesignText, getTaxonomy, roomLabels } from "@/lib/design-taxonomy";
+import { matchRoom, searchableDesignText, getTaxonomy } from "@/lib/design-taxonomy";
 import { ensureShop } from "@/lib/shop";
 import { pic } from "@/lib/pics";
 import { StorefrontSprite } from "@/components/storefront/icons";
@@ -33,22 +33,12 @@ export const Route = createFileRoute("/browse")({
   component: Shop,
 });
 
-const COLORS: { id: string; label: string; swatch: string; words: string[] }[] = [
-  { id: "white", label: "White & cream", swatch: "#F4F2EC", words: ["white", "cream", "ivory", "chalk", "bone"] },
-  { id: "beige", label: "Beige & neutral", swatch: "#D9CDB8", words: ["beige", "sand", "linen", "oat", "neutral", "taupe", "stone"] },
-  { id: "grey", label: "Grey", swatch: "#9A9A98", words: ["grey", "gray", "silver", "charcoal", "slate", "smok"] },
-  { id: "black", label: "Black", swatch: "#2A2A2A", words: ["black", "ink", "midnight", "charcoal"] },
-  { id: "blue", label: "Blue", swatch: "#6F8FB4", words: ["blue", "navy", "indigo", "sky", "teal"] },
-  { id: "green", label: "Green", swatch: "#7D9A6A", words: ["green", "olive", "sage", "moss", "fern", "emerald", "jungle", "palm"] },
-  { id: "pink", label: "Pink", swatch: "#E8B4B8", words: ["pink", "blush", "rose"] },
-  { id: "red", label: "Red & terracotta", swatch: "#B5523B", words: ["red", "terracotta", "rust", "clay", "coral"] },
-  { id: "gold", label: "Yellow & gold", swatch: "#C9A24D", words: ["yellow", "gold", "ochre", "mustard"] },
-  { id: "brown", label: "Brown", swatch: "#7A5236", words: ["brown", "walnut", "umber", "tan"] },
-];
+
 const lc = (x: string) => x.toLowerCase();
 const split = (v?: string) => (v ?? "").split(",").map((x) => x.trim()).filter(Boolean);
 const join = (l: string[]) => (l.length ? l.join(",") : undefined);
-const colorOf = (d: Design, id: string) => { const o = COLORS.find((c) => c.id === id); const p = lc([d.palette, ...(d.tags ?? []), ...(d.colorways ?? []).map((c) => c.name)].join(" ")); return o ? o.words.some((w) => p.includes(w)) : p.includes(id); };
+// colors come from Back office → Categories (the same list designers pick from and the color finder uses)
+const colorOf = (d: Design, id: string) => { const o = getTaxonomy().colors.find((c) => c.id === id); const p = lc([d.palette, ...(d.tags ?? []), ...(d.colorways ?? []).map((c) => c.name)].join(" ")); return o ? o.words.some((w) => p.includes(w)) : p.includes(id); };
 
 type Key = "room" | "category" | "theme" | "color" | "designer";
 type Group = { key: Key; label: string; opts: { v: string; label: string; swatch?: string }[] };
@@ -68,10 +58,10 @@ function Shop() {
 
   const designersInShop = allDesigners().filter((x) => designs.some((d) => d.designer === x.slug));
   const groups: Group[] = [
-    { key: "room", label: "Room", opts: roomLabels.map((r) => ({ v: r, label: r })) },
+    { key: "room", label: "Room", opts: tax.rooms.map((r) => ({ v: r, label: r })) },
     { key: "category", label: "Style", opts: tax.styles.map((s) => ({ v: s, label: s })) },
     { key: "theme", label: "Theme", opts: tax.themes.map((s) => ({ v: s, label: s })) },
-    { key: "color", label: "Color", opts: COLORS.map((c) => ({ v: c.id, label: c.label, swatch: c.swatch })) },
+    { key: "color", label: "Color", opts: tax.colors.map((c) => ({ v: c.id, label: c.label, swatch: c.swatch })) },
     { key: "designer", label: "Designer", opts: designersInShop.map((x) => ({ v: x.slug, label: x.name })) },
   ];
   const test = (d: Design, key: Key, v: string) =>

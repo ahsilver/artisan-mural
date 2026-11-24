@@ -8,6 +8,7 @@ import { api, Msg, Field, Pill, useSaver } from "@/components/bo/common";
 import { uploadFile, driveImport, driveFolder, makePreview, previewFromStored, fmtBytes, readDims } from "@/lib/designer-files";
 import { importSummary } from "@/lib/drive-verify";
 import { checkRepeat, type RepeatResult } from "@/lib/repeat-check";
+import { findColors } from "@/lib/color-families";
 import { pickRooms, makeMockup, makeSampleMockup, defaultMockupRooms } from "@/lib/auto-mockup";
 import { MockupRoomPicker, remakeRoomMockups, sceneMockup, designerRoom, pictureAspect } from "@/components/mockup-rooms";
 import { DriveFolderPicker } from "@/components/designer/drive-folder";
@@ -172,6 +173,10 @@ export function DesignEditor({ design, rules, onChanged, onClose, ensure, page }
       api(`designer/colorways/${c.id}`, { body: { swatchCrop: defaultCrop(c.original.width / c.original.height, design.kind === "mural") } }).then(() => onChanged()).catch(() => {});
     }
   }, [design.colors.map((c: any) => c.id + (c.swatchCrop ? 1 : 0)).join()]);
+  const [colorMsg, setColorMsg] = useState("");
+  const splitPal = (v: string) => String(v || "").split(",").map((x) => x.trim()).filter(Boolean);
+  const palList = () => splitPal(basic.palette);
+  const flipColor = (label: string) => setBasic((b: any) => { const l = splitPal(b.palette); const has = l.some((x) => x.toLowerCase() === label.toLowerCase()); return { ...b, palette: (has ? l.filter((x) => x.toLowerCase() !== label.toLowerCase()) : [...l, label]).join(", ") }; });
   const chips = (list: string[], on: (x: string) => boolean, flip: (x: string) => void) => <div className="de-chips">{list.map((r) => <button key={r} type="button" aria-pressed={on(r)} className={"de-chip" + (on(r) ? " on" : "")} onClick={() => flip(r)}>{r}</button>)}</div>;
   const flipRoom = (r: string) => setBasic((b: any) => ({ ...b, madeFor: b.madeFor.includes(r) ? b.madeFor.filter((x: string) => x !== r) : [...b.madeFor, r] }));
   const flipCat = (r: string) => setBasic((b: any) => ({ ...b, categories: b.categories.includes(r) ? b.categories.filter((x: string) => x !== r) : [...b.categories, r] }));
@@ -217,14 +222,16 @@ export function DesignEditor({ design, rules, onChanged, onClose, ensure, page }
           <div className="de-lbl">Good for rooms</div>{chips(ROOMS, (r) => basic.madeFor.includes(r), flipRoom)}
           <div className="de-lbl">Style</div>{chips(STYLES, (r) => basic.categories.includes(r), flipCat)}
           <div className="de-lbl">Theme / subject</div>{chips(THEMES, (r) => basic.categories.includes(r), flipCat)}
+          <div className="de-lbl">Main colors <span className="bo-sub">(found from the picture when you upload it; shoppers filter by these)</span></div>
+          <div className="de-chips">{tax.colors.map((c) => { const on = palList().some((x) => x.toLowerCase() === c.label.toLowerCase()); return <button key={c.id} type="button" aria-pressed={on} className={"de-chip" + (on ? " on" : "")} onClick={() => flipColor(c.label)}><i className="de-sw" style={{ background: c.swatch }} />{c.label}</button>; })}</div>
+          {hasArtNow() && <div className="bo-row" style={{ marginTop: 8 }}><button type="button" className="bo-btn sm" onClick={async () => { const src = design.colors?.[0]?.preview; if (!src) return; const found = await findColors(src, tax.colors).catch(() => []); setBasic((b: any) => ({ ...b, palette: [...new Set([...found, ...splitPal(b.palette).filter((x: string) => !tax.colors.some((c) => c.label.toLowerCase() === x.toLowerCase()))])].join(", ") })); setColorMsg(found.length ? `Found: ${found.join(", ")}. Save to keep them.` : "No clear main colors found; pick them by hand."); }}>Find the colors in the picture</button>{colorMsg && <span className="bo-sub">{colorMsg}</span>}</div>}
           {tagAi?.tagging && hasArtNow() && <div className="bo-row" style={{ marginTop: 8 }}><button type="button" className="bo-btn sm" onClick={() => autoTag(false)}>Fill in rooms and style with AI</button>{tagMsg && <span className="bo-sub">{tagMsg}</span>}</div>}
         </div>
         <RecommendedFinishBox design={design} value={rec} onChange={setRec} />
         <div className="de-box"><div className="de-h">Words</div>
           <Field label="Short description" hint="One or two sentences under the price."><textarea className="bo-ta" rows={2} maxLength={600} value={basic.description} onChange={(e) => setBasic({ ...basic, description: e.target.value })} placeholder="e.g. Soft sage leaves on a warm cream ground, painted by hand in watercolor." /></Field>
           <Field label="The story behind it" hint="Shown in its own section on the design page."><textarea className="bo-ta" rows={3} value={basic.story} onChange={(e) => setBasic({ ...basic, story: e.target.value })} placeholder="What inspired it? Customers love knowing the story." /></Field>
-          <div className="bo-grid2"><Field label="Main colors (optional)"><input className="bo-in" value={basic.palette} onChange={(e) => setBasic({ ...basic, palette: e.target.value })} placeholder="sage, cream, gold" /></Field>
-            <Field label="Keywords (optional)"><input className="bo-in" value={basic.tags} onChange={(e) => setBasic({ ...basic, tags: e.target.value })} placeholder="leaves, tropical" /></Field></div>
+          <Field label="Keywords (optional)" hint="Extra words shoppers might search for, like the color names you use (sage, blush) or what is in the picture."><input className="bo-in" value={basic.tags} onChange={(e) => setBasic({ ...basic, tags: e.target.value })} placeholder="leaves, tropical, sage" /></Field>
           <div className="bo-grid2"><Field label="Notes for printing (optional)" hint="Only the studio sees this."><input className="bo-in" value={basic.notes} onChange={(e) => setBasic({ ...basic, notes: e.target.value })} placeholder="color profile, bleed…" /></Field>
             <Field label="Suggested price / sq ft" hint="Empty = the shop's standard price."><input className="bo-in" type="number" step="0.25" min="0" value={suggest} onChange={(e) => setSuggest(e.target.value)} placeholder="5.50" /></Field></div>
         </div>

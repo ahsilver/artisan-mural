@@ -46,7 +46,7 @@ export function Orders() {
         <tbody>{orders.map((o: any) => <tr key={o.id} className="click" onClick={() => setOpen(o.id)}>
           <td data-l="Date">{fmtDate(o.created_at)}</td>
           <td><b style={{ fontWeight: 500 }}>{o.customer_name}</b><div className="bo-sub">{o.customer_email}</div></td>
-          <td data-l="Design"><div className="bo-row" style={{ flexWrap: "nowrap" }}>{o.thumb && <img className="bo-thumb bo-hide-m" src={o.thumb} alt="" style={{ width: 36, height: 36 }} />}<div>{o.design_title}<div className="bo-sub">{(() => { let sl: any = o.selection; try { if (typeof sl === "string") sl = JSON.parse(sl); } catch { sl = null; } return <>{sl?.wallName ? <>{sl.wallName} · </> : null}{sl?.colorName ? <>{sl.colorName} · </> : null}</>; })()}{o.finish}{o.source && o.source !== "website" ? ` · ${o.source}` : ""}</div></div></div></td>
+          <td data-l="Design"><div className="bo-row" style={{ flexWrap: "nowrap" }}>{o.thumb && <img className="bo-thumb bo-hide-m" src={o.thumb} alt="" style={{ width: 36, height: 36 }} />}<div>{o.is_sample ? <b className="bo-pill-s">Sample</b> : null}{o.design_title}<div className="bo-sub">{(() => { let sl: any = o.selection; try { if (typeof sl === "string") sl = JSON.parse(sl); } catch { sl = null; } return <>{sl?.wallName ? <>{sl.wallName} · </> : null}{sl?.colorName ? <>{sl.colorName} · </> : null}</>; })()}{o.finish}{o.source && o.source !== "website" ? ` · ${o.source}` : ""}</div></div></div></td>
           <td className="num" data-l="Sq ft">{Number(o.square_feet).toFixed(1)}</td>
           <td className="num" data-l="Total">{money(o.estimated_total)}</td>
           <td><Pill tone={STATUS_TONE[o.status]}>{LABEL[o.status] ?? o.status}</Pill>{o.status === "waiting_on_designer" && o.due_at && <div className="bo-sub">Due {fmtDate(o.due_at)}</div>}{o.project_id && <div className="bo-sub">Design request</div>}</td>
@@ -124,6 +124,7 @@ function OrderPanel({ id, onChanged, onClose }: { id: string; onChanged: () => v
           <dt>{o.design_fee ? "Printing + design" : "Subtotal"}</dt><dd>{money(o.estimated_total)}</dd>
           {Number(o.design_fee) > 0 && <><dt>· of which design work</dt><dd>{money(o.design_fee)}</dd></>}
           {Number(o.discount) > 0 && <><dt>Discount{o.coupon ? ` (${o.coupon})` : ""}</dt><dd>−{money(o.discount)}</dd></>}
+          {o.shipping != null && <><dt>Shipping</dt><dd>{Number(o.shipping) > 0 ? money(o.shipping) : "Free"}</dd></>}
           {Number(o.tax) > 0 && <><dt>Tax</dt><dd>{money(o.tax)}</dd></>}
           {Number(o.credit_applied) > 0 && <><dt>Store credit</dt><dd>−{money(o.credit_applied)}</dd></>}
           <dt><b>Total</b></dt><dd><b>{money(o.amount_due ?? o.estimated_total)}</b></dd>
@@ -132,6 +133,7 @@ function OrderPanel({ id, onChanged, onClose }: { id: string; onChanged: () => v
     </div>
     <div className="bo-card"><h2>What they ordered</h2>
       <dl className="bo-dl">
+        {o.is_sample ? <><dt>Type</dt><dd><b>Sample</b> (no wall size; ships flat)</dd></> : null}
         <dt>Design</dt><dd>{o.design_title}{(sel.colorName || sel.color) ? ` · color ${sel.colorName || (/^c\d+$/.test(sel.color) ? (data?.art?.name ?? sel.color) : sel.color)}` : ""}</dd>
         <dt>Paper</dt><dd>{o.finish}</dd>
         <dt>Wall</dt><dd>{sel.wallName ? <b>{sel.wallName}: </b> : null}{sel.width && sel.height ? `${sel.width} × ${sel.height} ${sel.unit ?? ""}` : "—"}{sel.panels ? ` · ${sel.panels} panels` : ""}</dd>

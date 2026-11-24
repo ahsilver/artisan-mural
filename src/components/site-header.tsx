@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCart } from "@/lib/cart";
 import { cn } from "@/lib/utils";
-import { roomLabels, getTaxonomy } from "@/lib/design-taxonomy";
+import { getTaxonomy } from "@/lib/design-taxonomy";
 import { useSession } from "@/hooks/use-session";
 import { NotificationBell } from "@/components/projects";
 import { BrandLogo } from "@/components/brand-logo";
@@ -30,7 +30,7 @@ const GROUPS: Group[] = [
     { label: "Repeating patterns", search: { kind: "repeating" }, pic: MENU_PICS["Repeating patterns"] || roomPic("Dining room") },
     { label: "Made for you", to: "/custom-request", pic: MENU_PICS["Made for you"] || roomPic("Office & study") },
   ] },
-  { key: "rooms", label: "Rooms", items: () => roomLabels.map((r) => ({ label: r, search: { room: r }, pic: roomPic(r) })) },
+  { key: "rooms", label: "Rooms", items: () => getTaxonomy().rooms.map((r) => ({ label: r, search: { room: r }, pic: roomPic(r) })) },
   { key: "style", label: "Style", items: () => getTaxonomy().styles.slice(0, 16).map((c) => ({ label: c, search: { category: c } })) },
   { key: "theme", label: "Themes", items: () => getTaxonomy().themes.slice(0, 16).map((c) => ({ label: c, search: { theme: c } })) },
   { key: "designers", label: "Designers", items: () => [{ label: "All designers", to: "/designers" }, { label: "How it works for designers", to: "/designers/how-it-works" }, { label: "Sell your art", to: "/sell" }] },

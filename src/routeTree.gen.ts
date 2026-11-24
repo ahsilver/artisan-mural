@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PageRouteImport } from './routes/$page'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminClassicRouteImport } from './routes/admin-classic'
@@ -48,6 +49,11 @@ import { Route as ProjectsIdPayRouteImport } from './routes/projects.$id.pay'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PageRoute = PageRouteImport.update({
+  id: '/$page',
+  path: '/$page',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountRoute = AccountRouteImport.update({
@@ -223,6 +229,7 @@ const ProjectsIdPayRoute = ProjectsIdPayRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$page': typeof PageRoute
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/admin-classic': typeof AdminClassicRoute
@@ -260,6 +267,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$page': typeof PageRoute
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/admin-classic': typeof AdminClassicRoute
@@ -298,6 +306,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$page': typeof PageRoute
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/admin-classic': typeof AdminClassicRoute
@@ -337,6 +346,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$page'
     | '/account'
     | '/admin'
     | '/admin-classic'
@@ -374,6 +384,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$page'
     | '/account'
     | '/admin'
     | '/admin-classic'
@@ -411,6 +422,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/$page'
     | '/account'
     | '/admin'
     | '/admin-classic'
@@ -449,6 +461,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PageRoute: typeof PageRoute
   AccountRoute: typeof AccountRoute
   AdminRoute: typeof AdminRoute
   AdminClassicRoute: typeof AdminClassicRoute
@@ -492,6 +505,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$page': {
+      id: '/$page'
+      path: '/$page'
+      fullPath: '/$page'
+      preLoaderRoute: typeof PageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account': {
@@ -737,6 +757,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PageRoute: PageRoute,
   AccountRoute: AccountRoute,
   AdminRoute: AdminRoute,
   AdminClassicRoute: AdminClassicRoute,

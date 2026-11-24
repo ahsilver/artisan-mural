@@ -17,7 +17,7 @@ import { ProductCarousel } from "@/components/product-carousel";
 import { RequestChange } from "@/components/projects";
 import { Reviews, DesignRating } from "@/components/community";
 import { useCommunity } from "@/lib/community";
-import { WallCalculator } from "@/components/wall-calculator";
+import { SampleOrder } from "@/components/storefront/sample-order";
 import { AskDesignerButton, oversizePrefill, wallLabel, type RequestPrefill } from "@/components/oversize";
 import { muralMaxLabel } from "@/components/size-notice";
 import {
@@ -166,6 +166,7 @@ function DesignDetail() {
                 {finishes.map((m) => <button key={m.id} type="button" role="radio" aria-checked={m.id === material?.id} className={"chip" + (m.id === material?.id ? " on" : "")} onClick={() => setFinish(m.id)}>{m.name}<small>{money(unitPrice(design, m))}</small></button>)}
               </div>
               {material?.blurb && <p className="mat-blurb">{material.blurb}</p>}
+              {material && <SampleOrder design={design.slug} title={design.title} finish={material.id} finishName={material.name} color={color} colorName={design.colorways?.find((c: any) => c.id === color)?.name} />}
             </div>
           )}
           <div className="pcta">

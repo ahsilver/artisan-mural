@@ -9,13 +9,13 @@ const GROUPS: Record<string, { title: string; note?: string; fields: F[] }> = {
     { k: "pricePerSqft", label: "Default price per sq ft ($)", type: "number" }, { k: "fitServiceFee", label: "Fit-to-wall service fee ($)", type: "number" }, { k: "commissionRate", label: "Studio commission on designer fees (%)", type: "number" },
   ] },
   shipping: { title: "Shipping", fields: [
-    { k: "flatRate", label: "Flat shipping ($, 0 = free)", type: "number" }, { k: "freeOver", label: "Free shipping over ($, 0 = off)", type: "number" }, { k: "processingDays", label: "Production days before shipping", type: "number" }, { k: "countries", label: "Ship to countries" },
+    { k: "flatRate", label: "Flat shipping ($, 0 = free)", type: "number" }, { k: "freeOver", label: "Free shipping over ($, 0 = off)", type: "number" }, { k: "samplePrice", label: "Sample price ($ each, free for Pro members)", type: "number" }, { k: "processingDays", label: "Production days before shipping", type: "number" }, { k: "countries", label: "Ship to countries" },
   ] },
   designerRules: { title: "Designer rules", fields: [
     { k: "targetDpi", label: "Print quality target (DPI)", type: "number", hint: "Recommended print DPI (200 or more). Max sharp wall size = image pixels ÷ this DPI." },
     { k: "minDpi", label: "Lowest DPI allowed for bigger walls", type: "number", hint: "The print file export uses the same minimum. 150 is the wallpaper standard." }, { k: "maxUploadGb", label: "Max upload size (GB)", type: "number" },
     { k: "autoApproveTrusted", label: "Trusted designers skip review", type: "bool" }, { k: "requireMockups", label: "Room mockups required per design", type: "number" },
-    { k: "royaltyStarter", label: "Royalty, starter (%)", type: "number" }, { k: "royaltyStudio", label: "Royalty from 2,500 sq ft/month (%)", type: "number" }, { k: "royaltyAtelier", label: "Royalty from 5,000 sq ft/month (%)", type: "number" },
+    { k: "royaltyStarter", label: "Royalty, starter (cents per sq ft, e.g. 50 = $0.50)", type: "number" }, { k: "royaltyStudio", label: "Royalty once a designer has sold 2,500 sq ft (cents per sq ft)", type: "number" }, { k: "royaltyAtelier", label: "Royalty once a designer has sold 5,000 sq ft (cents per sq ft)", type: "number" },
   ] },
   payments: { title: "Payments (Sola)", note: "Test mode only in this preview. No card is charged.", fields: [
     { k: "mode", label: "Mode", type: "select", options: ["test"] }, { k: "solaKey", label: "Sola API key", type: "secret" }, { k: "solaPin", label: "Sola iFields key / PIN", type: "secret" },
@@ -32,7 +32,7 @@ const GROUPS: Record<string, { title: string; note?: string; fields: F[] }> = {
   ] },
   pro: { title: "Pro program", note: "Your professional program for designers, architects and contractors. Approve applications in the Artisan Pro section. The default discount is used for new approvals; change a single member's discount in Artisan Pro → Members.", fields: [
     { k: "enabled", label: "Accept applications", type: "bool" }, { k: "name", label: "Program name", hint: "Shown on the site, the account page and emails, e.g. Artisan Pro or Design Professionals." },
-    { k: "discountPct", label: "Default member discount (%)", type: "number" }, { k: "freeSamples", label: "Free samples for members", type: "bool" },
+    { k: "discountPct", label: "Default member discount (%)", type: "number" }, { k: "freeSamples", label: "Free samples for members", type: "bool" }, { k: "freeShipping", label: "Free shipping for members", type: "bool" },
     { k: "approvalDays", label: "Approval time shown on the site" }, { k: "notifyEmail", label: "Email for new applications", hint: "Empty uses the contact email." },
   ] },
   popup: { title: "First-order popup", note: "A small window that offers new visitors a discount on their first order for their email. Each email gets its own one-time code. Never shown at checkout, to signed-in customers who already ordered, or again for the days below after it's closed. It doesn't stack with the Pro discount: the better one is used.", fields: [

@@ -338,6 +338,8 @@ export const META: Record<string,{pk:string;cols:Record<string,ColKind>;rels:Rel
   "cols": {
    "billing_address": "text",
    "payment_info": "json",
+   "shipping": "num",
+   "is_sample": "num",
    "discount": "num",
    "coupon": "text",
    "tax": "num",

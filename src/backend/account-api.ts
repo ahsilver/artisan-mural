@@ -40,7 +40,9 @@ export async function quote(env: Env, uid: string, subtotal: number, opt: { coup
     else { out.coupon = code; out.couponDiscount = r2(Math.min(base, c.kind === "fixed" ? Number(c.value) : base * Number(c.value) / 100)); base -= out.couponDiscount; }
   }
   const sh = s.shipping ?? {};
-  out.shipping = r2(Number(sh.freeOver) > 0 && subtotal >= Number(sh.freeOver) ? 0 : Number(sh.flatRate) || 0);
+  const proShipsFree = t?.trade_status === "approved" && s.pro?.freeShipping !== false; // approved Pro accounts: free shipping
+  out.shipping = r2(proShipsFree || (Number(sh.freeOver) > 0 && subtotal >= Number(sh.freeOver)) ? 0 : Number(sh.flatRate) || 0);
+  if (proShipsFree) out.freeShippingLabel = `Free with ${proName}`;
   const tax = s.tax ?? {};
   const states = String(tax.states || "").split(",").map((x: string) => x.trim().toUpperCase()).filter(Boolean);
   const st = String(opt.state || "").trim().toUpperCase();
@@ -50,6 +52,20 @@ export async function quote(env: Env, uid: string, subtotal: number, opt: { coup
   if (opt.useCredit) { const bal = await creditBalance(env, uid); out.credit = r2(Math.min(bal, total)); total -= out.credit; out.creditBalance = bal; }
   out.due = r2(total);
   return out;
+}
+
+/** Prices a placed cart on the server (Pro discount, shipping, tax) when the browser didn't finish checkout.
+ *  Only lines without a price yet are touched, so a checkout with a code or credit is never overwritten. */
+export async function priceCartIfMissing(env: Env, cartId: string) {
+  const rows = ((await env.DB.prepare(`SELECT id, user_id, estimated_total FROM order_requests WHERE cart_id = ? AND amount_due IS NULL`).bind(cartId).all()).results ?? []) as any[];
+  if (!rows.length || !rows[0].user_id) return;
+  const sub = rows.reduce((n, r) => n + Number(r.estimated_total), 0);
+  const q = await quote(env, rows[0].user_id, sub, { cartId });
+  for (const r of rows) {
+    const share = sub ? Number(r.estimated_total) / sub : 1 / rows.length;
+    const disc = r2(q.special * share), tax = r2(q.tax * share), shp = r2(q.shipping * share);
+    await env.DB.prepare(`UPDATE order_requests SET discount = ?, tax = ?, shipping = ?, amount_due = ? WHERE id = ? AND amount_due IS NULL`).bind(disc, tax, shp, r2(Number(r.estimated_total) - disc + tax + shp), r.id).run();
+  }
 }
 
 export async function accountRoutes(req: Request, env: Env, who: Who, p: string, m: string, body: any): Promise<Response> {
@@ -72,7 +88,7 @@ export async function accountRoutes(req: Request, env: Env, who: Who, p: string,
     for (const r of rows) {
       const share = sub ? Number(r.estimated_total) / sub : 1 / rows.length;
       const disc = r2((q.special + q.couponDiscount) * share), tax = r2(q.tax * share), cr = r2(q.credit * share), shp = r2(q.shipping * share);
-      await DB.prepare(`UPDATE order_requests SET discount = ?, coupon = ?, tax = ?, credit_applied = ?, amount_due = ?, payment_method = COALESCE(payment_method, ?) WHERE id = ?`).bind(disc, q.coupon, tax, cr, r2(Number(r.estimated_total) - disc + tax + shp - cr), q.netTerms ? "Net terms" : null, r.id).run();
+      await DB.prepare(`UPDATE order_requests SET discount = ?, coupon = ?, tax = ?, credit_applied = ?, shipping = ?, amount_due = ?, payment_method = COALESCE(payment_method, ?) WHERE id = ?`).bind(disc, q.coupon, tax, cr, shp, r2(Number(r.estimated_total) - disc + tax + shp - cr), q.netTerms ? "Net terms" : null, r.id).run();
     }
     if (q.coupon && q.firstOrder) await DB.prepare(`UPDATE first_order_codes SET used_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), used_by = ?, cart_id = ? WHERE code = ?`).bind(uid, body.cartId, q.coupon).run();
     else if (q.coupon) { await DB.prepare(`INSERT INTO coupon_uses (id, code, user_id, cart_id, amount) VALUES (?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), q.coupon, uid, body.cartId, q.couponDiscount).run(); await DB.prepare(`UPDATE coupons SET uses = uses + 1 WHERE code = ?`).bind(q.coupon).run(); }

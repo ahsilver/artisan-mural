@@ -1,4 +1,7 @@
 import { api } from "@/components/bo/common";
+import { loadSite } from "@/lib/site-settings";
+import { parseTaxonomy } from "@/lib/design-taxonomy";
+import { findColors } from "@/lib/color-families";
 import { uploadFile, driveImport, makePreview, previewFromStored, readDims, dominantColor } from "@/lib/designer-files";
 import { importSummary } from "@/lib/drive-verify";
 import { checkRepeat } from "@/lib/repeat-check";
@@ -42,7 +45,10 @@ async function addColorway(uploadId: string, orig: any, preview: Blob, name: str
       if (t === "mural") { m.originalWidthCm = wcm; m.originalHeightCm = hcm; }
       m.unit = t === "mural" ? "ft" : "in";
     }
-    await api(`designer/uploads/${uploadId}`, { body: { kind: t === "mural" ? "mural" : "repeating", repeat: t === "mural" ? "none" : t === "sideways" ? "horizontal" : "both", ...size, meta: m } });
+    // the main colors, found from the picture and named from the shop's color list (the designer can change them)
+    let palette: string | undefined;
+    try { const site: any = await loadSite(); const found = await findColors(preview, parseTaxonomy(site?.taxonomy).colors); if (found.length) palette = found.join(", "); } catch {}
+    await api(`designer/uploads/${uploadId}`, { body: { kind: t === "mural" ? "mural" : "repeating", repeat: t === "mural" ? "none" : t === "sideways" ? "horizontal" : "both", ...size, meta: m, ...(palette ? { palette } : {}) } });
   } catch {}
 }
 

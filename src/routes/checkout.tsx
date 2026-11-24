@@ -109,7 +109,7 @@ function Checkout() {
           <div><span>Subtotal</span><b>{money(total)}</b></div>
           {q?.special > 0 && <div><span>{q.proName ? `${q.proName} discount (${q.proPct}%)` : "Your special price"}</span><b>−{money(q.special)}</b></div>}
           {q?.couponDiscount > 0 && <div><span>{q.couponLabel ?? `Code ${q.coupon}`}</span><b>−{money(q.couponDiscount)}</b></div>}
-          <div><span>Delivery</span><b>{q ? (q.shipping ? money(q.shipping) : "Free") : "Calculated next"}</b></div>
+          <div><span>Delivery</span><b>{q ? (q.shipping ? money(q.shipping) : q.freeShippingLabel || "Free") : "Calculated next"}</b></div>
           {q?.tax > 0 && <div><span>{q.taxLabel}</span><b>{money(q.tax)}</b></div>}
           {q?.credit > 0 && <div><span>Store credit</span><b>−{money(q.credit)}</b></div>}
           <div className="tot"><span>Total</span><b>{money(due)}</b></div>

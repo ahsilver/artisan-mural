@@ -44,8 +44,41 @@ export function mockupRooms(rooms: readonly string[], styles: readonly string[])
 // ---- Shop taxonomy (owner-editable in Back office > Settings > Categories) ----
 export const defaultStyles = ["Modern", "Traditional", "Minimal", "Abstract", "Geometric", "Botanical", "Floral", "Damask", "Toile", "Chinoiserie", "Art deco", "Mid-century", "Boho", "Coastal", "Scandinavian", "Japanese", "Vintage", "Watercolor", "Textured neutrals"];
 export const defaultThemes = ["Tropical", "Landscape", "Animals & birds", "Trees & forest", "Sky & clouds", "Ocean & water", "Mountains", "Maps & travel", "Stripes", "Textures", "Marble & stone", "Celestial", "City & architecture", "Fruit & food", "Kids & nursery", "Hospitality"];
-export type Taxonomy = { styles: string[]; themes: string[]; rooms: string[] };
-export const defaultTaxonomy: Taxonomy = { styles: defaultStyles, themes: defaultThemes, rooms: roomOptions.map((r) => r.label) };
+/** Shop colors: the shop's Color filter, the designer's color picker and the automatic color finder all use this list. */
+export type ColorFamily = { id: string; label: string; swatch: string; words: string[] };
+const cf = (label: string, swatch: string, words: string[]): ColorFamily => ({ id: colorId(label), label, swatch, words });
+export function colorId(label: string) { const w = label.toLowerCase().split(/[\s&,]+/).filter(Boolean)[0] ?? "color"; return w.replace(/[^a-z0-9-]/g, "") || "color"; }
+export const defaultColors: ColorFamily[] = [
+  cf("White & cream", "#F4F2EC", ["white", "cream", "ivory", "chalk", "bone"]),
+  cf("Beige & neutral", "#D9CDB8", ["beige", "sand", "linen", "oat", "neutral", "taupe", "stone"]),
+  cf("Grey", "#9A9A98", ["grey", "gray", "silver", "slate", "smok"]),
+  cf("Black", "#2A2A2A", ["black", "ink", "midnight", "charcoal"]),
+  cf("Blue", "#6F8FB4", ["blue", "navy", "indigo", "sky", "teal"]),
+  cf("Green", "#7D9A6A", ["green", "olive", "sage", "moss", "fern", "emerald", "jungle", "palm"]),
+  cf("Pink", "#E8B4B8", ["pink", "blush", "rose"]),
+  cf("Red & terracotta", "#B5523B", ["red", "terracotta", "rust", "clay", "coral"]),
+  cf("Yellow & gold", "#C9A24D", ["yellow", "gold", "ochre", "mustard"]),
+  cf("Brown", "#7A5236", ["brown", "walnut", "umber", "tan"]),
+];
+/** One color per line: "Name | #hex | other words, comma separated". */
+export const colorsToText = (c: ColorFamily[]) => c.map((x) => `${x.label} | ${x.swatch} | ${x.words.join(", ")}`).join("\n");
+export function parseColors(v: unknown): ColorFamily[] {
+  const lines = Array.isArray(v) ? v : typeof v === "string" ? v.split(/\r?\n/) : null;
+  if (!lines) return defaultColors;
+  const out: ColorFamily[] = []; const seen = new Set<string>();
+  for (const l of lines) {
+    const o: any = typeof l === "object" && l ? l : null;
+    const parts = o ? [o.label, o.swatch, Array.isArray(o.words) ? o.words.join(",") : o.words] : String(l ?? "").split("|").map((x) => x.trim());
+    const label = String(parts[0] ?? "").replace(/\s+/g, " ").trim().slice(0, 30); if (!label) continue;
+    let id = colorId(label); while (seen.has(id)) id += "2"; seen.add(id);
+    const swatch = /^#[0-9a-f]{6}$/i.test(String(parts[1] ?? "").trim()) ? String(parts[1]).trim() : "#999999";
+    const words = [...new Set([...label.toLowerCase().split(/[\s&,]+/), ...String(parts[2] ?? "").toLowerCase().split(",")].map((w) => w.trim()).filter((w) => w.length > 1))].slice(0, 20);
+    out.push({ id, label, swatch, words });
+  }
+  return out.length ? out.slice(0, 40) : defaultColors;
+}
+export type Taxonomy = { styles: string[]; themes: string[]; rooms: string[]; colors: ColorFamily[] };
+export const defaultTaxonomy: Taxonomy = { styles: defaultStyles, themes: defaultThemes, rooms: roomOptions.map((r) => r.label), colors: defaultColors };
 const ALIASES: Record<string, string> = {
   kids: "Kids & nursery", kid: "Kids & nursery", nursery: "Kids & nursery", children: "Kids & nursery", "kids room": "Kids & nursery",
   animals: "Animals & birds", animal: "Animals & birds", birds: "Animals & birds", texture: "Textures", textured: "Textures",
@@ -63,7 +96,7 @@ const cleanList = (v: unknown, fallback: string[]): string[] => {
 };
 /** Reads the owner's saved lists (one label per line, or arrays). Empty lists fall back to the defaults. */
 export function parseTaxonomy(v: any): Taxonomy {
-  return { styles: cleanList(v?.styles, defaultStyles), themes: cleanList(v?.themes, defaultThemes), rooms: cleanList(v?.rooms, defaultTaxonomy.rooms) };
+  return { styles: cleanList(v?.styles, defaultStyles), themes: cleanList(v?.themes, defaultThemes), rooms: cleanList(v?.rooms, defaultTaxonomy.rooms), colors: parseColors(v?.colors) };
 }
 let current: Taxonomy = defaultTaxonomy;
 export function setTaxonomy(t?: Partial<Taxonomy> | null) { if (t) current = parseTaxonomy(t); }

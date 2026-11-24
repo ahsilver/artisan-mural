@@ -4,7 +4,7 @@ import { signUrl } from "./storage";
 import { alert, alertOwners, queueMail } from "./alerts";
 import { imageDims } from "@/lib/image-dims";
 import { DEFAULT_DESIGNER_FAQ } from "@/lib/designer-faq";
-import { defaultTaxonomy, parseTaxonomy, canonicalCategories, canonicalRooms } from "@/lib/design-taxonomy";
+import { defaultTaxonomy, parseTaxonomy, colorsToText, canonicalCategories, canonicalRooms } from "@/lib/design-taxonomy";
 type Env = any;
 const j = (body: any, status = 200, headers: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", ...headers } });
 const bad = (msg: string, status = 400) => j({ error: msg }, status);
@@ -14,7 +14,7 @@ const parseJ = (v: any, d: any = null) => { if (v == null) return d; try { retur
 
 export const ORDER_FLOW = ["awaiting_payment", "paid", "waiting_on_designer", "ready_to_print", "processing", "printing", "shipped", "delivered", "cancelled", "refunded"];
 export const DEFAULT_SETTINGS: Record<string, any> = {
-  pro: { enabled: true, name: "Artisan Pro", discountPct: 20, freeSamples: true, approvalDays: "1–2 business days", notifyEmail: "" },
+  pro: { enabled: true, name: "Artisan Pro", discountPct: 20, freeSamples: true, freeShipping: true, approvalDays: "1–2 business days", notifyEmail: "" },
   popup: { enabled: true, pct: 10, headline: "10% off your first order", text: "Join our list for new designs and get a one-time code for your first order.", delaySec: 8, exitIntent: true, hideDays: 14 },
   general: { siteName: "Artisan Mural", contactEmail: "", contactPhone: "", currency: "USD", pricePerSqft: 4.5, fitServiceFee: 45, commissionRate: 10, units: "ft", timezone: "America/New_York" },
   homepage: {
@@ -29,15 +29,19 @@ export const DEFAULT_SETTINGS: Record<string, any> = {
   emails: { mode: "test", provider: "resend", resendKey: "", fromName: "Artisan Murals", fromEmail: "", replyTo: "", orderConfirmation: true, shippingUpdate: true, designerApproved: true },
   tax: { enabled: false, rate: 0, states: "", label: "Sales tax", shippingTaxable: false, tradeExempt: true },
   ai: { roomRenderEnabled: false, mockupsEnabled: true, provider: "google", apiKey: "", model: "gemini-3.1-flash-image", dailyLimit: 10, freeOverlayEnabled: true, wallDetectEnabled: true, autoTagEnabled: true, visionModel: "gemini-3.8-flash" },
-  shipping: { flatRate: 0, freeOver: 0, processingDays: 5, countries: "US, CA" },
+  shipping: { flatRate: 10, freeOver: 0, samplePrice: 5, processingDays: 5, countries: "US, CA" },
   invoices: { businessName: "", address: "", phone: "", email: "", website: "", logoUrl: "", prefix: "INV-", startNumber: 1001, dueDays: 30, taxRate: 0, ratePerSqft: "", footer: "", notes: "Thank you for your business.", estPrefix: "EST-", estStartNumber: 1001, estValidDays: 30, estTerms: "This estimate is valid until the date shown. Final price is confirmed once wall measurements are checked.", estNotes: "" },
   designerFaq: { intro: "", reviewTime: "", faq: DEFAULT_DESIGNER_FAQ },
-  taxonomy: { styles: defaultTaxonomy.styles.join("\n"), themes: defaultTaxonomy.themes.join("\n"), rooms: defaultTaxonomy.rooms.join("\n") },
+  taxonomy: { styles: defaultTaxonomy.styles.join("\n"), themes: defaultTaxonomy.themes.join("\n"), rooms: defaultTaxonomy.rooms.join("\n"), colors: colorsToText(defaultTaxonomy.colors) },
   emailTemplates: {},
+  // owner-built pages ({ items, removed }), the footer and the editable texts of built-in pages (empty = ready-written)
+  pages: {},
+  footer: {},
+  texts: {},
   community: { promoEnabled: true, promoEvery: 12, promoTitle: "Can't find what you like?", promoText: "Get it custom. Tell a designer what you have in mind.", promoCta: "Get it custom", productLineEnabled: true, requestsEnabled: true, reviewsEnabled: true, contactEnabled: true },
 };
 const SECRET_FIELDS: Record<string, string[]> = { payments: ["solaKey", "solaPin"], payouts: ["clientSecret"], ai: ["apiKey"], emails: ["resendKey"] };
-const PUBLIC_KEYS = ["general", "homepage", "ai", "taxonomy", "pro", "popup", "community"];
+const PUBLIC_KEYS = ["general", "homepage", "ai", "taxonomy", "pro", "popup", "community", "pages", "footer", "texts", "shipping"];
 
 export async function getSettings(env: Env): Promise<Record<string, any>> {
   const r = await env.DB.prepare(`SELECT key, value FROM site_settings`).all();
@@ -96,22 +100,56 @@ async function designOwners(env: Env): Promise<Map<string, string>> {
   return m;
 }
 const COUNTED = new Set(["paid", "waiting_on_designer", "ready_to_print", "processing", "printing", "shipped", "delivered"]);
+/** Brings the designer earnings record up to date. Each paid order of a designer's design gets one "sale" line,
+ *  at the tier the designer had reached before that order (cents per sq ft, from Settings → Designer rules), and
+ *  keeps it: later tier changes or rate edits never re-price old orders. A cancelled or refunded order gets one
+ *  "reversal" line that takes its earnings back. Samples and orders without square feet earn nothing.
+ *  Safe to run any number of times (one line per order and kind). */
+export async function syncEarnings(env: Env, settings?: any) {
+  const s = settings ?? (await getSettings(env));
+  const rules = s.designerRules ?? {};
+  const owners = await designOwners(env);
+  const orders = ((await env.DB.prepare(`SELECT id, design_slug, square_feet, status, COALESCE(is_sample, 0) is_sample FROM order_requests ORDER BY created_at`).all()).results ?? []) as any[];
+  const have = ((await env.DB.prepare(`SELECT order_id, kind, designer_user_id, square_feet, cents_per_sqft, amount FROM designer_earnings`).all()).results ?? []) as any[];
+  const key = new Map(have.map((h) => [`${h.order_id}:${h.kind}`, h]));
+  const sold = new Map<string, number>(); // sq ft already earned per designer (for the tier)
+  for (const h of have) sold.set(h.designer_user_id, (sold.get(h.designer_user_id) ?? 0) + Number(h.square_feet));
+  const cents = (sqftBefore: number) => Number(sqftBefore >= 5000 ? rules.royaltyAtelier : sqftBefore >= 2500 ? rules.royaltyStudio : rules.royaltyStarter) || 0;
+  let added = 0;
+  for (const o of orders) {
+    const uid = owners.get(o.design_slug); const sq = Number(o.square_feet) || 0;
+    if (!uid || o.is_sample || sq <= 0) continue;
+    const sale = key.get(`${o.id}:sale`);
+    if (!sale && COUNTED.has(o.status)) {
+      const c = cents(sold.get(uid) ?? 0), amount = r2(sq * c / 100);
+      await env.DB.prepare(`INSERT OR IGNORE INTO designer_earnings (id, order_id, kind, designer_user_id, design_slug, square_feet, cents_per_sqft, amount) VALUES (?, ?, 'sale', ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), o.id, uid, o.design_slug, sq, c, amount).run();
+      key.set(`${o.id}:sale`, { designer_user_id: uid, square_feet: sq, cents_per_sqft: c, amount }); sold.set(uid, (sold.get(uid) ?? 0) + sq); added++;
+    } else if (sale && (o.status === "cancelled" || o.status === "refunded") && !key.has(`${o.id}:reversal`)) {
+      await env.DB.prepare(`INSERT OR IGNORE INTO designer_earnings (id, order_id, kind, designer_user_id, design_slug, square_feet, cents_per_sqft, amount) VALUES (?, ?, 'reversal', ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), o.id, sale.designer_user_id, o.design_slug, -Number(sale.square_feet), sale.cents_per_sqft, -Number(sale.amount)).run();
+      key.set(`${o.id}:reversal`, {}); sold.set(sale.designer_user_id, (sold.get(sale.designer_user_id) ?? 0) - Number(sale.square_feet)); added++;
+    }
+  }
+  return added;
+}
 async function earnings(env: Env, settings: any) {
   const owners = await designOwners(env);
-  const orders = (await env.DB.prepare(`SELECT id, design_slug, square_feet, estimated_total, status, created_at FROM order_requests`).all()).results ?? [];
+  const orders = (await env.DB.prepare(`SELECT id, design_slug, square_feet, estimated_total, status, created_at, COALESCE(is_sample, 0) is_sample FROM order_requests`).all()).results ?? [];
   const offers = (await env.DB.prepare(`SELECT designer_slug, amount, status FROM design_offers WHERE status IN ('accepted','paid')`).all()).results ?? [];
   const pays = (await env.DB.prepare(`SELECT designer_user_id, amount, status FROM designer_payouts`).all()).results ?? [];
   const accs = (await env.DB.prepare(`SELECT slug, user_id FROM designer_accounts`).all()).results ?? [];
   const rules = settings.designerRules;
-  const rate = (sqft: number) => (sqft >= 5000 ? rules.royaltyAtelier : sqft >= 2500 ? rules.royaltyStudio : rules.royaltyStarter) / 100;
-  const per = new Map<string, { sqft: number; sales: number; orders: number; jobs: number; paid: number; requested?: number; items: Map<string, { sqft: number; orders: number; sales: number }> }>();
+  const per = new Map<string, { sqft: number; sales: number; orders: number; jobs: number; paid: number; royalty?: number; requested?: number; items: Map<string, { sqft: number; orders: number; sales: number; royalty?: number }> }>();
   const get = (uid: string) => { if (!per.has(uid)) per.set(uid, { sqft: 0, sales: 0, orders: 0, jobs: 0, paid: 0, items: new Map() }); return per.get(uid)!; };
-  for (const o of orders) {
-    if (!COUNTED.has(o.status)) continue;
+  for (const o of orders as any[]) {
+    if (!COUNTED.has(o.status) || o.is_sample) continue;
     const uid = owners.get(o.design_slug); if (!uid) continue;
-    const p = get(uid); p.sqft += Number(o.square_feet); p.sales += Number(o.estimated_total); p.orders++;
-    const it = p.items.get(o.design_slug) ?? { sqft: 0, orders: 0, sales: 0 }; it.sqft += Number(o.square_feet); it.orders++; it.sales += Number(o.estimated_total); p.items.set(o.design_slug, it);
+    const p = get(uid); p.sales += Number(o.estimated_total); p.orders++;
+    const it = p.items.get(o.design_slug) ?? { sqft: 0, orders: 0, sales: 0, royalty: 0 }; it.orders++; it.sales += Number(o.estimated_total); p.items.set(o.design_slug, it);
   }
+  // square feet and royalties come only from the earnings record (locked per order)
+  await syncEarnings(env, settings);
+  const led = ((await env.DB.prepare(`SELECT designer_user_id, design_slug, SUM(square_feet) sq, SUM(amount) amt FROM designer_earnings GROUP BY designer_user_id, design_slug`).all()).results ?? []) as any[];
+  for (const l of led) { const p = get(l.designer_user_id); p.sqft += Number(l.sq); p.royalty = (p.royalty ?? 0) + Number(l.amt); const it = p.items.get(l.design_slug) ?? { sqft: 0, orders: 0, sales: 0, royalty: 0 }; it.sqft += Number(l.sq); it.royalty = (it.royalty ?? 0) + Number(l.amt); p.items.set(l.design_slug, it); }
   const accBySlug = new Map(accs.map((a: any) => [a.slug, a.user_id]));
   for (const f of offers) { const uid = accBySlug.get(f.designer_slug); if (uid) get(uid as string).jobs += Number(f.amount) * (1 - settings.general.commissionRate / 100); }
   // design requests: the designer's fee (less the studio commission) counts once the final file is delivered
@@ -120,8 +158,8 @@ async function earnings(env: Env, settings: any) {
   for (const p of pays as any[]) { const g = get(p.designer_user_id); if (p.status === "requested") g.requested = (g.requested ?? 0) + Number(p.amount); else g.paid += Number(p.amount); }
   const out = new Map<string, any>();
   for (const [uid, p] of per) {
-    const royalties = p.sqft * rate(p.sqft);
-    out.set(uid, { sqft: r2(p.sqft), sales: r2(p.sales), orders: p.orders, royalties: r2(royalties), jobs: r2(p.jobs), earned: r2(royalties + p.jobs), paid: r2(p.paid), requested: r2(p.requested ?? 0), owed: r2(royalties + p.jobs - p.paid), items: Object.fromEntries([...p.items].map(([k, v]) => [k, { ...v, sqft: r2(v.sqft), sales: r2(v.sales) }])) });
+    const royalties = p.royalty ?? 0;
+    out.set(uid, { sqft: r2(p.sqft), sales: r2(p.sales), orders: p.orders, royalties: r2(royalties), jobs: r2(p.jobs), earned: r2(royalties + p.jobs), paid: r2(p.paid), requested: r2(p.requested ?? 0), owed: r2(royalties + p.jobs - p.paid), items: Object.fromEntries([...p.items].map(([k, v]) => [k, { ...v, sqft: r2(v.sqft), sales: r2(v.sales), royalty: r2(v.royalty ?? 0) }])) });
   }
   return out;
 }
@@ -183,7 +221,44 @@ export async function handleApp(req: Request, env: Env, who: Who, origin: string
         await alert(env as any, { uid: o.user_id ?? null, email: o.customer_email, kind: "order_placed", tpl: { key: "order_placed", vars: { name: o.customer_name || "there", order: no, items: `${Math.round(Number(o.square_feet))} sq ft of wallpaper`, total: `$${Number(o.estimated_total).toFixed(2)}` } }, title: `We received your order ${no}`, body: `${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}. We'll email you when it's paid, printed and shipped.`, emailText: `Hello ${o.customer_name || ""},\n\nThank you for your order ${no}: ${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}.\n\nWe'll email you when it's paid, printed and shipped.\n\nArtisan Murals`, link: "/account?view=orders" });
         await alertOwners(env as any, { kind: "order", title: `New order ${no}`, body: `${o.customer_name || o.customer_email}: ${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}`, link: "/admin#orders" });
       }
+      // the server prices the order itself (Pro discount, shipping, tax), in case the browser stops before the last step
+      try { const { priceCartIfMissing } = await import("./account-api"); await priceCartIfMissing(env, cartId); } catch (e) { console.error("pricing", e); }
       return j({ ok: true, alerted: fresh.length });
+    }
+    // Order a sample from a design page. The price is decided here: free for approved Pro members (when free
+    // samples are on), else the sample price from Settings → Shipping. Samples earn the designer nothing.
+    if (p === "samples" && m === "POST") {
+      const st = await getSettings(env);
+      const slug = String(body.design ?? "").slice(0, 80), finish = String(body.finish ?? "").slice(0, 40);
+      const name = String(body.name ?? "").trim().slice(0, 100), email = String(body.email ?? who.email ?? "").trim().toLowerCase().slice(0, 200), address = String(body.address ?? "").trim().slice(0, 600);
+      if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || address.length < 8) return bad("Please fill in your name, email and full delivery address.");
+      const info = await designInfo(env, [slug]); if (!info[slug]) return bad("This design isn't available.", 404);
+      const today = (await env.DB.prepare(`SELECT COUNT(*) n FROM order_requests WHERE is_sample = 1 AND lower(customer_email) = ? AND created_at > strftime('%Y-%m-%dT%H:%M:%fZ','now','-1 day')`).bind(email).first()) as any;
+      if (Number(today?.n ?? 0) >= 6) return bad("You've ordered several samples today. Write to us if you need more.", 429);
+      let free = false;
+      if (who.uid) { const t: any = await env.DB.prepare(`SELECT trade_status FROM customer_terms WHERE user_id = ?`).bind(who.uid).first(); free = t?.trade_status === "approved" && st.pro?.freeSamples !== false; }
+      const price = free ? 0 : r2(Number(st.shipping?.samplePrice ?? 5));
+      const id = crypto.randomUUID(), no = id.slice(0, 8).toUpperCase();
+      const sel = { sample: true, finish, ...(body.color ? { color: String(body.color).slice(0, 60) } : {}), ...(body.colorName ? { colorName: String(body.colorName).slice(0, 60) } : {}) };
+      await env.DB.prepare(`INSERT INTO order_requests (id, cart_id, design_slug, finish, selection, square_feet, estimated_total, shipping, amount_due, status, customer_name, customer_email, phone, shipping_address, user_id, is_sample, notes, source) VALUES (?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, ?, ?, ?, ?, 1, ?, 'sample')`)
+        .bind(id, id, slug, finish, JSON.stringify(sel), price, price, free ? "paid" : "awaiting_payment", name, email, String(body.phone ?? "").slice(0, 40) || null, address, who.uid ?? null, free ? `Free ${st.pro?.name || "Artisan Pro"} sample` : "Sample").run();
+      const title = info[slug]!.title, proName = st.pro?.name || "Artisan Pro";
+      const what = `a sample of ${title}${finish ? ` (${finish})` : ""}`;
+      await alert(env as any, { uid: who.uid ?? null, email, kind: "order_placed", tpl: { key: "order_placed", vars: { name, order: no, items: what, total: free ? `$0.00 (free with ${proName})` : `$${price.toFixed(2)}` } }, title: `Sample ordered: ${title}`, body: free ? `Free with ${proName}. We'll email you when it ships.` : `$${price.toFixed(2)}. We'll send a payment link, then it ships.`, link: "/account?view=orders" });
+      await alertOwners(env as any, { kind: "order", title: `Sample ${no}: ${title}`, body: `${name} · ${finish || "any finish"} · ${free ? "free (Pro)" : `$${price.toFixed(2)}`}`, link: `/admin#orders:${id}` });
+      return j({ ok: true, order: no, free, price });
+    }
+    // "Track my order" page: order number (the 8 letters from the emails) + the email it was ordered with
+    if (p === "public/track" && m === "POST") {
+      const no = String(body.order ?? "").trim().replace(/^#/, "").toLowerCase(), em = String(body.email ?? "").trim().toLowerCase();
+      if (!/^[0-9a-f]{6,36}$/.test(no.replace(/-/g, "")) || !/@/.test(em)) return bad("Type the order number from your email (8 letters and numbers) and your email.");
+      const o: any = await env.DB.prepare(`SELECT id, status, carrier, tracking_number, status_updated_at, created_at FROM order_requests WHERE id LIKE ? AND lower(customer_email) = ? ORDER BY created_at DESC LIMIT 1`).bind(no + "%", em).first();
+      if (!o) return bad("We couldn't find an order with that number and email. Check both, or send us a message.", 404);
+      const stage = (st: string) => (["awaiting_payment", "paid"].includes(st) ? 0 : ["waiting_on_designer", "ready_to_print", "processing"].includes(st) ? 1 : st === "printing" ? 2 : st === "shipped" ? 3 : st === "delivered" ? 4 : -1);
+      const at = stage(o.status), names = ["Order received", "In production", "Printing", "Shipped", "Delivered"];
+      return j({ order: String(o.id).slice(0, 8).toUpperCase(), label: o.status === "cancelled" ? "Cancelled" : o.status === "refunded" ? "Refunded" : names[at] ?? "Order received",
+        steps: at < 0 ? [] : names.map((label, k) => ({ key: k, label, done: k < at, now: k === at })),
+        carrier: o.tracking_number ? o.carrier || "" : "", tracking: o.tracking_number || "", trackingLink: trackingUrl(o.carrier, o.tracking_number), updated: o.status_updated_at || o.created_at });
     }
     if (p === "public/settings") {
       const s = await getSettings(env);
@@ -476,7 +551,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
       const mockPaths = (mockRows as any[]).filter((x) => cids.has(x.colorway_id)).slice(0, 6).map((x) => x.image_path as string); paths.push(...mockPaths);
       const slug = `u-${u.id}`; const o: any = ov.get(slug);
       const e = earn.get(u.owner_id)?.items?.[slug];
-      return { id: u.id, slug, categories: canonicalCategories(parseJ(u.categories, [])), title: o?.title || u.title, sku: u.sku, kind: u.kind, repeat: u.repeat_style, widthCm: u.width_cm, heightCm: u.height_cm, status: u.status, review: u.review_status, reviewNote: u.review_note, submittedAt: u.submitted_at, createdAt: u.created_at, owner: users.get(u.owner_id)?.email ?? "", ownerName: profiles.get(u.owner_id) ?? null, colors: cs.map((c: any) => ({ id: c.id, name: c.name, swatch: c.swatch, path: c.artwork_path, hasOriginal: !!c.current_original_id })), thumbPath: thumb, mockPaths, meta: parseJ(u.error, null), recommendedFinish: parseJ(u.recommended_finish, null), description: o?.description ?? u.description ?? null, designerDescription: u.description ?? null, notes: u.designer_notes ?? null, tags: parseJ(u.tags, []), palette: u.palette ?? null, madeFor: parseJ(u.made_for, []), hidden: listing.get(slug) ?? false, pricePerSqft: o?.price_per_sqft ?? null, suggestedPrice: parseJ(u.error, {})?.suggestedPrice ?? null, story: o?.story ?? u.story, printFile: u.print_file_url, sales: e ?? null };
+      return { id: u.id, slug, categories: canonicalCategories(parseJ(u.categories, [])), palette: u.palette ?? "", title: o?.title || u.title, sku: u.sku, kind: u.kind, repeat: u.repeat_style, widthCm: u.width_cm, heightCm: u.height_cm, status: u.status, review: u.review_status, reviewNote: u.review_note, submittedAt: u.submitted_at, createdAt: u.created_at, owner: users.get(u.owner_id)?.email ?? "", ownerName: profiles.get(u.owner_id) ?? null, colors: cs.map((c: any) => ({ id: c.id, name: c.name, swatch: c.swatch, path: c.artwork_path, hasOriginal: !!c.current_original_id })), thumbPath: thumb, mockPaths, meta: parseJ(u.error, null), recommendedFinish: parseJ(u.recommended_finish, null), description: o?.description ?? u.description ?? null, designerDescription: u.description ?? null, notes: u.designer_notes ?? null, tags: parseJ(u.tags, []), palette: u.palette ?? null, madeFor: parseJ(u.made_for, []), hidden: listing.get(slug) ?? false, pricePerSqft: o?.price_per_sqft ?? null, suggestedPrice: parseJ(u.error, {})?.suggestedPrice ?? null, story: o?.story ?? u.story, printFile: u.print_file_url, sales: e ?? null };
     });
     const signed = await signAll(env, "designer-artwork", paths);
     // built-in catalog designs too
@@ -632,6 +707,16 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     return j({ ok: true });
   }
   // ----- payouts -----
+  // the earnings record, for the owner: per design, and every line (one per paid order, minus refunds)
+  if (p === "earnings" && m === "GET") {
+    await syncEarnings(env);
+    const log = ((await DB.prepare(`SELECT * FROM designer_earnings ORDER BY created_at DESC LIMIT 2000`).all()).results ?? []) as any[];
+    const prof = new Map(((await DB.prepare(`SELECT user_id, full_name FROM designer_profiles`).all()).results ?? []).map((x: any) => [x.user_id, x.full_name]));
+    const info = await designInfo(env, [...new Set(log.map((l) => l.design_slug))]);
+    const by = new Map<string, any>();
+    for (const l of log) { const k = l.design_slug; const b = by.get(k) ?? { slug: k, title: info[k]?.title ?? k, designer: prof.get(l.designer_user_id) ?? "", orders: 0, sqft: 0, royalty: 0 }; if (l.kind === "sale") b.orders++; else b.orders--; b.sqft += Number(l.square_feet); b.royalty += Number(l.amount); by.set(k, b); }
+    return j({ byDesign: [...by.values()].map((b) => ({ ...b, sqft: r2(b.sqft), royalty: r2(b.royalty) })).sort((a, b) => b.sqft - a.sqft), log: log.map((l) => ({ order: String(l.order_id).slice(0, 8).toUpperCase(), orderId: l.order_id, kind: l.kind, design: info[l.design_slug]?.title ?? l.design_slug, designer: prof.get(l.designer_user_id) ?? "", sqft: r2(Number(l.square_feet)), centsPerSqft: Number(l.cents_per_sqft), amount: r2(Number(l.amount)), at: l.created_at })) });
+  }
   if (p === "payouts" && m === "GET") {
     const users = await emailUsers(env);
     const settings = await getSettings(env);
@@ -747,6 +832,39 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     else if (r.kind === "setting") { const s = await getSettings(env); s.general.pricePerSqft = b.price; await DB.prepare(`UPDATE site_settings SET value = ? WHERE key = 'general'`).bind(JSON.stringify(s.general)).run(); }
     await DB.prepare(`UPDATE price_history SET undone = 1 WHERE id = ?`).bind(r.id).run();
     try { const { invalidateShopCache } = await import("@/lib/shop.server"); invalidateShopCache(); } catch {}
+    return j({ ok: true });
+  }
+  // ----- categories: how many designs use each one, and renaming re-tags those designs -----
+  if (p === "taxonomy/counts" && m === "GET") {
+    const rows = (await DB.prepare(`SELECT made_for, categories, palette FROM artwork_uploads WHERE deleted_at IS NULL`).all()).results ?? [];
+    const tax = parseTaxonomy((await getSettings(env)).taxonomy);
+    const out: Record<string, Record<string, number>> = { rooms: {}, styles: {}, themes: {}, colors: {} };
+    const bump = (k: string, v: string) => { const x = v.toLowerCase(); out[k]![x] = (out[k]![x] ?? 0) + 1; };
+    for (const r of rows as any[]) {
+      for (const v of new Set(canonicalRooms(parseJ(r.made_for, []) as string[]))) bump("rooms", v);
+      for (const v of new Set(parseJ(r.categories, []) as string[])) { const l = String(v); if (tax.themes.some((t) => t.toLowerCase() === l.toLowerCase())) bump("themes", l); else bump("styles", l); }
+      const pal = String(r.palette ?? "").toLowerCase();
+      for (const c of tax.colors) if (c.words.some((w) => pal.includes(w))) bump("colors", c.label);
+    }
+    return j(out);
+  }
+  if (p === "taxonomy/rename" && m === "POST") {
+    const kind = String(body.kind), from = String(body.from ?? "").trim(), to = String(body.to ?? "").trim().slice(0, 40);
+    if (!from || !to || !["rooms", "styles", "themes", "colors"].includes(kind)) return bad("Nothing to rename");
+    const col = kind === "rooms" ? "made_for" : kind === "colors" ? "palette" : "categories";
+    const rows = (await DB.prepare(`SELECT id, ${col} v FROM artwork_uploads WHERE deleted_at IS NULL AND lower(${col}) LIKE ?`).bind(`%${from.toLowerCase()}%`).all()).results ?? [];
+    let updated = 0;
+    for (const r of rows as any[]) {
+      let next: string;
+      if (col === "palette") next = String(r.v).split(",").map((x) => (x.trim().toLowerCase() === from.toLowerCase() ? to : x.trim())).filter(Boolean).join(", ");
+      else next = JSON.stringify([...new Set((parseJ(r.v, []) as string[]).map((x) => (String(x).toLowerCase() === from.toLowerCase() ? to : x)))]);
+      if (next !== r.v) { await DB.prepare(`UPDATE artwork_uploads SET ${col} = ? WHERE id = ?`).bind(next, r.id).run(); updated++; }
+    }
+    return j({ ok: true, updated });
+  }
+  mm = p.match(/^designs\/([0-9a-f-]{36})\/palette$/);
+  if (mm && m === "POST") {
+    await DB.prepare(`UPDATE artwork_uploads SET palette = ? WHERE id = ?`).bind(String(body.palette ?? "").slice(0, 200) || null, mm[1]).run();
     return j({ ok: true });
   }
   // ----- email templates: every email the site sends, ready-written and editable -----
