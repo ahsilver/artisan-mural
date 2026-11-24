@@ -6,6 +6,10 @@ import { useSession } from "@/hooks/use-session";
 import { AuthPanel } from "@/components/auth-panel";
 import { attachFile, papi } from "@/components/projects";
 import { StorefrontSprite } from "@/components/storefront/icons";
+import { cart } from "@/lib/cart";
+import { loadSite } from "@/lib/site-settings";
+import { uploadFile, driveImport, previewFromStored } from "@/lib/designer-files";
+import { OWN_GOOD_DPI, OWN_SLUG, ownDpi, ownSelection, type OwnFile } from "@/lib/own-image";
 
 export const Route = createFileRoute("/own")({
   loader: ({ context }) => ensureShop(context.queryClient),
@@ -35,7 +39,11 @@ function Own() {
   const [zoom, setZoom] = useState(1); const [pos, setPos] = useState<[number, number]>([50, 50]);
   const [mat, setMat] = useState(materials[0]?.id ?? "canvas");
   const [rights, setRights] = useState(false);
-  const [err, setErr] = useState(""); const [busy, setBusy] = useState(false); const [ask, setAsk] = useState<"" | "print" | "designer">("");
+  const [err, setErr] = useState(""); const [busy, setBusy] = useState(false); const [ask, setAsk] = useState<"" | "print" | "designer" | "drive">("");
+  // the full-size picture, once it is saved in the customer's own private folder
+  const [stored, setStored] = useState<OwnFile | null>(null); const [prog, setProg] = useState(""); const ownId = useRef("own-" + (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "00000000-0000-4000-8000-000000000000"));
+  const [goodDpi, setGoodDpi] = useState(OWN_GOOD_DPI); const [lowOk, setLowOk] = useState(false);
+  useEffect(() => { loadSite().then((st: any) => { const v = Number(st?.general?.ownGoodDpi); if (v > 0) setGoodDpi(v); }).catch(() => {}); }, []);
   const wallRef = useRef<HTMLDivElement>(null); const drag = useRef<{ x: number; y: number; p: [number, number] } | null>(null);
   const m = materials.find((x) => x.id === mat) ?? materials[0];
   const rate = unitPrice(undefined, m);
@@ -43,13 +51,57 @@ function Own() {
   // the picture covers the wall; zoom makes it bigger than the wall
   const ar = px[0] && px[1] ? px[0] / px[1] : 1.5, wallAr = w / h;
   const coverW = (ar >= wallAr ? h * ar : w) * zoom; // printed picture width in ft
-  const dpi = px[0] ? Math.round(px[0] / (coverW * 12)) : 0;
-  const dpiWord = !dpi ? "–" : dpi >= 60 ? `${dpi} DPI · Sharp up close` : dpi >= 35 ? `${dpi} DPI · Sharp from a few steps` : `${dpi} DPI · Too small for this wall`;
+  const dpi = px[0] ? ownDpi({ wallW: w, wallH: h, picW: px[0], picH: px[1], zoom }) : 0;
+  const sharp = dpi >= goodDpi; // sharp enough for this wall: straight to the cart; below: a warning and a choice
+  const dpiWord = !dpi ? "–" : sharp ? `${dpi} DPI · Sharp` : dpi >= goodDpi * 0.6 ? `${dpi} DPI · A little soft up close` : `${dpi} DPI · Low resolution`;
+  void coverW;
   const panels = Math.ceil((w * 12) / (PANEL_IN - 3));
 
-  const load = (url: string, nm: string) => { const i = new Image(); i.onload = () => { setPx([i.naturalWidth, i.naturalHeight]); setSrc(url); setName(nm); setZoom(1); setPos([50, 50]); setErr(""); }; i.onerror = () => setErr("We couldn't open that picture. Try a JPG or PNG, or check the Drive link is shared."); i.src = url; };
-  const onFile = (f?: File) => { if (!f) return; setFile(f); setDrive(""); load(URL.createObjectURL(f), f.name); };
-  const onDrive = () => { const id = driveId(driveLink.trim()); if (!id) { setErr("That isn't a Google Drive file link. It should look like drive.google.com/file/d/…"); return; } setDrive(id); setFile(null); load(`https://drive.google.com/thumbnail?id=${id}&sz=w2400`, "Google Drive picture"); };
+  const load = (url: string, nm: string, real?: [number, number]) => { const i = new Image(); i.onload = () => { setPx(real ?? [i.naturalWidth, i.naturalHeight]); setLowOk(false); setSrc(url); setName(nm); setZoom(1); setPos([50, 50]); setErr(""); }; i.onerror = () => setErr("We couldn't open that picture. Try a JPG or PNG, or check the Drive link is shared."); i.src = url; };
+  const onFile = (f?: File) => { if (!f) return; setFile(f); setDrive(""); setStored(null); load(URL.createObjectURL(f), f.name); };
+  // Google Drive: the full-size file is copied into the customer's own private folder first, then shown from there
+  const onDrive = async () => {
+    const id = driveId(driveLink.trim()); if (!id) { setErr("That isn't a Google Drive file link. It should look like drive.google.com/file/d/…"); return; }
+    if (!session) { setAsk("drive"); return; }
+    setErr(""); setBusy(true);
+    try {
+      const r: any = await driveImport(`https://drive.google.com/file/d/${id}/view`, ownId.current, (d, t, nm) => setProg(`Copying ${nm} from Google Drive · ${t ? Math.round((d / t) * 100) : 0}%`));
+      setProg("Making the preview…");
+      const pv = await previewFromStored(r.key, r.mime, r.size, r.dims);
+      if (!pv) throw new Error("We copied your file but can't show it. Use a JPG, PNG or TIFF.");
+      const real: [number, number] | undefined = r.dims?.width ? [r.dims.width, r.dims.height] : undefined;
+      setDrive(id); setFile(null);
+      setStored({ key: r.key, filename: r.filename, width: real?.[0] ?? 0, height: real?.[1] ?? 0 });
+      load(URL.createObjectURL(pv), r.filename, real);
+    } catch (x: any) { setErr(x.message || "We couldn't copy that file. Check it is shared as \"Anyone with the link\"."); }
+    setProg(""); setBusy(false);
+  };
+  /** The full-size picture in the customer's own folder (uploads it the first time). */
+  async function ensureStored(): Promise<OwnFile> {
+    if (stored) return stored;
+    if (!file) throw new Error("Upload your picture first.");
+    const r: any = await uploadFile(file, { uploadId: ownId.current, purpose: "original" }, (d, t) => setProg(`Saving your full-size picture · ${t ? Math.round((d / t) * 100) : 0}%`));
+    const s0: OwnFile = { key: r.key, filename: file.name, width: r.dims?.width || px[0], height: r.dims?.height || px[1] };
+    setStored(s0); setProg(""); return s0;
+  }
+  /** A small picture for the cart line (the print uses the full-size file). */
+  async function thumb(): Promise<string> {
+    try { const i = new Image(); i.src = src; await i.decode(); const k = 480 / Math.max(i.naturalWidth, i.naturalHeight); const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(i.naturalWidth * k)); c.height = Math.max(1, Math.round(i.naturalHeight * k)); c.getContext("2d")!.drawImage(i, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", 0.8); } catch { return ""; }
+  }
+  async function addToCart() {
+    setErr("");
+    if (!src) { setErr("Upload your picture first."); return; }
+    if (!rights) { setErr("Please confirm you own the image or have permission to print it."); return; }
+    if (!sharp && !lowOk) { setErr("This picture is low resolution for your wall. Tick the box to print it anyway, or send it to a designer to sharpen it."); return; }
+    if (!session) { setAsk("print"); return; }
+    setBusy(true);
+    try {
+      const f = await ensureStored();
+      cart.add({ design: OWN_SLUG, finish: mat, selection: ownSelection({ wallW: w, wallH: h, picW: px[0], picH: px[1], zoom, pos }), own: { ...f, thumb: await thumb() }, ...(sharp ? {} : { name: `Low resolution (${dpi} DPI), approved by customer` }) });
+      void navigate({ to: "/cart" });
+    } catch (x: any) { setErr(x.message || "That didn't go through. Please try again."); }
+    setProg(""); setBusy(false);
+  }
   useEffect(() => { const up = () => { drag.current = null; }; addEventListener("pointerup", up); return () => removeEventListener("pointerup", up); }, []);
 
   async function send(kind: "print" | "designer") {
@@ -59,10 +111,11 @@ function Own() {
     if (!session) { setAsk(kind); return; }
     setBusy(true);
     try {
+      const full = await ensureStored().catch(() => null);
       const atts = file ? [await attachFile(file)] : [];
       const brief = kind === "print"
         ? `Print my own image as wallpaper.\nWall: ${w} × ${h} ft (${sqft} sq ft), ${panels} panels.\nPaper: ${m?.name} (${money(rate)} / sq ft, about ${money(sqft * rate)}).\nPlacement: zoom ${Math.round(zoom * 100)}%, center ${Math.round(pos[0])}% / ${Math.round(pos[1])}%.\nMeasured sharpness: ${dpiWord}.${drive ? `\nGoogle Drive file: https://drive.google.com/file/d/${drive}/view` : ""}\nPlease check the file and send a proof and price.`
-        : `Please work on my picture for my wall: upscale, extend or touch it up as needed.\nWall: ${w} × ${h} ft. Paper: ${m?.name}.\nMeasured sharpness now: ${dpiWord}.${drive ? `\nGoogle Drive file: https://drive.google.com/file/d/${drive}/view` : ""}`;
+        : `Please work on my picture for my wall: upscale, extend or touch it up as needed.\nWall: ${w} × ${h} ft. Paper: ${m?.name}.\nMeasured sharpness now: ${dpiWord}.${drive ? `\nGoogle Drive file: https://drive.google.com/file/d/${drive}/view` : ""}${full ? `\nFull-size file saved: ${full.filename} (${full.width} × ${full.height} px)` : ""}`;
       const r = await papi("projects/create", { kind: "custom", designerSlug: "open", title: kind === "print" ? "Print my own image" : "Upscale / fix my own image", brief, room: "", wallSize: `${w} x ${h} ft`, attachments: atts });
       void navigate({ to: "/projects/$id", params: { id: r.id } });
     } catch (x: any) { setErr(x.message || "That didn't go through. Please try again."); }
@@ -84,7 +137,7 @@ function Own() {
             <span className="od-ic" aria-hidden="true">+</span>
             <b>Upload your image</b>
             <small>JPG, PNG or WEBP. The bigger the file, the sharper the print: we check it for you.</small>
-            <span className="od-drive" onClick={(e) => e.preventDefault()}><span className="od-sep">or paste a Google Drive link</span><span className="od-drow"><input value={driveLink} onChange={(e) => setDriveLink(e.target.value)} placeholder="https://drive.google.com/file/d/…" aria-label="Google Drive link to your picture" /><button type="button" className="btn btn-wine btn-sm" onClick={onDrive}>Use link</button></span></span>
+            <span className="od-drive" onClick={(e) => e.preventDefault()}><span className="od-sep">or paste a Google Drive link</span><span className="od-drow"><input value={driveLink} onChange={(e) => setDriveLink(e.target.value)} placeholder="https://drive.google.com/file/d/…" aria-label="Google Drive link to your picture" /><button type="button" className="btn btn-wine btn-sm" disabled={busy} onClick={() => void onDrive()}>{busy ? "Copying…" : "Use link"}</button></span></span>
           </label>
         ) : (
           <div className="own-work">
@@ -101,7 +154,7 @@ function Own() {
               <div className="own-under"><span>{panels} panels, {PANEL_IN} in wide, 3 in overlap</span><span className="own-acts"><button type="button" className="up-link" onClick={() => { setSrc(""); setFile(null); setDrive(""); }}>Use another picture</button></span></div>
             </div>
             <aside className="own-panel">
-              <div className="own-file"><img src={src} alt="" /><div><b>{name}</b><small>{px[0] ? `${px[0].toLocaleString()} × ${px[1].toLocaleString()} px${drive ? " · preview size" : ""}` : ""}</small></div></div>
+              <div className="own-file"><img src={src} alt="" /><div><b>{name}</b><small>{px[0] ? `${px[0].toLocaleString()} × ${px[1].toLocaleString()} px${stored ? " · full size saved" : ""}` : ""}</small></div></div>
               <div className="blk"><h3 className="bh"><span>1</span>Your wall</h3>
                 <div className="sz-inputs">
                   <label className="fld"><span>Width</span><span className="iv"><input type="number" min={2} max={60} step={0.5} value={w} onChange={(e) => setW(Math.max(2, Math.min(60, +e.target.value || 2)))} inputMode="decimal" /><em>ft</em></span></label>
@@ -109,20 +162,31 @@ function Own() {
                   <label className="fld"><span>Height</span><span className="iv"><input type="number" min={2} max={20} step={0.5} value={h} onChange={(e) => setH(Math.max(2, Math.min(20, +e.target.value || 2)))} inputMode="decimal" /><em>ft</em></span></label>
                 </div></div>
               <div className="blk"><h3 className="bh"><span>2</span>Print sharpness</h3>
-                <div className="sharp"><div className="sharp-top"><span>Measured from your file</span><b>{dpiWord}</b></div><div className="meter own-meter"><i style={{ width: `${Math.min(100, (dpi / 80) * 100)}%`, background: dpi >= 60 ? "#4E7A4A" : dpi >= 35 ? "#C9A24D" : "#B03A2E" }} /><span style={{ left: "44%" }} /><span style={{ left: "75%" }} /></div></div>
-                <p className="hint">{drive ? "Measured from Google's preview; the studio checks the full-size file." : dpi && dpi < 35 ? "Too small for this wall. Send it to a designer to upscale it, or choose a smaller wall." : "35 DPI is sharp from a few steps away, 60 DPI is sharp up close."}</p></div>
+                <div className="sharp"><div className="sharp-top"><span>Measured from your file</span><b>{dpiWord}</b></div><div className="meter own-meter"><i style={{ width: `${Math.min(100, (dpi / (goodDpi * 1.4)) * 100)}%`, background: sharp ? "#4E7A4A" : dpi >= goodDpi * 0.6 ? "#C9A24D" : "#B03A2E" }} /><span style={{ left: `${(0.6 / 1.4) * 100}%` }} /><span style={{ left: `${(1 / 1.4) * 100}%` }} /></div></div>
+                <p className="hint">{sharp ? `Sharp on a ${w} × ${h} ft wall. Made bigger on the wall, it gets softer.` : "Low resolution for this wall: it can look soft or blurry up close, but often fine from across the room. Make the picture smaller on the wall, choose a smaller wall, or have a designer sharpen it."}</p></div>
               <div className="blk"><h3 className="bh"><span>3</span>Paper</h3>
                 <div className="chips papers" role="radiogroup" aria-label="Paper">{materials.map((x) => <button key={x.id} type="button" role="radio" aria-checked={x.id === mat} className={"chip" + (x.id === mat ? " on" : "")} onClick={() => setMat(x.id)}>{x.name}<small>{money(unitPrice(undefined, x))}</small></button>)}</div></div>
               <div className="sz-total"><div><b>{sqft} sq ft</b><small>{m?.name} · {money(rate)} / sq ft</small></div><strong>{money(sqft * rate)}</strong></div>
               <label className="co-check own-rights"><input type="checkbox" checked={rights} onChange={(e) => setRights(e.target.checked)} /><span>I own this image or have permission to print it.</span></label>
-              <button type="button" className="btn btn-wine big" disabled={busy} onClick={() => send("print")}>{busy ? "Sending…" : "Get my proof & price"}</button>
-              <p className="hint">The studio checks your file, sends a proof of exactly what will print, and the final price. You pay after you approve.</p>
+              {sharp ? <>
+                <button type="button" className="btn btn-wine big" disabled={busy} onClick={() => void addToCart()}>{busy ? (prog || "Saving…") : "Add to cart"}</button>
+                <p className="hint">We save your full-size picture and print exactly the part you placed on the wall.</p>
+              </> : <div className="own-low" role="status">
+                <b>Low resolution for this wall ({dpi} DPI)</b>
+                <p>We recommend a designer sharpens it first. You can still print it as it is.</p>
+                <button type="button" className="btn btn-wine big" disabled={busy} onClick={() => send("designer")}>{busy ? (prog || "Sending…") : "Send to a designer to sharpen it"}</button>
+                <label className="co-check"><input type="checkbox" checked={lowOk} onChange={(e) => setLowOk(e.target.checked)} /><span>I understand it may not look sharp. Print it as it is.</span></label>
+                <button type="button" className="btn optline" disabled={busy || !lowOk} onClick={() => void addToCart()}>Print it anyway · add to cart</button>
+              </div>}
+              {prog && <p className="hint" role="status">{prog}</p>}
               {err && <p className="up-err" role="alert">{err}</p>}
-              {ask && !session && <div className="own-signin"><b>Sign in to send it</b><p className="hint">So we can send you the proof and the price.</p><AuthPanel kicker="" title="" sub="" /></div>}
+              {ask && ask !== "drive" && !session && <div className="own-signin"><b>Sign in to continue</b><p className="hint">We save your full-size picture in your account, so it's safe until it's printed.</p><AuthPanel kicker="" title="" sub="" /></div>}
             </aside>
           </div>
         )}
+        {!src && prog && <p className="hint" role="status">{prog}</p>}
         {err && !src && <p className="up-err" role="alert">{err}</p>}
+        {ask === "drive" && !session && !src && <div className="own-signin"><b>Sign in to copy your picture from Google Drive</b><p className="hint">We copy the full-size file into your account, so it's safe until it's printed.</p><AuthPanel kicker="" title="" sub="" /></div>}
         <div className="own-pro">
           <div><b>Want it custom, bigger or sharper?</b><p>A designer can upscale a small photo, extend it to a bigger wall, change colors, remove things or redraw it as artwork. You get a price first and approve a proof before printing.</p></div>
           <button type="button" className="btn btn-wine" onClick={() => (src ? send("designer") : void navigate({ to: "/custom-request" }))}>Send this picture to a designer</button>

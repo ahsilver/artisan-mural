@@ -8,7 +8,9 @@ import { orderSqft, repeatStyle, sizeIssue, wallSelectionSchema } from "@/lib/wa
 export const createCartOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({
-    items: z.array(z.object({ design: z.string().max(60), finish: z.string().max(60), selection: wallSelectionSchema, name: z.string().trim().max(40).optional() })).min(1).max(30),
+    items: z.array(z.object({ design: z.string().max(60), finish: z.string().max(60), selection: wallSelectionSchema, name: z.string().trim().max(40).optional(),
+      // "Your own image": the customer's picture, already stored full size in their own private folder
+      own: z.object({ key: z.string().max(400), filename: z.string().max(200), width: z.number().int().positive().max(1000000), height: z.number().int().positive().max(1000000) }).optional() })).min(1).max(30),
     name: z.string().trim().min(1).max(100),
     phone: z.string().trim().max(40),
     address: z.string().trim().min(5).max(600),
@@ -21,6 +23,15 @@ export const createCartOrder = createServerFn({ method: "POST" })
     const { loadShopData } = await import("@/lib/shop.server");
     registerShop(await loadShopData());
     const rows = data.items.map((item) => {
+      if (item.own) {
+        // the customer's own picture: priced at the shop's standard rate for the paper, checked on the server
+        const material = materials.find((m) => m.id === item.finish);
+        if (!material) throw new Error("One finish in your cart is no longer available.");
+        if (!item.own.key.startsWith(`customer-originals/${context.userId}/`) || item.own.key.includes("..")) throw new Error("Please upload your picture again.");
+        const sqft = orderSqft(item.selection);
+        const selection = { ...item.selection, own: item.own, ...(item.name ? { wallName: item.name } : {}) };
+        return { user_id: context.userId, cart_id: cartId, design_slug: "own-image", finish: material.id, selection, square_feet: Math.round(sqft * 100) / 100, estimated_total: Math.round(sqft * unitPrice(undefined, material) * 100) / 100, customer_name: data.name, customer_email: email, phone: data.phone || null, shipping_address: data.address, billing_address: data.billing || data.address, notes: data.notes || null, status: "awaiting_payment" } as any;
+      }
       const design = designBySlug(item.design);
       const material = materials.find((m) => m.id === item.finish);
       if (!design || !material || isHidden(design.slug)) throw new Error("One wallpaper or finish in your cart is no longer available.");

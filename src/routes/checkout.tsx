@@ -1,3 +1,4 @@
+import { ownDesign } from "@/lib/own-image";
 import { ensureShop, useLiveDesigns } from "@/lib/shop";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -26,7 +27,7 @@ function Checkout() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [placed, setPlaced] = useState<{ total: number; email: string } | null>(null);
-  const lines = items.map(i => { const d0 = designBySlug(i.design); return { ...i, d: d0 ? withColorway(d0, i.selection.color) : undefined, m: materials.find(m => m.id === i.finish) }; }).filter(l => l.d && l.m);
+  const lines = items.map(i => { const d0 = i.own ? ownDesign(i.own) : designBySlug(i.design); return { ...i, d: d0 ? withColorway(d0, i.selection.color) : undefined, m: materials.find(m => m.id === i.finish) }; }).filter(l => l.d && l.m);
   const total = lines.reduce((n, l) => n + orderSqft(l.selection) * unitPrice(l.d, l.m), 0);
   const [acct, setAcct] = useState<any>(null);
   const [coupon, setCoupon] = useState(""); const [appliedCoupon, setAppliedCoupon] = useState("");
@@ -48,11 +49,11 @@ function Checkout() {
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget); const v = (k: string) => String(f.get(k) ?? "");
-    const big = lines.find(l => repeatStyle(l.d!) === "none" && sizeIssue(l.d!, l.selection));
+    const big = lines.find(l => !l.own && repeatStyle(l.d!) === "none" && sizeIssue(l.d!, l.selection));
     if (big) { setError(`Your wall is bigger than ${big.d!.title} was made for. Don't worry, we can fix it: open it from your cart and tap "Ask the designer to make it fit".`); return; }
     setBusy(true); setError("");
     try {
-      const r = await create({ data: { items: lines.map(l => ({ design: l.design, finish: l.finish, selection: l.selection, ...(l.name ? { name: l.name } : {}) })), name: v("name"), phone: v("phone"), address: [v("address"), v("city"), v("state"), v("postal"), v("country")].filter(Boolean).join(", "), ...(sameBill ? {} : { billing: [v("bname"), v("baddress"), v("bcity"), v("bstate"), v("bpostal"), v("bcountry")].filter(Boolean).join(", ") }), notes: v("notes") } });
+      const r = await create({ data: { items: lines.map(l => ({ design: l.design, finish: l.finish, selection: l.selection, ...(l.name ? { name: l.name } : {}), ...(l.own ? { own: { key: l.own.key, filename: l.own.filename, width: l.own.width, height: l.own.height } } : {}) })), name: v("name"), phone: v("phone"), address: [v("address"), v("city"), v("state"), v("postal"), v("country")].filter(Boolean).join(", "), ...(sameBill ? {} : { billing: [v("bname"), v("baddress"), v("bcity"), v("bstate"), v("bpostal"), v("bcountry")].filter(Boolean).join(", ") }), notes: v("notes") } });
       void fetch("/backend/orders-placed", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cartId: (r as any)?.cartId }) }).catch(() => {});
       let fin: any = null;
       try { fin = await api("account/finalize", { body: { cartId: r.cartId, coupon: appliedCoupon, state: v("state"), useCredit } }); } catch {} if (fin?.firstOrder) try { localStorage.removeItem("am-welcome-code"); localStorage.setItem("am-popup-hide-until", String(Date.now() + 365 * 864e5)); } catch {}

@@ -4,6 +4,7 @@ import { api, useApi, Msg, Field, Switch, useSaver, Pill } from "./common";
 type F = { k: string; label: string; type?: "text" | "number" | "bool" | "select" | "secret" | "textarea" | "image"; options?: string[]; hint?: string };
 const GROUPS: Record<string, { title: string; note?: string; fields: F[] }> = {
   general: { title: "General", fields: [
+    { k: "ownGoodDpi", label: "Your own image: sharp enough at (DPI)", type: "number", hint: "At or above this, customers add their own picture straight to the cart. Below it they see a low-resolution warning and choose: print anyway, or send it to a designer." },
     { k: "siteName", label: "Site name" }, { k: "contactEmail", label: "Contact email" }, { k: "contactPhone", label: "Contact phone" },
     { k: "currency", label: "Currency", type: "select", options: ["USD", "CAD", "EUR", "GBP"] }, { k: "units", label: "Default units", type: "select", options: ["ft", "in", "cm"] },
     { k: "pricePerSqft", label: "Default price per sq ft ($)", type: "number" }, { k: "fitServiceFee", label: "Fit-to-wall service fee ($)", type: "number" }, { k: "commissionRate", label: "Studio commission on designer fees (%)", type: "number" },

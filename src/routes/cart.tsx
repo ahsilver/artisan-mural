@@ -1,3 +1,4 @@
+import { ownDesign } from "@/lib/own-image";
 import { ensureShop, useLiveDesigns } from "@/lib/shop";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { StorefrontSprite } from "@/components/storefront/icons";
@@ -19,8 +20,8 @@ function CartPage() {
   const navigate = useNavigate();
   const anotherWall = (l: { id: string; design: string; finish: string; selection: any }) => { const id = cart.duplicate(l.id); if (id) void navigate({ to: "/design/$slug/preview", params: { slug: l.design }, search: { ...l.selection, finish: l.finish, line: id } }); };
   useLiveDesigns(); // registers uploaded designs on the client after a hard reload
-  const lines = items.map(i => { const d = designBySlug(i.design); return { ...i, d: d ? withColorway(d, i.selection.color) : undefined, m: materials.find(m => m.id === i.finish) }; }).filter(l => l.d && l.m);
-  const tooBigLine = (l: (typeof lines)[number]) => repeatStyle(l.d!) === "none" && !!sizeIssue(l.d!, l.selection);
+  const lines = items.map(i => { const d = i.own ? ownDesign(i.own) : designBySlug(i.design); return { ...i, d: d ? withColorway(d, i.selection.color) : undefined, m: materials.find(m => m.id === i.finish) }; }).filter(l => l.d && l.m);
+  const tooBigLine = (l: (typeof lines)[number]) => !l.own && repeatStyle(l.d!) === "none" && !!sizeIssue(l.d!, l.selection);
   const anyBig = lines.some(tooBigLine);
   const total = lines.reduce((n, l) => n + orderSqft(l.selection) * unitPrice(l.d, l.m), 0);
   const crumbs = <div className="pg crumbs-row"><nav className="crumbs" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><b>Cart</b></nav></div>;
@@ -42,15 +43,15 @@ function CartPage() {
                 <div className="ci-crop-pic"><MuralFramer design={l.d!} selection={l.selection} compact /></div>
                 <div className="ci-body">
                   {(l.name || lines.filter((x) => x.design === l.design).length > 1) && <input className="ci-name" aria-label="Wall name" data-testid="wall-name" defaultValue={l.name ?? ""} placeholder="Wall name" maxLength={40} onBlur={(e) => { const v = e.target.value.trim(); if (v !== (l.name ?? "")) cart.update(l.id, { name: v || undefined } as any); }} />}
-                  <b><Link to="/design/$slug" params={{ slug: l.design }}>{l.d!.title}{cw ? ` · ${cw.name}` : ""}</Link></b>
+                  <b>{l.own ? <Link to="/own">Your own image · {l.own.filename}</Link> : <Link to="/design/$slug" params={{ slug: l.design }}>{l.d!.title}{cw ? ` · ${cw.name}` : ""}</Link>}</b>
                   <small>{l.selection.width} × {l.selection.height} {l.selection.unit} · {sqft.toFixed(1)} sq ft · {l.m!.name}</small>
                   <small className="ci-crop">Exactly as printed on your wall</small>
                   {tooBigLine(l) && <p role="status" data-testid="cart-oversize" className="notice">This mural is made for walls up to {muralMaxLabel(l.d!, l.selection) ?? "its original size"}. The designer can make it fit: open it and choose “Chat with the designer”.</p>}
-                  <span className="ci-act">
+                  {l.own ? <span className="ci-act"><button type="button" className="rm" onClick={() => cart.remove(l.id)} aria-label="Remove your own image">Remove</button></span> : <span className="ci-act">
                     <Link className="ed" to="/design/$slug/preview" params={{ slug: l.design }} search={{ ...l.selection, finish: l.finish, line: l.id }}>Edit</Link>
                     <button type="button" className="ed" onClick={() => anotherWall(l)}>Add another wall</button>
                     <button type="button" className="rm" onClick={() => cart.remove(l.id)} aria-label={`Remove ${l.d!.title}`}>Remove</button>
-                  </span>
+                  </span>}
                 </div>
                 <strong>{money(sqft * unitPrice(l.d, l.m))}</strong>
               </div>

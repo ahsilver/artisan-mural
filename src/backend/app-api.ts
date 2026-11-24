@@ -16,7 +16,7 @@ export const ORDER_FLOW = ["awaiting_payment", "paid", "waiting_on_designer", "r
 export const DEFAULT_SETTINGS: Record<string, any> = {
   pro: { enabled: true, name: "Artisan Pro", discountPct: 20, freeSamples: true, freeShipping: true, approvalDays: "1–2 business days", notifyEmail: "" },
   popup: { enabled: true, pct: 10, headline: "10% off your first order", text: "Join our list for new designs and get a one-time code for your first order.", delaySec: 8, exitIntent: true, hideDays: 14 },
-  general: { siteName: "Artisan Mural", contactEmail: "", contactPhone: "", currency: "USD", pricePerSqft: 4.5, fitServiceFee: 45, commissionRate: 10, units: "ft", timezone: "America/New_York" },
+  general: { ownGoodDpi: 100, siteName: "Artisan Mural", contactEmail: "", contactPhone: "", currency: "USD", pricePerSqft: 4.5, fitServiceFee: 45, commissionRate: 10, units: "ft", timezone: "America/New_York" },
   homepage: {
     banner: { enabled: false, text: "", link: "" },
     hero: { title: "", subtitle: "", ctaText: "", ctaLink: "/browse", image: "" },
@@ -131,6 +131,18 @@ export async function syncEarnings(env: Env, settings?: any) {
   }
   return added;
 }
+/** "Your own image" orders: the customer's full-size picture (in their private folder) becomes the order's print
+ *  original, and the order is marked as a mural so "Ready to print" crops exactly the part they placed on the wall.
+ *  Runs on the server only; safe to run again. */
+export async function attachOwnImage(env: Env, o: any) {
+  if (o?.design_slug !== "own-image") return;
+  const sel = parseJ(o.selection, {}); const own = sel?.own;
+  if (!own?.key || !o.user_id || !String(own.key).startsWith(`customer-originals/${o.user_id}/`) || String(own.key).includes("..")) return;
+  if (!o.print_design_snapshot) await env.DB.prepare(`UPDATE order_requests SET print_design_snapshot = ? WHERE id = ? AND print_design_snapshot IS NULL`).bind(JSON.stringify({ kind: "mural", repeat: "none", title: "Customer's own image" }), o.id).run();
+  const path = String(own.key).slice("customer-originals/".length);
+  const has: any = await env.DB.prepare(`SELECT id FROM order_files WHERE order_id = ? AND bucket = 'customer-originals'`).bind(o.id).first();
+  if (!has && (await env.FILES.head(own.key))) await env.DB.prepare(`INSERT INTO order_files (id, order_id, bucket, path, label, width, height, created_by) VALUES (?, ?, 'customer-originals', ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), o.id, path, `Customer file: ${String(own.filename || "picture").slice(0, 100)}`, Number(own.width) || null, Number(own.height) || null, o.user_id).run();
+}
 async function earnings(env: Env, settings: any) {
   const owners = await designOwners(env);
   const orders = (await env.DB.prepare(`SELECT id, design_slug, square_feet, estimated_total, status, created_at, COALESCE(is_sample, 0) is_sample FROM order_requests`).all()).results ?? [];
@@ -221,6 +233,8 @@ export async function handleApp(req: Request, env: Env, who: Who, origin: string
         await alert(env as any, { uid: o.user_id ?? null, email: o.customer_email, kind: "order_placed", tpl: { key: "order_placed", vars: { name: o.customer_name || "there", order: no, items: `${Math.round(Number(o.square_feet))} sq ft of wallpaper`, total: `$${Number(o.estimated_total).toFixed(2)}` } }, title: `We received your order ${no}`, body: `${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}. We'll email you when it's paid, printed and shipped.`, emailText: `Hello ${o.customer_name || ""},\n\nThank you for your order ${no}: ${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}.\n\nWe'll email you when it's paid, printed and shipped.\n\nArtisan Murals`, link: "/account?view=orders" });
         await alertOwners(env as any, { kind: "order", title: `New order ${no}`, body: `${o.customer_name || o.customer_email}: ${Math.round(Number(o.square_feet))} sq ft, $${Number(o.estimated_total).toFixed(2)}`, link: "/admin#orders" });
       }
+      // a customer's own picture becomes the order's print original
+      for (const r of rows as any[]) if (r.design_slug === "own-image") { try { await attachOwnImage(env, await env.DB.prepare(`SELECT * FROM order_requests WHERE id = ?`).bind(r.id).first()); } catch (e) { console.error("own image", e); } }
       // the server prices the order itself (Pro discount, shipping, tax), in case the browser stops before the last step
       try { const { priceCartIfMissing } = await import("./account-api"); await priceCartIfMissing(env, cartId); } catch (e) { console.error("pricing", e); }
       return j({ ok: true, alerted: fresh.length });
@@ -420,8 +434,9 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
   }
   let mm = p.match(/^orders\/([0-9a-f-]{36})$/);
   if (mm && m === "GET") {
-    const o: any = await DB.prepare(`SELECT * FROM order_requests WHERE id = ?`).bind(mm[1]).first();
+    let o: any = await DB.prepare(`SELECT * FROM order_requests WHERE id = ?`).bind(mm[1]).first();
     if (!o) return bad("Order not found", 404);
+    if (o.design_slug === "own-image" && !o.print_design_snapshot) { await attachOwnImage(env, o); o = await DB.prepare(`SELECT * FROM order_requests WHERE id = ?`).bind(mm[1]).first(); }
     const events = (await DB.prepare(`SELECT * FROM order_events WHERE order_id = ? ORDER BY created_at DESC`).bind(o.id).all()).results ?? [];
     // print-ready file(s)
     const files: { label: string; url: string }[] = [];
@@ -458,7 +473,12 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     // high-res artwork for preview / crop
     let art: any = null;
     const custFile: any = (crops as any[]).find((c) => String(c.label).startsWith("Customer file"));
-    if (custFile && !String(o.design_slug).startsWith("u-")) art = { name: custFile.label, url: env.PUBLIC_ORIGIN + "/storage/v1" + (await signUrl(env, custFile.bucket, custFile.path, 3600)) };
+    if (custFile && !String(o.design_slug).startsWith("u-")) {
+      const cu = env.PUBLIC_ORIGIN + "/storage/v1" + (await signUrl(env, custFile.bucket, custFile.path, 6 * 3600)); const fname = String(custFile.path).split("/").pop() || "picture";
+      const head = custFile.bucket === "customer-originals" ? await env.FILES.head(`${custFile.bucket}/${custFile.path}`) : null;
+      const mime = head?.httpMetadata?.contentType || (/\.tiff?$/i.test(fname) ? "image/tiff" : /\.png$/i.test(fname) ? "image/png" : "image/jpeg");
+      art = { name: custFile.label, url: cu, original: { url: cu, filename: fname.replace(/^\d+-/, ""), mime, size: head?.size ?? null, width: custFile.width, height: custFile.height } };
+    }
     else if (String(o.design_slug).startsWith("u-")) {
       const cols = (await DB.prepare(`SELECT c.name, c.artwork_path, p.storage_path, p.filename, p.mime_type, p.byte_size, p.pixel_width, p.pixel_height FROM artwork_colorways c LEFT JOIN print_originals p ON p.id = c.current_original_id WHERE c.upload_id = ? ORDER BY c.position`).bind(String(o.design_slug).slice(2)).all()).results ?? [];
       const sel = parseJ(o.selection, {}); const pos = /^c\d+$/.test(sel?.color ?? "") ? Number(sel.color.slice(1)) : 0;
@@ -470,7 +490,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
       const po: any = await DB.prepare(`SELECT storage_path, filename, mime_type, byte_size, pixel_width, pixel_height FROM print_originals WHERE id = ?`).bind(o.print_original_id).first();
       if (po?.storage_path) art.original = { url: env.PUBLIC_ORIGIN + "/storage/v1" + (await signUrl(env, "print-originals", po.storage_path, 6 * 3600)), filename: po.filename, mime: po.mime_type, size: po.byte_size, width: po.pixel_width, height: po.pixel_height };
     }
-    let title = o.design_slug === "outside-file" ? "Customer file (outside order)" : (await designInfo(env, [o.design_slug]))[o.design_slug]?.title ?? o.design_slug;
+    let title = o.design_slug === "own-image" ? "Customer's own image" : o.design_slug === "outside-file" ? "Customer file (outside order)" : (await designInfo(env, [o.design_slug]))[o.design_slug]?.title ?? o.design_slug;
     if (o.project_id && String(o.design_slug).startsWith("project-")) { const pt: any = await DB.prepare(`SELECT title FROM projects WHERE id = ?`).bind(o.project_id).first(); if (pt) title = `Custom: ${pt.title}`; }
     const others = o.cart_id ? ((await DB.prepare(`SELECT id, design_slug, estimated_total, status FROM order_requests WHERE cart_id = ? AND id <> ?`).bind(o.cart_id, o.id).all()).results ?? []) : [];
     return j({ order: { ...o, design_title: title, selection: parseJ(o.selection, {}), print_design_snapshot: parseJ(o.print_design_snapshot) }, art, events, files, project, cartSiblings: others, trackingUrl: trackingUrl(o.carrier, o.tracking_number) });

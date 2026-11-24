@@ -1,8 +1,10 @@
 import { useSyncExternalStore } from "react";
 import type { WallSelection } from "@/lib/wall-selection";
+import type { OwnFile } from "@/lib/own-image";
 
 /** Browser-held cart; prices are always recomputed on the server at checkout. */
-export type CartItem = { id: string; design: string; finish: string; selection: WallSelection; name?: string };
+/** own: the customer's own picture ("Your own image"), stored full size in their private folder. */
+export type CartItem = { id: string; design: string; finish: string; selection: WallSelection; name?: string; own?: OwnFile };
 const KEY = "artisan-cart";
 const listeners = new Set<() => void>();
 let cache: CartItem[] | null = null;

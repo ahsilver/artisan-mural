@@ -36,9 +36,11 @@ function keyFor(who: Who, bucket: string, uploadId: string, name: string) {
 }
 function ownsKey(who: Who, key: string) {
   const [bucket, uid] = key.split("/");
-  return ["print-originals", "designer-artwork", "project-files"].includes(bucket) && uid === who.uid && !key.includes("..");
+  return ["print-originals", "designer-artwork", "project-files", "customer-originals"].includes(bucket) && uid === who.uid && !key.includes("..");
 }
 /** A paid design request this designer delivers files for (uploads land in project-files/<uid>/<projectId>/). */
+/** A customer's own picture for "Your own image" (id "own-<uuid>"); stored under their own account folder. */
+function ownImage(who: Who, id: string) { return who.uid && /^own-[0-9a-f-]{36}$/.test(String(id || "")) ? { id: String(id), own: true } : null; }
 async function ownProject(env: Env, who: Who, id: string) {
   const p: any = await env.DB.prepare(`SELECT id FROM projects WHERE id = ? AND designer_user_id = ? AND status IN ('in_progress','delivered')`).bind(id, who.uid).first();
   return p ? { id: p.id, project: true } : null;
@@ -255,10 +257,10 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
   }
   // ---- files ----
   if (p === "files/start" && m === "POST") {
-    const u: any = (await ownUpload(env, who, body.uploadId)) ?? (await ownProject(env, who, body.uploadId)); if (!u) return bad("Design not found", 404);
+    const u: any = ownImage(who, body.uploadId) ?? (await ownUpload(env, who, body.uploadId)) ?? (await ownProject(env, who, body.uploadId)); if (!u) return bad("Design not found", 404);
     const settings = await getSettings(env);
     if (Number(body.size) > settings.designerRules.maxUploadGb * 1024 ** 3) return bad(`Files up to ${settings.designerRules.maxUploadGb} GB.`);
-    const bucket = u.project ? "project-files" : body.purpose === "original" ? "print-originals" : "designer-artwork";
+    const bucket = u.own ? "customer-originals" : u.project ? "project-files" : body.purpose === "original" ? "print-originals" : "designer-artwork";
     const key = keyFor(who, bucket, u.id, body.filename || "file");
     const mime = body.type || "application/octet-stream";
     if (Number(body.size) <= 90 * 1024 * 1024) return j({ key, single: true });
@@ -268,7 +270,7 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
   if (p === "files/put" && (m === "PUT" || m === "POST")) {
     const key = url.searchParams.get("key") ?? "";
     if (!ownsKey(who, key)) return bad("Not your file", 403);
-    if (/^(print-originals|project-files)\//.test(key) && (await env.FILES.head(key))) return bad("This file is kept and can't be replaced.", 409);
+    if (/^(print-originals|project-files|customer-originals)\//.test(key) && (await env.FILES.head(key))) return bad("This file is kept and can't be replaced.", 409);
     const mime = req.headers.get("content-type") || "application/octet-stream";
     const obj = await env.FILES.put(key, req.body, { httpMetadata: { contentType: mime } });
     await recordObject(env, key, obj.size, mime, who.uid);
@@ -305,10 +307,10 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
   }
   // ---- Google Drive import (client-driven steps, server does the copying) ----
   if (p === "drive/start" && m === "POST") {
-    const u: any = (await ownUpload(env, who, body.uploadId)) ?? (await ownProject(env, who, body.uploadId)); if (!u) return bad("Design not found", 404);
+    const u: any = ownImage(who, body.uploadId) ?? (await ownUpload(env, who, body.uploadId)) ?? (await ownProject(env, who, body.uploadId)); if (!u) return bad("Design not found", 404);
     const id = driveId(String(body.link || ""));
     if (!id) return bad("That doesn't look like a Google Drive file link.");
-    if (!u.project && !body.fresh) {
+    if (!u.project && !u.own && !body.fresh) {
       // the same Drive file was already copied for this designer (e.g. one folder used for several designs): reuse it, no second copy
       const prev: any = await DB.prepare(`SELECT * FROM import_jobs WHERE owner_id = ? AND src = ? AND status = 'done' AND file_key LIKE 'print-originals/%' ORDER BY created_at DESC LIMIT 1`).bind(who.uid, id).first();
       if (prev) { const ob = await env.FILES.head(prev.file_key); if (ob && Number(ob.size) === Number(prev.total)) return j({ job: prev.id, reused: true, filename: prev.filename, total: Number(prev.total), key: prev.file_key, mime: prev.mime, partSize: PART, parts: 0 }); }
@@ -332,7 +334,7 @@ export async function designerRoutes(req: Request, env: Env, who: Who, p: string
       const have = (((await DB.prepare(`SELECT part FROM import_parts WHERE job_id = ?`).bind(open.id).all()).results ?? []) as any[]).map((x) => Number(x.part));
       return j({ job: open.id, filename: open.filename, total, key: open.file_key, mime: open.mime, partSize: PART, parts: plan.parts, have, resumed: true });
     }
-    const key = keyFor(who, u.project ? "project-files" : "print-originals", u.id, fname);
+    const key = keyFor(who, u.own ? "customer-originals" : u.project ? "project-files" : "print-originals", u.id, fname);
     const mime = mimeOf(fname, ct);
     const mp = await env.FILES.createMultipartUpload(key, { httpMetadata: { contentType: mime } });
     const job = crypto.randomUUID();

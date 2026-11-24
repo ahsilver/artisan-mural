@@ -2820,3 +2820,6 @@
 .am .so-pro{font-size:12px;color:var(--ink-2)}.am .so-done p{margin:4px 0 0;font-size:14px;color:var(--ink-2)}
 @media (max-width:520px){.am .so-2{grid-template-columns:1fr}}
 .bo-pill-s{display:inline-block;margin-right:6px;padding:1px 7px;border-radius:99px;background:#F3EEE6;border:1px solid #E6E1D8;font-size:11px}
+.am .own-low{border:1px solid #E7C9B8;background:#FBF1EA;padding:14px;display:grid;gap:10px;margin:12px 16px 14px;border-radius:10px}
+.am .own-panel .own-low .btn,.am .own-panel .own-low .btn.big{margin:0;width:100%}
+.am .own-low b{color:#8A3F22}.am .own-low p{margin:0;font-size:13.5px;color:var(--ink-2)}
