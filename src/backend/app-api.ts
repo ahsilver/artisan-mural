@@ -390,6 +390,11 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
       const c: any = (sel?.colorName && cols.find((x: any) => x.name === sel.colorName)) || cols[pos] || cols[0];
       if (c) art = { name: c.name, url: env.PUBLIC_ORIGIN + "/storage/v1" + (await signUrl(env, "designer-artwork", c.artwork_path, 3600)), original: c.storage_path ? { url: env.PUBLIC_ORIGIN + "/storage/v1" + (await signUrl(env, "print-originals", c.storage_path, 6 * 3600)), filename: c.filename, mime: c.mime_type, size: c.byte_size, width: c.pixel_width, height: c.pixel_height } : null };
     } else { const info = await designInfo(env, [o.design_slug]); if (info[o.design_slug]?.thumb) art = { name: info[o.design_slug].title, url: info[o.design_slug].thumb }; }
+    // print from the exact original saved with the order, even if the designer replaced the file later (e.g. a repeat fix)
+    if (art && o.print_original_id) {
+      const po: any = await DB.prepare(`SELECT storage_path, filename, mime_type, byte_size, pixel_width, pixel_height FROM print_originals WHERE id = ?`).bind(o.print_original_id).first();
+      if (po?.storage_path) art.original = { url: env.PUBLIC_ORIGIN + "/storage/v1" + (await signUrl(env, "print-originals", po.storage_path, 6 * 3600)), filename: po.filename, mime: po.mime_type, size: po.byte_size, width: po.pixel_width, height: po.pixel_height };
+    }
     let title = o.design_slug === "outside-file" ? "Customer file (outside order)" : (await designInfo(env, [o.design_slug]))[o.design_slug]?.title ?? o.design_slug;
     if (o.project_id && String(o.design_slug).startsWith("project-")) { const pt: any = await DB.prepare(`SELECT title FROM projects WHERE id = ?`).bind(o.project_id).first(); if (pt) title = `Custom: ${pt.title}`; }
     const others = o.cart_id ? ((await DB.prepare(`SELECT id, design_slug, estimated_total, status FROM order_requests WHERE cart_id = ? AND id <> ?`).bind(o.cart_id, o.id).all()).results ?? []) : [];
