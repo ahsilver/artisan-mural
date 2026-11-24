@@ -2498,6 +2498,22 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 .up-x{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:13px;cursor:pointer;line-height:1}
 .up-x:hover{background:#201D1D;color:#fff;border-color:#201D1D}
 .up-file{position:relative}.up-x-file{position:absolute;top:6px;right:6px;width:26px;height:26px;font-size:12px;z-index:3}
+.bo-ordrow{cursor:pointer}.bo-ordrow:hover td{background:#FBF8F2}
+.od-steps{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 6px}
+.od-steps button{border:1px solid var(--line);background:#fff;padding:7px 11px;font:600 12px var(--f-body);cursor:pointer;border-radius:999px}
+.od-steps button.done{background:#F3EEE6;color:var(--ink-2)}.od-steps button.cur{background:#201D1D;border-color:#201D1D;color:#fff}
+.od-notify{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--ink-2);margin-bottom:10px}
+.od-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.od-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:12px;background:#fff}
+.od-grid .od-card{margin-top:0}
+.od-card h3{margin:0 0 8px;font:400 19px/1.2 var(--f-display)}.od-card h3+p+h3,.od-addr+h3{margin-top:14px}
+.od-addr{margin:0;font-size:14px;line-height:1.55}
+.od-note{margin:8px 0 0;font-size:12px;color:var(--ink-2)}
+.od-money dd{text-align:right}
+.od-item{display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:start}.od-item img{width:160px;aspect-ratio:1.3;object-fit:cover;border-radius:8px}
+.od-track{display:flex;flex-wrap:wrap;gap:8px}.od-track select,.od-track input{height:36px;border:1px solid var(--line);border-radius:6px;padding:0 10px;font:inherit;font-size:13px;background:#fff}.od-track input{flex:1;min-width:160px}
+.od-hist{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px;font-size:13px}.od-hist time{display:inline-block;min-width:130px;color:var(--ink-2);font-size:12px}
+@media (max-width:700px){.od-grid{grid-template-columns:1fr}.od-item{grid-template-columns:1fr}.od-item img{width:100%}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -6030,6 +6046,48 @@ async function tiffCrop(read, box, sink, onProgress) {
   }
   const fval = (form, n) => form.querySelector(`[name="${n}"]`)?.value ?? '';
 
+  /* one order, opened completely: customer, addresses, payment, money, what they ordered, status, shipping, notes */
+  const ORD_FLOW = ['Awaiting payment', 'Paid', 'In production', 'Printing', 'Shipped', 'Delivered'];
+  const CARDS = [['Visa', '4242', '08/29'], ['Mastercard', '5454', '11/27'], ['American Express', '0005', '03/28'], ['Visa', '1881', '06/30']];
+  const STREETS = ['214 Atlantic Ave', '88 Congress St', '1520 N Halsted St', '402 Pine St', '77 Collins Ave'];
+  const ZIPS = ['NY 11201', 'TX 78701', 'IL 60642', 'WA 98101', 'FL 33139'];
+  function boOrderDialog(id) {
+    const i = ORDERS.findIndex(o => o[0] === id); if (i < 0) return;
+    const [, dt, sl, wall, st0, , tot] = ORDERS[i]; const d = bySlug[sl], o = origOf(d, sl);
+    const cu = BO_CUSTOMERS[i % BO_CUSTOMERS.length], [cname, place] = cu;
+    const rec = (BOS.orders = BOS.orders || {})[id] || (BOS.orders[id] = {});
+    const st = rec.st || st0;
+    const email = cname.toLowerCase().replace(/[^a-z]+/g, '.').replace(/^\.|\.$/g, '') + '@example.com';
+    const phone = `(${212 + i * 7}) 555-01${String(10 + i).padStart(2, '0')}`;
+    const ship = `${cname}\n${STREETS[i % 5]}\n${place.split(', ')[0]}, ${ZIPS[i % 5]}\nUnited States`;
+    const billDiff = i % 2 === 1, bill = billDiff ? `${cname.split(' ')[0]} Design LLC\n500 5th Ave, Suite ${200 + i}\nNew York, NY 10110\nUnited States` : '';
+    const [brand, last4, exp] = CARDS[i % CARDS.length];
+    const paid = st !== 'Awaiting payment';
+    const sub = tot, disc = i % 3 === 0 ? Math.round(sub * 0.1) : 0, ship$ = 0, tax = Math.round((sub - disc) * 0.08875 * 100) / 100, total = sub - disc + ship$ + tax;
+    const sqft = (() => { const m = wall.match(/([\d.]+)\s*×\s*([\d.]+)/); return m ? (+m[1]) * (+m[2]) : 0; })();
+    const paper = (wall.split('·')[1] || '').trim();
+    const hist = [[dt + ', 10:14', 'Order placed on the website'], ...(paid ? [[dt + ', 10:15', `Paid ${money(total)} by ${brand} •••• ${last4}`]] : []), ...(rec.hist || [])];
+    $('boDlgBody').innerHTML = `<header class="bd-h"><div><span class="k">Order · ${dt}</span><h2>${id}</h2><small>${cname} · ${d.name} · ${money(total)}</small></div><span class="pill ${st === 'Delivered' || st === 'Shipped' ? 'ok' : 'wait'}">${st}</span></header>
+      <div class="od-steps" role="group" aria-label="Order status">${ORD_FLOW.map((x, k) => `<button type="button" data-ost="${x}" class="${x === st ? 'cur' : ORD_FLOW.indexOf(st) > k ? 'done' : ''}">${x}</button>`).join('')}</div>
+      <label class="od-notify"><input type="checkbox" id="odNotify" checked> Email and notify the customer when I change the status</label>
+      <div class="od-grid">
+        <section class="od-card"><h3>Customer</h3><dl class="bd-dl2"><dt>Name</dt><dd>${cname}</dd><dt>Email</dt><dd><a href="mailto:${email}">${email}</a></dd><dt>Phone</dt><dd>${phone}</dd><dt>Account</dt><dd>Signed-in customer · ${cu[2]} order${cu[2] > 1 ? 's' : ''}</dd></dl></section>
+        <section class="od-card"><h3>Shipping address</h3><p class="od-addr">${ship.replace(/\n/g, '<br>')}</p><h3>Billing address</h3><p class="od-addr">${billDiff ? bill.replace(/\n/g, '<br>') : 'Same as shipping'}</p></section>
+        <section class="od-card"><h3>Payment</h3><dl class="bd-dl2"><dt>Status</dt><dd>${paid ? '<span class="pill ok">Paid</span>' : '<span class="pill wait">Awaiting payment</span>'}</dd><dt>Method</dt><dd>Credit card</dd><dt>Card</dt><dd>${paid ? `${brand} •••• ${last4} · exp ${exp}` : 'Not paid yet'}</dd>${paid ? `<dt>Name on card</dt><dd>${cname}</dd>` : ''}</dl><p class="od-note">For safety only the card type, last 4 digits, expiry and name are kept. Full card numbers stay with the payment company.</p></section>
+        <section class="od-card"><h3>Money</h3><dl class="bd-dl2 od-money"><dt>Subtotal</dt><dd>${money(sub)}</dd>${disc ? `<dt>Discount (WELCOME10)</dt><dd>−${money(disc)}</dd>` : ''}<dt>Shipping</dt><dd>Free</dd><dt>Sales tax</dt><dd>${money(tax)}</dd><dt><b>Total</b></dt><dd><b>${money(total)}</b></dd></dl></section>
+      </div>
+      <section class="od-card"><h3>What they ordered</h3><div class="od-item"><img src="d/${sl}-room1.webp" alt=""><dl class="bd-dl2"><dt>Design</dt><dd><a href="#design-${sl}">${d.name}</a> · ${d.sku}</dd><dt>Designer</dt><dd>${d.by}</dd><dt>Type</dt><dd>${d.kind === 'repeat' ? 'Repeating pattern' : 'Mural'}</dd><dt>Wall</dt><dd>${wall.split('·')[0].trim()}${sqft ? ` · ${sqft} sq ft` : ''}</dd><dt>Paper</dt><dd>${paper || '—'}</dd><dt>Placement</dt><dd>${d.kind === 'repeat' ? 'Repeat from the left edge of the wall' : 'Their crop, exactly as placed on the wall preview'}</dd><dt>Note</dt><dd>${i % 2 ? 'Please call before delivery.' : '—'}</dd></dl></div></section>
+      <section class="od-card"><h3>Print file</h3><p class="od-note">Made from the designer's original (${o.file}, ${o.px[0].toLocaleString()} × ${o.px[1].toLocaleString()} px) at 250 DPI, cut into numbered panels for the customer's exact wall.</p><div class="bd-dl"><button class="btn btn-wine btn-sm" data-tiff="${id}">Download print file (TIFF panels)</button><a class="btn btn-sm optline" href="d/${sl}-full.webp" download>Download original</a></div></section>
+      <section class="od-card"><h3>Shipping & tracking</h3><div class="od-track"><select id="odCarrier" aria-label="Carrier">${['', 'UPS', 'FedEx', 'USPS', 'DHL'].map(c => `<option ${rec.carrier === c ? 'selected' : ''}>${c || 'Carrier…'}</option>`).join('')}</select><input id="odTrack" placeholder="Tracking number" value="${bx(rec.tracking || '')}"><button type="button" class="btn btn-wine btn-sm" id="odSaveTrack">Save tracking · mark shipped</button></div>${rec.tracking ? `<p class="od-note">The customer sees ${rec.carrier || ''} ${bx(rec.tracking)} in their account.</p>` : ''}</section>
+      <section class="od-card"><h3>Notes & history</h3><div class="od-track"><input id="odNote" placeholder="Add a private note (only you see it)"><button type="button" class="btn btn-sm optline" id="odAddNote">Add note</button></div><ul class="od-hist">${hist.slice().reverse().map(([w, t]) => `<li><time>${w}</time>${bx(t)}</li>`).join('')}</ul></section>`;
+    $('boDlg').showModal(); $('boDlg').scrollTop = 0;
+    const stamp = () => new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    const log = (t) => { rec.hist = (rec.hist || []).concat([[stamp(), t]]); boSave(); };
+    $('boDlgBody').querySelectorAll('[data-ost]').forEach(b => b.onclick = () => { rec.st = b.dataset.ost; log(`Status: ${rec.st}${$('odNotify').checked ? ' · customer emailed and notified' : ''}`); boMsg(`${id}: ${rec.st}`); boOrderDialog(id); renderAdmin(curTab); });
+    $('odSaveTrack').onclick = () => { const t = $('odTrack').value.trim(); if (!t) { $('odTrack').focus(); return; } rec.carrier = $('odCarrier').value === 'Carrier…' ? '' : $('odCarrier').value; rec.tracking = t; if (ORD_FLOW.indexOf(rec.st || st0) < 4) rec.st = 'Shipped'; log(`Tracking ${rec.carrier} ${t} saved, status Shipped${$('odNotify').checked ? ' · customer emailed the tracking link' : ''}`); boMsg('Tracking saved.'); boOrderDialog(id); renderAdmin(curTab); };
+    $('odAddNote').onclick = () => { const t = $('odNote').value.trim(); if (!t) return; log('Note: ' + t); boOrderDialog(id); };
+    $('boDlgBody').querySelectorAll('[data-tiff]').forEach(b => b.onclick = () => { b.textContent = 'Making 250 DPI TIFF…'; b.disabled = true; setTimeout(() => { b.textContent = 'TIFF ready ✓'; }, 1200); });
+  }
   function boDesignDialog(key) {
     const up = BO_UPLOADS.find(u => u.id === key);
     const row = up ? null : boDesignRows().find(r => r.key === key);
@@ -6069,7 +6127,7 @@ async function tiffCrop(read, box, sink, onProgress) {
     const c = counts();
     $('boNav').innerHTML = BO_GROUPS.map(([g, items]) => `<span class="bo-g">${g}</span>` + items.map(([k, n]) => { const cnt = c[k]; return `<a href="#admin-${k}" aria-current="${k === tab}">${n}${cnt ? `<em>${cnt}</em>` : ''}</a>`; }).join('')).join('');
     const rows = boDesignRows();
-    const ordersT = (list, print) => `<div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Order</th><th>Customer</th><th>Design</th><th>Wall &amp; paper</th><th>Total</th><th>Status</th><th>Files</th></tr></thead><tbody>${list.map(([id, dt, sl, wall, st, cls, tot], i) => { const d = bySlug[sl]; const o = origOf(d, sl); return `<tr><td><img src="d/${sl}-full.webp" alt=""></td><td><b>${id}</b><br><small>${dt}</small></td><td>${BO_CUSTOMERS[i % BO_CUSTOMERS.length][0]}</td><td><a href="#design-${sl}">${d.name}</a><br><small>${d.sku}</small></td><td>${wall}</td><td>${money(tot)}</td><td>${print ? '<span class="pill wait">Ready to print</span>' : `<select class="bo-sel" aria-label="Order status"><option>Awaiting payment</option><option>Paid</option><option ${st === 'In production' ? 'selected' : ''}>In production</option><option>Shipped</option><option ${st === 'Delivered' ? 'selected' : ''}>Delivered</option></select>`}</td><td class="bo-files"><button class="btn btn-sm btn-wine" data-tiff="${id}">Print file (TIFF panels)</button><a class="btn btn-sm optline" href="d/${sl}-full.webp" download="${o.file.replace(/\.(tif|png)$/, '')}-preview.webp">Original</a></td></tr>`; }).join('')}</tbody></table></div>`;
+    const ordersT = (list, print) => `<div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Order</th><th>Customer</th><th>Design</th><th>Wall &amp; paper</th><th>Total</th><th>Status</th><th>Files</th></tr></thead><tbody>${list.map(([id, dt, sl, wall, st, cls, tot], i) => { const d = bySlug[sl]; const o = origOf(d, sl); st = (BOS.orders && BOS.orders[id] && BOS.orders[id].st) || st; return `<tr class="bo-ordrow" data-ordrow="${id}"><td><img src="d/${sl}-full.webp" alt=""></td><td><b>${id}</b><br><small>${dt}</small></td><td>${BO_CUSTOMERS[i % BO_CUSTOMERS.length][0]}</td><td><a href="#design-${sl}">${d.name}</a><br><small>${d.sku}</small></td><td>${wall}</td><td>${money(tot)}</td><td>${print ? '<span class="pill wait">Ready to print</span>' : `<select class="bo-sel" aria-label="Order status"><option>Awaiting payment</option><option>Paid</option><option ${st === 'In production' ? 'selected' : ''}>In production</option><option>Shipped</option><option ${st === 'Delivered' ? 'selected' : ''}>Delivered</option></select>`}</td><td class="bo-files"><button class="btn btn-sm btn-wine" data-ord="${id}">Open order</button><button class="btn btn-sm optline" data-tiff="${id}">Print file (TIFF panels)</button><a class="btn btn-sm optline" href="d/${sl}-full.webp" download="${o.file.replace(/\.(tif|png)$/, '')}-preview.webp">Original</a></td></tr>`; }).join('')}</tbody></table></div>`;
     const M = {};
     M.overview = `<div class="stats"><div class="stat"><b>${ORDERS.length}</b><small>Open orders</small></div><div class="stat"><b>$4,235</b><small>Sales, last 30 days</small></div><a class="stat" href="#admin-designs"><b>${c.designs}</b><small>Designs to review</small></a><a class="stat" href="#admin-designers"><b>${c.designers}</b><small>Designers waiting for approval</small></a></div>
       <h2>Latest orders</h2>${ordersT(ORDERS.slice(0, 4))}`;
@@ -6130,6 +6188,8 @@ async function tiffCrop(read, box, sink, onProgress) {
     }
 
     wirePickers(main);
+    main.querySelectorAll('[data-ord]').forEach(b => b.onclick = (e) => { e.stopPropagation(); boOrderDialog(b.dataset.ord); });
+    main.querySelectorAll('[data-ordrow]').forEach(r => r.onclick = (e) => { if (e.target.closest('a,button,select,input')) return; boOrderDialog(r.dataset.ordrow); });
     main.querySelectorAll('[data-tiff]').forEach(b => b.onclick = () => { b.textContent = 'Making 250 DPI TIFF…'; b.disabled = true; setTimeout(() => { b.textContent = 'TIFF ready ✓'; }, 1200); });
     main.querySelectorAll('[data-df]').forEach(b => b.onclick = () => { designFilter = b.dataset.df; renderAdmin('designs'); });
     const dq = $('boDq'); if (dq) dq.oninput = () => { designQ = dq.value.trim().toLowerCase(); const pos = dq.selectionStart; renderAdmin('designs'); const n2 = $('boDq'); n2.focus(); n2.setSelectionRange(pos, pos); };
