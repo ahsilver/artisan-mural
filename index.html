@@ -2577,6 +2577,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 @media (max-width:700px){.se .se-2,.se .se-link{grid-template-columns:1fr}.se .se-color{grid-template-columns:34px 1fr auto auto}.se .se-color .se-words{grid-column:2/-1;grid-row:2}}
 .se .se-pic{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.se .se-pic img{width:96px;height:64px;object-fit:cover;border:1px solid var(--line)}.se .se-pic select{border:1.5px solid var(--line);padding:7px}
 .se .se-check{display:flex !important;gap:8px;align-items:center;margin:4px 0 10px;width:auto}.se .se-check input{width:18px;height:18px;flex:none;margin:0}.se .se-check span{flex:1}
+.own-low{border:1px solid #E7C9B8;background:#FBF1EA;padding:14px;display:grid;gap:10px;margin:12px 16px 14px;border-radius:10px}.own-low[hidden]{display:none}.own-low b{color:#8A3F22}.own-low p{margin:0;font-size:13.5px;color:var(--ink-2)}.own-panel .own-low .btn,.own-panel .own-low .btn.big{margin:0;width:100%}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -3008,6 +3009,13 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
         <div class="sz-total"><div><b id="ownSq">108 sq ft</b><small id="ownRate"></small></div><strong id="ownPrice">$0</strong></div>
         <label class="co-check own-rights"><input type="checkbox" id="ownRights"><span>I own this image or have permission to print it.</span></label>
         <button class="btn btn-wine big" id="ownAdd">Add to cart</button>
+        <div class="own-low" id="ownLow" role="status" hidden>
+          <b id="ownLowT">Low resolution for this wall</b>
+          <p>We recommend a designer sharpens it first. You can still print it as it is.</p>
+          <button type="button" class="btn btn-wine big" id="ownLowDes">Send to a designer to sharpen it</button>
+          <label class="co-check"><input type="checkbox" id="ownLowOk"><span>I understand it may not look sharp. Print it as it is.</span></label>
+          <button type="button" class="btn optline" id="ownLowAdd" disabled>Print it anyway · add to cart</button>
+        </div>
         <p class="up-err" id="ownErr" aria-live="polite"></p>
       </aside>
     </div>
@@ -5971,7 +5979,8 @@ async function tiffCrop(read, box, sink, onProgress) {
     $('ownDpiTip').textContent = d >= 60 ? 'Sharp, even up close.' : d >= 35 ? 'Looks great from a few steps back, a little soft with your nose on the wall. Normal for photo murals.' : d >= 20 ? 'It will look soft. Try the original file from your camera, a smaller wall, or zoom out.' : `Your file is too small for a wall this size. Use the original file from your camera or a smaller wall. With this file, up to ${Math.max(1, Math.floor(OWN.iw / 20 / 12 * 2) / 2)} ft wide works.`;
     const sq = Math.round(g.W * g.H / 144), price = sq * OWN.paper.rate;
     $('ownSq').textContent = `${sq} sq ft`; $('ownRate').textContent = `${OWN.paper.name} · ${money(OWN.paper.rate)} / sq ft`; $('ownPrice').textContent = money(price);
-    $('ownAdd').classList.toggle('blocked', d < 20);
+    // sharp enough (100 DPI, owner setting on the real site): straight to the cart; below: a warning and a choice
+    const low = d < 100; $('ownAdd').hidden = low; $('ownLow').hidden = !low; $('ownLowT').textContent = `Low resolution for this wall (${d} DPI)`;
   }
   $('ownPaper').innerHTML = PAPERS.map((p, k) => `<button class="chip" role="radio" aria-checked="${k === 0}" data-k="${k}">${p.name} <small>${money(p.rate)}</small></button>`).join('');
   [...$('ownPaper').children].forEach(b => b.onclick = () => { OWN.paper = PAPERS[+b.dataset.k]; [...$('ownPaper').children].forEach(x => x.setAttribute('aria-checked', String(x === b))); ownRender(); });
@@ -5992,11 +6001,14 @@ async function tiffCrop(read, box, sink, onProgress) {
     wall.tabIndex = 0; wall.onkeydown = (e) => { const k = { ArrowLeft: [-0.05, 0], ArrowRight: [0.05, 0], ArrowUp: [0, -0.05], ArrowDown: [0, 0.05] }[e.key]; if (!k) return; e.preventDefault(); OWN.px = Math.min(1, Math.max(0, OWN.px + k[0])); OWN.py = Math.min(1, Math.max(0, OWN.py + k[1])); ownRender(); };
   })();
   addEventListener('resize', () => { if (!$('view-own').hidden) ownRender(); });
-  $('ownAdd').onclick = () => {
-    if ($('ownAdd').classList.contains('blocked')) { $('ownErr').textContent = 'The image is too small for this wall. Make the wall smaller or use a bigger file.'; return; }
+  $('ownLowOk').onchange = () => { $('ownLowAdd').disabled = !$('ownLowOk').checked; };
+  $('ownLowAdd').onclick = () => $('ownAdd').onclick(true);
+  $('ownLowDes').onclick = () => $('ownToDesigner').click();
+  $('ownAdd').onclick = (lowOk) => {
+    if (ownGeom().dpi < 100 && lowOk !== true) { $('ownErr').textContent = 'This picture is low resolution for your wall. Tick the box to print it anyway, or send it to a designer to sharpen it.'; return; }
     if (!$('ownRights').checked) { $('ownErr').textContent = 'Please confirm you own this image or have permission to print it.'; return; }
     const g = ownGeom();
-    addToCart({ slug: 'own', name: 'Your own image', desc: `${$('ownW').value} × ${$('ownH').value} ft · ${OWN.paper.name} · ${g.dpi} DPI`, price: Math.round(g.W * g.H / 144) * OWN.paper.rate,
+    addToCart({ slug: 'own', name: 'Your own image', desc: `${$('ownW').value} × ${$('ownH').value} ft · ${OWN.paper.name} · ${g.dpi} DPI${g.dpi < 100 ? ' · low resolution, approved by you' : ''}`, price: Math.round(g.W * g.H / 144) * OWN.paper.rate,
       crop: { ar: g.W / g.H, kind: 'mural', img: OWN.small, whole: false, sw: g.aw, sh: g.ah, px: OWN.px, py: OWN.py } });
     toast('Added to your cart'); location.hash = 'cart';
   };
