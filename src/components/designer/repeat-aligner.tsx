@@ -23,8 +23,16 @@ function joinScore(g: Float32Array, W: number, H: number, pw: number, ph: number
   return { side, top };
 }
 
-/** Finds the true repeat: if the file holds the pattern more than once, the strip where it starts again. */
-function findRepeat(g: Float32Array, W: number, H: number, mode: RepeatMode) {
+/** What the finder decided about a file:
+ *  inside  = the pattern starts again inside the file (the extra strip is left out)
+ *  overlap = the file's end really continues its start, so the ends are laid over each other and blended
+ *  joins   = the file already ends where the pattern starts again
+ *  none    = the file wasn't made as a repeat: no part of the end matches the start, so nothing is changed */
+export type RepeatVerdict = "inside" | "overlap" | "joins" | "none";
+
+/** Finds the true repeat. Only says "repeat" when one position matches far better than the file's typical ones,
+ *  so a picture that was never built as a repeat is reported as such instead of being forced into one. */
+export function findRepeat(g: Float32Array, W: number, H: number, mode: RepeatMode): { w: number; h: number; blend: boolean; verdict: RepeatVerdict } {
   const band = 6;
   let base = 0, n = 0; for (let y = 0; y < H; y += 2) for (let x = 0; x < W - 1; x += 2) { base += Math.abs(g[y * W + x]! - g[y * W + x + 1]!); n++; } base = base / n || 1;
   const bestPeriod = (len: number, other: number, at: (i: number, j: number) => number, drops: number[]) => {
@@ -40,24 +48,27 @@ function findRepeat(g: Float32Array, W: number, H: number, mode: RepeatMode) {
   };
   const drops = mode === "halfdrop" ? [Math.round(H / 2)] : [0];
   const sx = bestPeriod(W, H, (x, y) => g[y * W + x]!, drops);
-  let w = sx.c < 0.35 ? sx.p : W; // the pattern starts again inside the file: that's the repeat width
-  let blend = false;
-  // no exact repeat inside the file and the edges don't join: overlap the ends where they look most alike and blend them
-  if (w === W) {
+  let w = W, blend = false, verdict: RepeatVerdict = "joins";
+  if (sx.c < 0.35) { w = sx.p; verdict = "inside"; }
+  else {
     let edge = 0, k = 0; for (let y = 0; y < H; y += 2) { edge += Math.abs(g[y * W + W - 1]! - g[y * W]!); k++; }
     if (edge / k / base > 1.6) {
-      let bestOv = 0, bestC = Infinity;
+      // the ends don't join. Is the end a real continuation of the start (an overlap)? Try 4% to 25% and keep the
+      // best only if it is far better than the typical overlap; otherwise the file simply isn't a repeat.
+      const tries: [number, number][] = [];
       for (let ov = Math.round(W * 0.04); ov <= Math.round(W * 0.25); ov += 2) {
         let s2 = 0, n2 = 0;
         for (let y = 0; y < H; y += 4) for (let x = 0; x < ov; x += Math.max(1, Math.floor(ov / 24))) { s2 += Math.abs(g[y * W + W - ov + x]! - g[y * W + x]!); n2++; }
-        const c = s2 / n2; if (c < bestC) { bestC = c; bestOv = ov; }
+        tries.push([ov, s2 / n2]);
       }
-      if (bestOv) { w = W - bestOv; blend = true; }
+      const sorted = [...tries].sort((a, b) => a[1] - b[1]); const best = sorted[0]; const typical = sorted[sorted.length >> 1]?.[1] || 1;
+      if (best && best[1] / typical < 0.5 && best[1] / base < 3) { w = W - best[0]; blend = true; verdict = "overlap"; }
+      else verdict = "none";
     }
   }
   let h = H;
-  if (mode !== "sideways") { const sy = bestPeriod(H, w, (y, x) => g[y * W + x]!, [0]); if (sy.c < 0.35) h = sy.p; }
-  return { w, h, blend };
+  if (mode !== "sideways") { const sy = bestPeriod(H, w, (y, x) => g[y * W + x]!, [0]); if (sy.c < 0.35) { h = sy.p; if (verdict === "joins" || verdict === "none") verdict = "inside"; } }
+  return { w, h, blend, verdict };
 }
 
 export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCancel }: { src: string; mode: RepeatMode; initial?: Partial<RepeatFit>; busy?: boolean; onSave: (r: RepeatFit) => void; onCancel: () => void }) {
@@ -69,6 +80,7 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
   const [focus, setFocus] = useState({ x: 0.5, y: 0.5 }); // where the magnifiers look along each join
   const [auto, setAuto] = useState("");
   const [blend, setBlend] = useState<boolean>(!!initial?.blend);
+  const [notRepeat, setNotRepeat] = useState(false);
   const view = useRef<HTMLCanvasElement>(null); const lSide = useRef<HTMLCanvasElement>(null); const lTop = useRef<HTMLCanvasElement>(null);
   const drag = useRef<{ x: number; y: number; pw: number; ph: number } | null>(null);
 
@@ -160,8 +172,9 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
     if (used) e.preventDefault();
   };
   const findIt = (quiet = false) => {
-    if (!img) return; const r = findRepeat(img.g, W, H, mode); setPw(r.w); setPh(r.h); setBlend(r.blend);
-    if (r.blend) setAuto(`Your file doesn't repeat by itself, so we overlap the ends by ${Math.round((1 - r.w / W) * 100)}% (where they look most alike) and blend them softly, one on top of the other. Check the join in the magnifier; drag to adjust if you like.`);
+    if (!img) return; const r = findRepeat(img.g, W, H, mode); setPw(r.w); setPh(r.h); setBlend(r.blend); setNotRepeat(r.verdict === "none");
+    if (r.verdict === "none") setAuto("This file doesn't look like it was made as a repeat: no part of its end continues its start, so we didn't change anything. Sell it as a mural (choose \"Mural, no repeat\"), or upload a real repeat file. You can still drag it by hand and blend the join, but trees and other shapes may look cut or doubled where the copies meet.");
+    else if (r.blend) setAuto(`Your file doesn't repeat by itself, but its end continues its start, so we overlap the ends by ${Math.round((1 - r.w / W) * 100)}% (where they match) and blend them softly, one on top of the other. Check the join in the magnifier; drag to adjust if you like.`);
     else if (r.w < W || r.h < H) setAuto(`Found it: the pattern starts again ${r.w < W ? `${Math.round((1 - r.w / W) * 100)}% before the right edge` : ""}${r.w < W && r.h < H ? " and " : ""}${r.h < H ? `${Math.round((1 - r.h / H) * 100)}% above the bottom` : ""}. The extra strip is left out.`);
     else if (!quiet) setAuto("Your file already ends exactly where the pattern starts again.");
   };
@@ -189,9 +202,9 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
         {mode !== "sideways" && <div className="ra-n"><span>Repeat height</span><button type="button" onClick={() => setPh((v) => clampH(v - 1))} aria-label="Repeat height one pixel less">−</button><b>{pct(ph, H)}</b><button type="button" onClick={() => setPh((v) => clampH(v + 1))} aria-label="Repeat height one pixel more">+</button></div>}
         <button type="button" className="btn optline btn-sm" onClick={() => findIt()}>Find the repeat for me</button>
         {pw < W && <label className="sa-check ra-blend"><input type="checkbox" checked={blend} onChange={(e) => setBlend(e.target.checked)} /><span><b>Blend the overlap</b> · the copies lie one on top of the other and fade softly into each other, so no line shows (for designs that weren't drawn to repeat)</span></label>}
-        <button type="button" className="up-link" onClick={() => { setPw(W); setPh(H); setAuto(""); }}>Back to the whole file</button>
+        <button type="button" className="up-link" onClick={() => { setPw(W); setPh(H); setAuto(""); setNotRepeat(false); }}>Back to the whole file</button>
       </div>
-      {auto && <p className="ra-auto" role="status">{auto}</p>}
+      {auto && <p className={"ra-auto" + (notRepeat ? " warn" : "")} role="status">{auto}</p>}
       {(pw < W || (mode !== "sideways" && ph < H)) && <p className="hint">When you save, we make a corrected print file with only the repeat ({pct(pw, W)} of the width{mode !== "sideways" ? `, ${pct(ph, H)} of the height` : ""}). Your original file is kept.</p>}
       <div className="up-row"><button type="button" className="btn btn-wine btn-sm" disabled={busy} onClick={() => onSave({ w: pw / W, h: mode === "sideways" ? 1 : ph / H, mode, blend: blend && pw < W })}>{busy ? "Saving…" : "Use this repeat"}</button><button type="button" className="btn optline btn-sm" disabled={busy} onClick={onCancel}>Cancel</button></div>
     </div>
