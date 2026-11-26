@@ -215,3 +215,48 @@ export function SizeStudio(p: Props) {
     </div>}
   </div>;
 }
+
+/** Just the wall, as on the customize page: numbered panels, sizes, "Drag to move", and one design-size slider.
+ *  Used by the owner's "Make a print file" and "New order". Works on the shared WallSelection, so the print file
+ *  (printGeometry) is exactly what is shown. */
+export function WallStage({ design, selection: sel, onChange, maxH = 0.56 }: { design: Design; selection: WallSelection; onChange: (s: WallSelection) => void; maxH?: number }) {
+  const stageRef = useRef<HTMLDivElement>(null), wallRef = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const st = stageRef.current; if (!st) return;
+    const fit = () => { const W = measurementInches(sel.width, sel.unit), H = measurementInches(sel.height, sel.unit); const maxW = st.clientWidth - 32, mh = Math.max(220, window.innerHeight * maxH);
+      let w = maxW, h = (w * H) / W; if (h > mh) { h = mh; w = (h * W) / H; } setBox({ w, h }); };
+    fit(); const ro = new ResizeObserver(fit); ro.observe(st); return () => ro.disconnect();
+  }, [sel.width, sel.height, sel.unit]);
+  let draws: { x: number; y: number; w: number; h: number }[] = [];
+  try { draws = printGeometry(design as any, sel).draws.slice(0, 4000); } catch { draws = []; }
+  const panels = panelGeometry(sel.width, sel.unit), starts = [0, ...panels.guides.map((g) => g.start)];
+  const mural = repeatStyle(design) === "none";
+  // the slider: murals from "just covers the wall" to 4x bigger; repeats from a quarter to 4x their size
+  const cover = Math.min(1, (sel.width / sel.height) / sel.artRatio);
+  const zHi = mural ? cover : Math.min(MAX_REPEAT_ZOOM, 8), zLo = mural ? Math.max(MIN_ARTWORK_ZOOM, cover / 4) : 0.5;
+  const toV = (z: number) => Math.round((1000 * Math.log(zHi / Math.min(zHi, Math.max(zLo, z)))) / Math.log(zHi / zLo));
+  const fromV = (v: number) => zHi / Math.pow(zHi / zLo, v / 1000);
+  const drag = useRef<{ x: number; y: number; s: WallSelection } | null>(null);
+  const down = (e: React.PointerEvent) => { drag.current = { x: e.clientX, y: e.clientY, s: sel }; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); wallRef.current?.classList.add("drag"); };
+  const move = (e: React.PointerEvent) => {
+    const d = drag.current; if (!d || !box.w) return; const dx = (e.clientX - d.x) / box.w, dy = (e.clientY - d.y) / box.h;
+    if (mural) { const f = frameGeometry(d.s); onChange({ ...d.s, x: Math.min(1, Math.max(0, f.x - dx * f.w)), y: Math.min(1, Math.max(0, f.y - dy * f.h)) }); return; }
+    const { tw, th, style } = tileGeometry(design, d.s); const wrap = (v: number) => ((v % 1) + 1) % 1;
+    onChange({ ...d.s, x: wrap(d.s.x - dx / tw), y: style === "both" ? wrap(d.s.y - dy / th) : th > 1 ? Math.min(1, Math.max(0, d.s.y - dy / (th - 1))) : d.s.y });
+  };
+  const up = () => { drag.current = null; wallRef.current?.classList.remove("drag"); };
+  const step = (k: number) => onChange({ ...sel, zoom: Math.min(zHi, Math.max(zLo, sel.zoom * k)) });
+  return <div className="sz-stage ws" ref={stageRef}>
+    <div className="sz-wall" ref={wallRef} style={{ width: box.w || undefined, height: box.h || undefined }} aria-label="The wall. Drag to move the design." onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+      <div className="sz-art">{draws.map((d, k) => <span key={k} className="sz-tile" style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%`, width: `calc(${d.w * 100}% + 1px)`, height: `calc(${d.h * 100}% + 1px)`, backgroundImage: `url("${design.image}")` }} />)}</div>
+      <div className="sz-guides">{panels.guides.map((g, k) => <i key={k} style={{ left: `${g.start * 100}%` }} />)}{starts.map((s0, k) => <b key={k} style={{ left: `calc(${s0 * 100}% + 6px)` }}>{k + 1}</b>)}</div>
+      <span className="sz-dim w">{fmt1(sel.width)} {sel.unit}</span><span className="sz-dim h">{fmt1(sel.height)} {sel.unit}</span>
+      <span className="sz-hint">Drag to move</span>
+    </div>
+    <div className="sz-under"><span>{panels.count} panel{panels.count > 1 ? "s" : ""}, 52 in wide, 3 in overlap</span><span>{mural ? "Drag to choose the part on the wall" : "Drag to move the pattern"}</span></div>
+    <div className="sz-zoom"><button type="button" className="zb" aria-label="Make the design smaller" onClick={() => step(mural ? 1.08 : 1.08)}>−</button>
+      <label htmlFor="wsZoom" className="sr">Design size</label><input id="wsZoom" type="range" min={0} max={1000} value={toV(sel.zoom)} onChange={(e) => onChange({ ...sel, zoom: fromV(Number(e.target.value)) })} />
+      <button type="button" className="zb" aria-label="Make the design bigger" onClick={() => step(1 / 1.08)}>+</button><span className="zpct">Design size</span></div>
+  </div>;
+}

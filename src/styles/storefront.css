@@ -2960,3 +2960,9 @@
 .bo-new-order .mk-empty{min-height:320px;border-radius:10px;background:#F3EEE6;display:grid;place-items:center;text-align:center;padding:24px;color:#6F6A66;font-size:14px}
 .bo-new-order .mk .bo-grid3{grid-template-columns:1fr 1fr 1fr}
 @media (max-width:980px){.bo-new-order .mk{grid-template-columns:1fr}.bo-new-order .mk-r{position:static}}
+.bo-new-order .mk-up{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 12px}
+.bo-new-order .mk-up .btn{cursor:pointer}
+.bo-new-order .mk-r .ws{background:#F3EEE6;border-radius:10px;padding:16px}
+.bo-new-order .bo-preview .ws{padding:12px}
+.bo-new-order .mk-l .bo-h3{font:400 20px/1.2 var(--f-display,Georgia,serif);margin:18px 0 8px}
+.am .ws .zpct{white-space:nowrap}
