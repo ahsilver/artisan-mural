@@ -5444,6 +5444,12 @@ async function tiffCrop(read, box, sink, onProgress) {
     const { blob } = await TIFF.tiffPreview(reader, maxSide, undefined, readMany);
     return URL.createObjectURL(blob);
   }
+  async function driveTiffSize(id) {
+    if (TIFF_SIZE[id]) return TIFF_SIZE[id];
+    const call = async (ranges) => { const r = await fetch(DRIVE_RANGES, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, ranges }) }); if (!r.ok) throw new Error('read failed'); const b = new Uint8Array(await r.arrayBuffer()), dv = new DataView(b.buffer), out = []; let o = 0; while (o < b.length) { const n = dv.getUint32(o); o += 4; out.push(b.subarray(o, o + n)); o += n; } return out; };
+    const info = await TIFF.readTiff(async (s0, l) => (await call([[s0, l]]))[0]);
+    return (TIFF_SIZE[id] = [info.width, info.height]);
+  }
   const DL_CACHE = {}; // folder id -> files (sub-folders read ahead, so they open instantly)
   const tiffWanted = () => []; // browsing shows the built-in pictures; the sharp picture is made only when a design is chosen (upAddDrive)
   let tiffRunning = 0, tiffRerender = null;
@@ -5501,7 +5507,8 @@ async function tiffCrop(read, box, sink, onProgress) {
     if (UP.files.some(x => x.driveId === id)) return;
     const tt = TIFF_THUMBS[id], src = tt && tt.startsWith('blob:') ? tt : isTif(nm) ? DRIVE_THUMB + id : `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;
     UP.files.push({ file: nm, driveId: id, drive: true, src, check: src, px: (TIFF_SIZE[id] || [0])[0], py: (TIFF_SIZE[id] || [0, 0])[1], vector: /\.(pdf|svg|ai|eps)$/i.test(nm), role: role || (UP.files.some(x => x.role === 'main') ? 'color' : 'main'), cw: prettyName(nm) });
-    if (/\.tiff?$/i.test(nm)) { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = true; }); driveTiffThumb(id, 1400).then(u => { UP.files.forEach(x => { if (x.driveId === id) { x.sharpening = false; if (u) { x.src = u; x.check = u; x.det = null; } } }); upRender(); }).catch(() => { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = false; }); upRender(); }); }
+    if (/\.tiff?$/i.test(nm)) { driveTiffSize(id).then(([w, h]) => { UP.files.forEach(x => { if (x.driveId === id) { x.px = w; x.py = h; x.det = null; } }); upRender(); }).catch(() => {});
+      UP.files.forEach(x => { if (x.driveId === id) x.sharpening = true; }); driveTiffThumb(id, 1400).then(u => { UP.files.forEach(x => { if (x.driveId === id) { x.sharpening = false; if (u) { x.src = u; x.check = u; x.det = null; } } }); upRender(); }).catch(() => { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = false; }); upRender(); }); }
   }
   const upNameOf = (id) => ((UP.dl && UP.dl.files) || []).concat(...Object.values(DL_CACHE)).find(f => f.id === id)?.name || 'Google Drive file';
   function upWireGrid() {
