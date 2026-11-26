@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 /** Line up a repeat by hand (or let the site find it): the next copy is dragged with the mouse until it joins exactly,
  *  a magnifier shows the join pixel by pixel, and the result is the true repeat size (a part of the file when the
@@ -80,7 +81,7 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
   const [mode, setMode] = useState<RepeatMode>(mode0);
   const [pw, setPw] = useState(0); const [ph, setPh] = useState(0);
   const [zoom, setZoom] = useState(4);
-  const [showJoin, setShowJoin] = useState(true); const [big, setBig] = useState(false);
+  const [showJoin, setShowJoin] = useState(false); const [big, setBig] = useState(false);
   const wallRef = useRef<HTMLCanvasElement>(null); const bigRef = useRef<HTMLCanvasElement>(null);
   const [focus, setFocus] = useState({ x: 0.5, y: 0.5 }); // where the magnifiers look along each join
   const [auto, setAuto] = useState("");
@@ -130,19 +131,22 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
     const cv = view.current; if (!cv || !img || !pw || !tile) return;
     const cols = 2, rows = mode === "sideways" ? 1 : 2;
     const box = cv.parentElement!.clientWidth;
-    const k = Math.min(box / (pw * cols), 560 / (tileH * rows));
+    const k = Math.min(box / (pw * cols), Math.min(560, window.innerHeight * 0.4) / (tileH * rows));
     cv.width = Math.round(pw * cols * k); cv.height = Math.round(tileH * rows * k);
     const x = cv.getContext("2d")!; x.imageSmoothingQuality = "high"; x.fillStyle = "#eee"; x.fillRect(0, 0, cv.width, cv.height);
     for (let c = 0; c < cols; c++) for (let r = -1; r <= rows; r++) {
       const dy = mode === "halfdrop" && c % 2 ? tileH / 2 : 0;
       x.drawImage(tile!, c * pw * k, (r * tileH + dy) * k, pw * k, tileH * k);
     }
+    // where the copies meet: arrows on the edges, never over the picture itself (a thin line only if asked for)
+    const jx = pw * k, jy = tileH * k, a = 11; x.fillStyle = "#201D1D"; x.strokeStyle = "#fff"; x.lineWidth = 1.5; x.beginPath();
+    x.moveTo(jx - a, 0); x.lineTo(jx + a, 0); x.lineTo(jx, a * 1.4); x.closePath(); x.moveTo(jx - a, cv.height); x.lineTo(jx + a, cv.height); x.lineTo(jx, cv.height - a * 1.4); x.closePath();
+    if (rows > 1) { x.moveTo(0, jy - a); x.lineTo(0, jy + a); x.lineTo(a * 1.4, jy); x.closePath(); x.moveTo(cv.width, jy - a); x.lineTo(cv.width, jy + a); x.lineTo(cv.width - a * 1.4, jy); x.closePath(); }
+    x.fill(); x.stroke();
     if (showJoin) {
-      x.beginPath(); x.moveTo(pw * k, 0); x.lineTo(pw * k, cv.height); if (rows > 1) { x.moveTo(0, tileH * k); x.lineTo(cv.width, tileH * k); }
-      x.lineWidth = 4; x.strokeStyle = "rgba(255,255,255,.85)"; x.stroke(); x.setLineDash([10, 7]); x.lineWidth = 2; x.strokeStyle = "rgba(32,29,29,.75)"; x.stroke();
+      x.beginPath(); x.moveTo(jx, a * 1.4); x.lineTo(jx, cv.height - a * 1.4); if (rows > 1) { x.moveTo(a * 1.4, jy); x.lineTo(cv.width - a * 1.4, jy); }
+      x.setLineDash([8, 8]); x.lineWidth = 1; x.strokeStyle = "rgba(32,29,29,.45)"; x.stroke(); x.setLineDash([]);
     }
-    x.setLineDash([]); x.strokeStyle = "#201D1D"; x.lineWidth = 2; x.strokeRect(pw * k - 26, focus.y * tileH * k - 26, 52, 52);
-    if (rows > 1) x.strokeRect(focus.x * pw * k - 26, tileH * k - 26, 52, 52);
     // magnifiers: the exact pixels where the copies meet
     const lens = (cv2: HTMLCanvasElement | null, cx: number, cy: number) => {
       if (!cv2) return; const S = 300; cv2.width = S; cv2.height = S; const g = cv2.getContext("2d")!; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
@@ -212,7 +216,7 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
           <figure><figcaption>Side join · {zoom}×{score && <span className={"ra-q " + word(score.side)[0]}>{word(score.side)[1]}</span>}</figcaption><canvas ref={lSide} /></figure>
           {mode !== "sideways" && <figure><figcaption>Top / bottom join · {zoom}×{score && <span className={"ra-q " + word(score.top)[0]}>{word(score.top)[1]}</span>}</figcaption><canvas ref={lTop} /></figure>}
           <div className="ra-zoom2"><span>Zoom on the join</span>{[2, 4, 8].map((z) => <button key={z} type="button" aria-pressed={zoom === z} onClick={() => setZoom(z)}>{z}×</button>)}</div>
-          <label className="sa-check"><input type="checkbox" checked={showJoin} onChange={(e) => setShowJoin(e.target.checked)} /><span>Show the join on the picture</span></label>
+          <label className="sa-check"><input type="checkbox" checked={showJoin} onChange={(e) => setShowJoin(e.target.checked)} /><span>Thin line at the join</span></label>
         </div>
       </div>
       <div className="ra-ctl">
@@ -227,7 +231,8 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
       {auto && <p className={"ra-auto" + (notRepeat ? " warn" : "")} role="status">{auto}</p>}
       {(pw < W || (mode !== "sideways" && ph < H)) && <p className="hint">When you save, we make a corrected print file with only the repeat ({pct(pw, W)} of the width{mode !== "sideways" ? `, ${pct(ph, H)} of the height` : ""}). Your original file is kept.</p>}
       <div className="ra-wall"><div className="ra-wh"><b>On a wall · 4 repeats</b><button type="button" className="btn optline btn-sm" onClick={() => setBig(true)}>⤢ Open full size to zoom</button></div><canvas ref={wallRef} onClick={() => setBig(true)} title="Open full size to zoom" /></div>
-      {big && <div className="ra-big" role="dialog" aria-modal="true" aria-label="The wall at full size"><div className="ra-big-h"><b>On a wall · full size</b><span className="hint">Scroll to look around; this is the real detail of your file.</span><button type="button" className="btn optline btn-sm" onClick={() => setBig(false)}>Close</button></div><div className="ra-big-in"><canvas ref={bigRef} /></div></div>}
+      {/* on top of every window (it opens from the repeat window) */}
+      {big && typeof document !== "undefined" && createPortal(<div className="am"><div className="ra-big" role="dialog" aria-modal="true" aria-label="The wall at full size"><div className="ra-big-h"><b>On a wall · full size</b><span className="hint">Scroll to look around; this is the real detail of your file.</span><button type="button" className="btn optline btn-sm" onClick={() => setBig(false)}>Close</button></div><div className="ra-big-in"><canvas ref={bigRef} /></div></div></div>, document.body)}
       <div className="up-row"><button type="button" className="btn btn-wine btn-sm" disabled={busy} onClick={() => onSave({ w: pw / W, h: mode === "sideways" ? 1 : ph / H, mode, blend: blend && pw < W })}>{busy ? "Saving…" : "Use this repeat"}</button><button type="button" className="btn optline btn-sm" disabled={busy} onClick={onCancel}>Cancel</button></div>
     </div>
   );
