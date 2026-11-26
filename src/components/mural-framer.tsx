@@ -46,6 +46,14 @@ const rulerStep = (inches: number) => [6, 12, 24, 36, 48, 60, 96, 120, 240, 480,
  */
 export function MuralFramer({ design, selection, onChange, compact = false, maxHeight, tools }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
+  const artRef = useRef<HTMLImageElement>(null);
+  // a picture that finished loading before the page became interactive never fires onLoad: read its size here too,
+  // so the wall preview, the cart and the print all use the picture's real proportion
+  useEffect(() => {
+    const im = artRef.current; if (!im || !onChange) return;
+    const apply = () => { if (!im.naturalWidth || !im.naturalHeight) return; const r = im.naturalWidth / im.naturalHeight; if (Math.abs(r - selection.artRatio) > 0.001) onChange(clampSel({ ...selection, artRatio: r })); };
+    if (im.complete) apply(); else im.addEventListener("load", apply, { once: true });
+  }, [design.image, selection.artRatio]);
   const [rulers, setRulers] = useState(false);
   const [panels, setPanels] = useState(true);
   const [boxW, setBoxW] = useState(0);
@@ -222,6 +230,7 @@ export function MuralFramer({ design, selection, onChange, compact = false, maxH
             );
           })()}
         <img
+          ref={artRef}
           src={design.image}
           alt={design.title}
           draggable={false}

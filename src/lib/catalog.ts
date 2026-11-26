@@ -196,6 +196,8 @@ export type Design = {
   repeatCm?: number;
   /** Horizontal repeats: printed height of one repeat (wall height limit). */
   printHeightCm?: number;
+  /** Mural picture width ÷ height (from the designer's print size); orders use it so the print matches the preview. */
+  artRatio?: number | undefined;
   /** Murals: printed width of the full artwork (height follows the image). */
   maxWidthCm?: number;
   orientation: "portrait" | "landscape";

@@ -100,6 +100,7 @@ async function fetchShopData(uploadId?: string): Promise<ShopData> {
       repeat: mural ? undefined : u.repeat_style === "horizontal" ? "horizontal" : "both", match: !mural && u.repeat_style === "halfdrop" ? "halfdrop" : undefined,
       repeatCm: mural ? undefined : w, printHeightCm: !mural && u.repeat_style === "horizontal" ? h : undefined,
       maxWidthCm: mural ? Number(u.max_print_width_cm) || w : undefined,
+      artRatio: mural && w > 0 && h > 0 ? w / h : undefined, // the mural picture's true proportion (orders use it)
       orientation: w >= h ? "landscape" : "portrait",
       description: (u as any).description || (mural ? "An original mural from one of our designers, printed and cropped to your exact wall." : "An original repeating pattern from one of our designers, printed to any wall size."),
       story: u.story ?? undefined, orders: 0,

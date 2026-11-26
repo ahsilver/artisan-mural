@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { allDesigners, designerBySlug, liveDesigns, registerShop, type Design } from "@/lib/catalog";
 import { matchRoom, searchableDesignText, getTaxonomy } from "@/lib/design-taxonomy";
+import { smartSearch, type SearchDoc } from "@/lib/smart-search";
 import { ensureShop } from "@/lib/shop";
 import { pic } from "@/lib/pics";
 import { StorefrontSprite } from "@/components/storefront/icons";
@@ -67,12 +68,15 @@ function Shop() {
   const test = (d: Design, key: Key, v: string) =>
     key === "room" ? matchRoom(d, v) : key === "color" ? colorOf(d, v) : key === "designer" ? d.designer === v : d.categories.some((c) => lc(c) === lc(v));
   const passes = (d: Design, skip?: Key) => {
-    const hay = q ? lc([d.title, d.sku ?? "", d.palette, d.description, designerBySlug(d.designer)?.name ?? "", ...d.room, ...d.categories, ...(d.tags ?? []), searchableDesignText(d)].join(" ")) : "";
-    return (!kind || d.kind === kind) && (!q || hay.includes(lc(q))) && groups.every((g) => g.key === skip || !sel[g.key].length || sel[g.key].some((v) => test(d, g.key, v)));
+    return (!kind || d.kind === kind) && groups.every((g) => g.key === skip || !sel[g.key].length || sel[g.key].some((v) => test(d, g.key, v)));
   };
-  const countFor = (key: Key, v: string) => designs.filter((d) => passes(d, key) && test(d, key, v)).length;
-  const filtered = designs.filter((d) => passes(d));
-  const list = sort === "az" ? [...filtered].sort((a, b) => a.title.localeCompare(b.title)) : sort === "new" ? [...filtered].reverse() : sort === "popular" ? [...filtered].sort((a, b) => (b.orders ?? 0) - (a.orders ?? 0)) : filtered;
+  const countFor = (key: Key, v: string) => pool.filter((d) => passes(d, key) && test(d, key, v)).length;
+  // the words typed are searched smartly (each word, plurals, colors, typos), best matches first
+  const toDoc = (d: Design): SearchDoc => ({ title: d.title, sku: d.sku, designer: designerBySlug(d.designer)?.name, kind: d.kind === "mural" ? "mural" : "repeating pattern", palette: d.palette, colorways: (d.colorways ?? []).map((c) => c.name), tags: d.tags, rooms: [...d.room], styles: [...d.categories], extra: searchableDesignText(d) + " " + tax.colors.filter((c) => colorOf(d, c.id)).map((c) => c.label).join(" "), description: d.description });
+  const found = q ? smartSearch(designs, toDoc, q, tax.colors) : { list: designs, closest: false };
+  const pool = found.list;
+  const filtered = pool.filter((d) => passes(d));
+  const list = sort === "az" ? [...filtered].sort((a, b) => a.title.localeCompare(b.title)) : sort === "new" ? designs.filter((d) => filtered.includes(d)).reverse() : sort === "popular" ? [...filtered].sort((a, b) => (b.orders ?? 0) - (a.orders ?? 0)) : filtered;
 
   const selLabels = groups.flatMap((g) => sel[g.key].map((v) => g.opts.find((o) => o.v === v)?.label ?? v));
   const kindName = kind === "mural" ? "Murals" : kind === "repeating" ? "Repeating patterns" : "";
@@ -107,7 +111,7 @@ function Shop() {
       <StorefrontSprite />
       <div className="pg crumbs-row"><nav className="crumbs" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><b>Shop</b></nav></div>
       <section className="pg shop">
-        <div className="shop-head"><h1>{title}</h1></div>
+        <div className="shop-head"><h1>{title}</h1>{q && found.closest ? <p className="hint">No design has all of those words, so here are the closest ones. Try fewer words, or <Link to="/custom-request">ask a designer to create it</Link>.</p> : null}</div>
         <nav className="kinds" aria-label="Choose murals or repeating patterns">
           {([["", "All designs", "Murals and repeating patterns together"], ["mural", "Murals", "One big scene, printed once and sized to your wall"], ["repeating", "Repeating patterns", "A pattern that repeats to cover any wall size"]] as const).map(([k, b, s]) => (
             <Link key={k || "all"} to="/browse" search={(prev: any) => ({ ...prev, kind: k || undefined })} aria-current={kind === k}>

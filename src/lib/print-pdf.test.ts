@@ -63,3 +63,19 @@ describe('order print PDFs', () => {
     await expect(createPrintPdf(await src.save(),{kind:'mural'},{...initialWall,artRatio:1},'test')).rejects.toThrow('professional PDF preflight');
   });
 });
+describe('mural print crops the exact spot the customer saw', () => {
+  it('maps the preview frame of a real order to the same area of the print', async () => {
+    const { frameGeometry } = await import('./wall-selection');
+    // the selection saved by a real test order (10 x 8 ft wall, picture 1800 x 914)
+    const sel = { width: 10, height: 8, unit: 'ft', zoom: 0.6, x: 0.35, y: 0.47264770240700216, artRatio: 1.9693654266958425, waste: 0 } as const;
+    const f = frameGeometry(sel as any);
+    const d = printGeometry({ kind: 'mural', repeat: 'none' } as any, sel as any).draws[0]!;
+    // the picture is placed so that exactly the previewed part (left/top edge and size) fills the print page
+    expect(-d.x * f.w).toBeCloseTo(f.x - f.w / 2, 9);
+    expect(-d.y * f.h).toBeCloseTo(f.y - f.h / 2, 9);
+    expect(1 / d.w).toBeCloseTo(f.w, 9);
+    expect(1 / d.h).toBeCloseTo(f.h, 9);
+    // the crop keeps the wall's shape: crop width / crop height in real units equals 10 / 8
+    expect((f.w * sel.artRatio) / f.h).toBeCloseTo(10 / 8, 9);
+  });
+});

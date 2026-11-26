@@ -39,7 +39,10 @@ export const createCartOrder = createServerFn({ method: "POST" })
       const sqft = orderSqft(item.selection);
       // the chosen color travels with the order by name, and its own print file is the one that gets printed
       const cw = design.colorways?.find((c) => c.id === item.selection.color) ?? (design.colorways && design.colorways.length > 1 ? design.colorways[0] : undefined);
-      const selection0 = cw ? { ...item.selection, color: cw.id, colorName: cw.name } : item.selection;
+      // murals: the picture's true proportion comes from the design's print size, not from the browser
+      const trueRatio = repeatStyle(design) === "none" && design.artRatio ? Number(design.artRatio) : 0;
+      const sel1 = trueRatio > 0 && Math.abs(item.selection.artRatio - trueRatio) / trueRatio > 0.02 ? { ...item.selection, artRatio: trueRatio } : item.selection;
+      const selection0 = cw ? { ...sel1, color: cw.id, colorName: cw.name } : sel1;
       const selection = item.name ? { ...selection0, wallName: item.name } : selection0;
       return { user_id: context.userId, cart_id: cartId, design_slug: design.slug, finish: material.id, selection, ...(cw?.originalId ? { print_original_id: cw.originalId } : {}), square_feet: Math.round(sqft * 100) / 100, estimated_total: Math.round(sqft * unitPrice(design, material) * 100) / 100, customer_name: data.name, customer_email: email, phone: data.phone || null, shipping_address: data.address, billing_address: data.billing || data.address, notes: data.notes || null, status: "awaiting_payment" };
     });
