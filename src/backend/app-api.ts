@@ -728,6 +728,17 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     if (body.trusted !== undefined) await DB.prepare(`UPDATE designer_profiles SET trusted = ? WHERE user_id = ?`).bind(body.trusted ? 1 : 0, mm[1]).run();
     return j({ ok: true });
   }
+  // ----- the owner's own designs: the shop's studio account, so the owner uploads through the same designer flow -----
+  if (p === "owner-studio" && m === "POST") {
+    const g: any = (await getSettings(env)).general ?? {};
+    const name = String(g.siteName || "Artisan Murals").replace(/\s+studio$/i, "") + " Studio";
+    const prof: any = await DB.prepare(`SELECT status FROM designer_profiles WHERE user_id = ?`).bind(who.uid).first();
+    if (!prof) await DB.prepare(`INSERT INTO designer_profiles (full_name, studio_name, country, bio, styles, portfolio_links, payout_method, payout_details, user_id, status, trusted) VALUES (?, ?, '', ?, '[]', '[]', 'none', '', ?, 'approved', 1)`).bind(name, name, "Designs made by our own studio.", who.uid).run();
+    else await DB.prepare(`UPDATE designer_profiles SET status = 'approved', trusted = 1 WHERE user_id = ?`).bind(who.uid).run();
+    const acc: any = await DB.prepare(`SELECT slug FROM designer_accounts WHERE user_id = ?`).bind(who.uid).first();
+    if (!acc) { const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "studio"; let slug = base, n = 1; while (await DB.prepare(`SELECT 1 FROM designer_accounts WHERE slug = ?`).bind(slug).first()) slug = `${base}-${++n}`; await DB.prepare(`INSERT INTO designer_accounts (slug, user_id) VALUES (?, ?)`).bind(slug, who.uid).run(); }
+    return j({ ok: true, name });
+  }
   // ----- payouts -----
   // the earnings record, for the owner: per design, and every line (one per paid order, minus refunds)
   if (p === "earnings" && m === "GET") {

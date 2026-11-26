@@ -50,7 +50,7 @@ function DesignerUpload() {
         : !id && d.profile.status === "approved" ? <StudioUpload rules={d.rules} />
         : <div className="bo dp de-new" style={{ minHeight: 0, ["--de-top" as any]: "84px" }}>
             {d.profile.status === "pending" && <div className="bo-msg" style={{ marginBottom: 12 }}>The studio is reviewing your application. Designs go live after approval.</div>}
-            <DesignEditor key="form" page design={design} rules={d.rules} ensure={ensure} onChanged={me.reload} onClose={() => { window.location.href = "/studio?view=designs"; }} />
+            <DesignEditor key="form" page owner={!!d.owner} design={design} rules={d.rules} ensure={ensure} onChanged={me.reload} onClose={() => { window.location.href = "/studio?view=designs"; }} />
           </div>}
     </section>
   </div>;

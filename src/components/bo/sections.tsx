@@ -58,7 +58,7 @@ export function Designs() {
   const listing = (slug: string, hidden: boolean) => s.run(async () => { await api(`admin/designs/${slug}/listing`, { body: { hidden } }); reload(); }, hidden ? "Hidden from the shop" : "Shown in the shop");
   const count = (t: string) => data.uploads.filter((u: any) => t === "pending" ? u.review === "pending" && u.submittedAt : u.review === t).length;
   return <div>
-    <div className="bo-top"><h1>Designs</h1></div>
+    <div className="bo-top"><h1>Designs</h1><button type="button" className="bo-btn pri" data-testid="owner-upload" onClick={async () => { try { await api("admin/owner-studio", { method: "POST", body: {} }); window.location.href = "/studio?view=upload"; } catch (e: any) { alert(e.message || "Could not open the upload."); } }}>+ Upload a design</button><span className="bo-sub">Your own designs: the same upload as designers (computer or Google Drive, repeat tool, categories, room pictures). They go straight into the shop under your studio's name.</span></div>
     <ThumbsBar key={count("approved")} />
     <div className="bo-tabs">{[["all", `All designs (${data.uploads.length + data.builtIn.length})`], ["pending", `To review (${count("pending")})`], ["approved", `Approved (${count("approved")})`], ["rejected", "Rejected"], ["drafts", "Drafts"], ["builtin", `Sample designs (${data.builtIn.length})`], ["archived", "Deleted by designers"]].map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}</div>
     <Msg m={s.msg} />

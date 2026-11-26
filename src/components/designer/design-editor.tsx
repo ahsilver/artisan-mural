@@ -77,7 +77,7 @@ export function RepeatPreview({ src, type, halfDrop, label }: { src?: string; ty
     <figcaption>{label ?? (type === "full" ? `Repeats in every direction${halfDrop ? " (half-drop match)" : ""}` : type === "sideways" ? "Repeats sideways; one copy covers the wall's full height" : "Mural: one scene, printed once, never tiled")}</figcaption></figure>;
 }
 
-export function DesignEditor({ design, rules, onChanged, onClose, ensure, page }: { design: any; rules: any; onChanged: () => void; onClose?: () => void; ensure?: () => Promise<string>; page?: boolean }) {
+export function DesignEditor({ design, rules, onChanged, onClose, ensure, page, owner }: { design: any; rules: any; onChanged: () => void; onClose?: () => void; ensure?: () => Promise<string>; page?: boolean; owner?: boolean }) {
   const s = useSaver();
   const meta = design.meta ?? {};
   const [tax, setTax] = useState(getTaxonomy());
@@ -243,7 +243,7 @@ export function DesignEditor({ design, rules, onChanged, onClose, ensure, page }
       {submitted ? <div className="bo-row"><Pill tone={design.review === "approved" ? "ok" : "warn"}>{design.review === "approved" ? "Live" : "Sent for review"}</Pill><button type="button" className="bo-btn sm danger de-quiet" onClick={() => confirm("Remove this design? It disappears from the shop and from your list. The studio keeps a copy and can bring it back.") && s.run(async () => { await api(`designer/uploads/${design.id}`, { method: "DELETE" }); onClose?.(); }, "Removed")}>Remove</button></div>
         : <div className="bo-row">{design.id && <button type="button" className="bo-btn sm danger de-quiet" onClick={() => confirm("Delete this draft? The studio keeps a copy and can bring it back.") && s.run(async () => { await api(`designer/uploads/${design.id}`, { method: "DELETE" }); onClose?.(); }, "Deleted")}>Delete draft</button>}
           {!s.busy && (!hasArt || !basic.title?.trim() || !sizeSet || !repeatOk) ? <span className="de-why">Finish the steps to submit</span> : null}
-          <button className="bo-btn pri de-submit" data-testid="submit-design" disabled={s.busy || !hasArt || !basic.title?.trim() || !sizeSet || !repeatOk} onClick={() => s.run(async () => { const r = await api(`designer/uploads/${design.id}/submit`, { body: {} }); onChanged(); return r; }, "Sent. The studio will review it.")}>Submit for review</button></div>}
+          <button className="bo-btn pri de-submit" data-testid="submit-design" disabled={s.busy || !hasArt || !basic.title?.trim() || !sizeSet || !repeatOk} onClick={() => s.run(async () => { const r = await api(`designer/uploads/${design.id}/submit`, { body: {} }); onChanged(); return r; }, owner ? "Published: it's in the shop now." : "Sent. The studio will review it.")}>{owner ? "Publish to the shop" : "Submit for review"}</button></div>}
     </div>
   </div>;
 }
