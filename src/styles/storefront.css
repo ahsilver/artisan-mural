@@ -2966,3 +2966,7 @@
 .bo-new-order .bo-preview .ws{padding:12px}
 .bo-new-order .mk-l .bo-h3{font:400 20px/1.2 var(--f-display,Georgia,serif);margin:18px 0 8px}
 .am .ws .zpct{white-space:nowrap}
+.bo-new-order .bo-jobs{display:grid;gap:8px;margin-top:10px;padding:12px;border:1px solid var(--line,#E6E1D8);border-radius:8px;background:#fff}
+.bo-new-order .bo-jobs ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.bo-new-order .bo-jobs li{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--line,#E6E1D8);padding-top:8px}
+.bo-new-order .bo-jn{display:grid;font-size:13px;min-width:0}.bo-new-order .bo-jn small{color:#6F6A66;font-size:12px}

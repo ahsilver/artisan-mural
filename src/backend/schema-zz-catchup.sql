@@ -18,3 +18,5 @@ CREATE INDEX IF NOT EXISTS designer_earnings_user ON designer_earnings(designer_
 -- Visitor statistics (anonymous: a random browser number, no names, no IP addresses). Kept about 13 months.
 CREATE TABLE IF NOT EXISTS site_visits (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, day TEXT NOT NULL, vid TEXT NOT NULL, sid TEXT NOT NULL, kind TEXT NOT NULL, path TEXT, source TEXT DEFAULT '', campaign TEXT DEFAULT '', country TEXT DEFAULT '', device TEXT DEFAULT '', design TEXT, q TEXT, n INTEGER);
 CREATE INDEX IF NOT EXISTS site_visits_day ON site_visits(day);
+-- Print jobs for huge originals (made by the print service container); the file is stored at out_key in R2.
+CREATE TABLE IF NOT EXISTS print_jobs (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, status TEXT NOT NULL, name TEXT NOT NULL, source_url TEXT NOT NULL, width_in REAL NOT NULL, height_in REAL NOT NULL, dpi REAL NOT NULL, draws TEXT NOT NULL, out_key TEXT, bytes INTEGER, info TEXT, error TEXT, started_at TEXT, finished_at TEXT);

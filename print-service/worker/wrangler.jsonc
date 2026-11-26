@@ -1,0 +1,25 @@
+{
+  // The print worker. Needs the Workers Paid plan with Containers turned on.
+  // Fill in the same D1 database id and R2 bucket the site uses before deploying (see print-service/README.md).
+  "name": "artisan-print",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-01",
+  "containers": [
+    {
+      "class_name": "PrintService",
+      "image": "../Dockerfile",
+      // 1 vCPU, 6 GiB memory, 12 GB disk: a 2.8 GB original took 32 s and under 400 MB of memory in testing
+      "instance_type": "standard-2",
+      "max_instances": 2
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "PRINT_SERVICE", "class_name": "PrintService" },
+      { "name": "JOB_RUNNER", "class_name": "JobRunner" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PrintService", "JobRunner"] }],
+  "d1_databases": [{ "binding": "DB", "database_name": "artisan-mural", "database_id": "REPLACE_WITH_SITE_D1_ID" }],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "REPLACE_WITH_SITE_R2_BUCKET" }]
+}

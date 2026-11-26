@@ -8,6 +8,7 @@ import { WallStage } from "@/components/storefront/size-studio";
 import { RepeatAligner, type RepeatFit } from "@/components/designer/repeat-aligner";
 import { oneRepeat } from "@/lib/repeat-fix";
 import { MIN_PRINT_DPI, createPrintPdf, effectivePrintDpi, printGeometry } from "@/lib/print-pdf";
+import { readTiff } from "@/lib/tiff";
 import { api, useApi, money, Msg, Field } from "./common";
 
 type Unit = "ft" | "in" | "cm";
@@ -81,15 +82,31 @@ export function NewOrder({ onDone, tool }: { onDone: (id: string) => void; tool?
   const [align, setAlign] = useState(false); const [fit, setFit] = useState<RepeatFit | null>(null);
   const [tile, setTile] = useState<{ blob: Blob; url: string; w: number; h: number } | null>(null);
   const [srcPx, setSrcPx] = useState<{ w: number; h: number } | null>(null);
+  const [srcPxReal, setSrcPxReal] = useState<{ w: number; h: number } | null>(null);
   const [anyDpi, setAnyDpi] = useState(false);
   // Google Drive: one file, or a folder to choose from
   const [dLink, setDLink] = useState(""); const [dBusy, setDBusy] = useState(""); const [dErr, setDErr] = useState("");
   const [dFolder, setDFolder] = useState<{ name: string; files: any[]; stack: { id: string; name: string }[] } | null>(null);
-  const useFile = (f: File) => { setFile(f); setFileUrl(URL.createObjectURL(f)); };
+  const [server, setServer] = useState<{ id: string; name: string; size: number } | null>(null);
+  const useFile = (f: File) => { setServer(null); setFile(f); setFileUrl(URL.createObjectURL(f)); };
+  /** A Drive file too big for the browser: preview from the small picture inside it, true size from its header. */
+  async function useServerFile(id: string, info: { name: string; size: number }) {
+    setDBusy("Reading the file's size…");
+    const read = async (start: number, length: number) => { const r = await api("designer/drive/ranges", { body: { id, ranges: [[start, length]] }, raw: true }) as Response; const b = new Uint8Array(await r.arrayBuffer()); const len = new DataView(b.buffer).getUint32(0); return b.subarray(4, 4 + len); };
+    const t = await readTiff(read);
+    const prev = await fetch(`/backend/public/drive-thumb?id=${encodeURIComponent(id)}`); if (!prev.ok) throw new Error("This big file has no preview picture inside. Save it as a TIFF with a preview, or use a JPG copy.");
+    setFile(null); setFileUrl(URL.createObjectURL(await prev.blob()));
+    setServer({ id, name: info.name, size: info.size }); setSrcPxReal({ w: t.width, h: t.height });
+  }
   async function openDrive(link: string, stack: { id: string; name: string }[] = []) {
     setDErr(""); const fid = link.match(/\/file\/d\/([\w-]{10,})/)?.[1] || (!/folders/.test(link) ? link.match(/[?&]id=([\w-]{10,})/)?.[1] : undefined);
     try {
-      if (fid) { setDBusy("Reading from Google Drive…"); useFile(await driveFile(fid, setDBusy)); setDFolder(null); }
+      if (fid) {
+        const info = (await api("designer/drive/info", { body: { ids: [fid] } })).info?.[0];
+        if (info?.ok && info.size > 400 * 1024 * 1024) { if (!/tif/i.test(info.mime || info.name)) throw new Error(`That file is ${Math.round(info.size / 1048576).toLocaleString()} MB. Files this big work as TIFFs (the print service reads them on the server); for other types, save a JPG copy.`); await useServerFile(fid, info); }
+        else { setDBusy("Reading from Google Drive…"); useFile(await driveFile(fid, setDBusy)); }
+        setDFolder(null);
+      }
       else { setDBusy("Opening the folder…"); const r = await api("designer/drive/list", { body: { link } }); setDFolder({ name: r.name || "Folder", files: r.files, stack: [...stack, { id: r.folderId, name: r.name || "Folder" }] }); }
     } catch (e: any) { setDErr(e.message || "Could not open that link."); }
     setDBusy("");
@@ -113,7 +130,7 @@ export function NewOrder({ onDone, tool }: { onDone: (id: string) => void; tool?
     return { slug: "outside-file", title: file?.name ?? "Customer file", image: upKind === "repeating" && tile ? tile.url : fileUrl, kind: upKind,
       ...(upKind === "repeating" ? { repeat: repMode === "horizontal" ? "horizontal" : "both", match: repMode === "halfdrop" ? "halfdrop" : undefined, repeatCm: rcm, printHeightCm: repMode === "horizontal" ? rcm / tr : undefined } : {}) } as any;
   }, [src, designs, slug, color, fileUrl, file, upKind, repeatIn, repMode, tile, srcPx]);
-  useEffect(() => { setFit(null); setTile((t) => { if (t) URL.revokeObjectURL(t.url); return null; }); setSrcPx(null); if (fileUrl) loadImg(fileUrl).then((im) => setSrcPx({ w: im.naturalWidth, h: im.naturalHeight })).catch(() => {}); }, [fileUrl]);
+  useEffect(() => { setFit(null); setTile((t) => { if (t) URL.revokeObjectURL(t.url); return null; }); setSrcPx(null); if (!server) setSrcPxReal(null); if (fileUrl) loadImg(fileUrl).then((im) => setSrcPx({ w: im.naturalWidth, h: im.naturalHeight })).catch(() => {}); }, [fileUrl]);
   async function useFit(f: RepeatFit) {
     const im = await loadImg(fileUrl); const c = oneRepeat(im, im.naturalWidth, im.naturalHeight, f);
     const blob: Blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("This file is too large for the browser."))), "image/png"));
@@ -129,6 +146,20 @@ export function NewOrder({ onDone, tool }: { onDone: (id: string) => void; tool?
     const b: Blob = await new Promise((res, rej) => c.toBlob((x) => (x ? res(x) : rej(new Error("Could not read the file."))), "image/png"));
     return { bytes: new Uint8Array(await b.arrayBuffer()), type: "image/png", px: { w: c.width, h: c.height } };
   }
+  const jobs = useApi<any>("admin/print-jobs", [busy]);
+  useEffect(() => { if (!(jobs.data?.jobs ?? []).some((j: any) => j.status === "queued" || j.status === "running")) return; const t = setInterval(() => jobs.reload(), 4000); return () => clearInterval(t); }, [jobs.data]);
+  async function makeOnServer() {
+    if (!base || !sel || !server) return;
+    setMsg(null); setBusy("Sending it to the print service…");
+    try {
+      const g = printGeometry(base as any, sel);
+      const name = `${server.name.replace(/\.[a-z0-9]+$/i, "")}-${w}x${h}${unit}`;
+      await api("admin/print-jobs", { body: { driveId: server.id, widthIn: g.widthIn, heightIn: g.heightIn, dpi: 150, draws: g.draws, crop: upKind === "repeating" && fit ? { w: fit.w, h: fit.h } : undefined, name } });
+      setMsg({ ok: true, text: "The print service is making it. It shows below; the Download button appears when it is ready (usually under a minute, a few minutes for the biggest files)." });
+    } catch (e: any) { setMsg({ ok: false, text: e.message || "Could not start the print file." }); }
+    setBusy("");
+  }
+  async function downloadJob(id: string) { try { const r = await api(`admin/print-jobs/${id}/download`); window.location.href = r.url; } catch (e: any) { setMsg({ ok: false, text: e.message }); } }
   async function download(kind: "pdf" | "tiff") {
     if (!base || !sel) return;
     setMsg(null); setBusy(kind === "pdf" ? "Making the print PDF…" : "Making the print TIFF…");
@@ -155,10 +186,12 @@ export function NewOrder({ onDone, tool }: { onDone: (id: string) => void; tool?
     setSel(base.kind === "mural" ? { ...start, zoom: 1 } : designerScaleSelection(base as any, start));
     lastKey.current = key;
   }, [key]);
-  useEffect(() => { if (base?.image) loadImg(base.image).then((im) => setSel((s) => (s ? { ...s, artRatio: im.naturalWidth / im.naturalHeight } : s))).catch(() => {}); }, [base?.image]);
+  // the picture's proportion: from the real file when the print service makes it (the preview inside a TIFF is rounded)
+  useEffect(() => { if (base?.image) loadImg(base.image).then((im) => setSel((s) => { if (!s) return s; const r0 = server && srcPxReal ? srcPxReal.w / srcPxReal.h : im.naturalWidth / im.naturalHeight; const r = server && srcPxReal && upKind === "repeating" && fit ? (srcPxReal.w * fit.w) / (srcPxReal.h * fit.h) : r0; return { ...s, artRatio: r }; })).catch(() => {}); }, [base?.image, srcPxReal, fit]);
   useEffect(() => { if (!finish && finishes[0]) setFinish(finishes[0].id); }, [finishes]);
   const material = finishes.find((m) => m.id === finish) ?? finishes[0];
-  const px = upKind === "repeating" && tile ? { w: tile.w, h: tile.h } : srcPx;
+  const real = server && srcPxReal ? srcPxReal : null;
+  const px = real ? (upKind === "repeating" && fit ? { w: real.w * fit.w, h: real.h * fit.h } : real) : upKind === "repeating" && tile ? { w: tile.w, h: tile.h } : srcPx;
   let dpi = 0; try { if (src === "upload" && base && sel && px) dpi = Math.floor(effectivePrintDpi(px.w, px.h, printGeometry(base as any, sel))); } catch {}
   const sqft = dims.width && dims.height ? orderSqft(dims as any) : 0;
   const auto = Math.round(sqft * unitPrice(src === "pick" ? base ?? undefined : undefined, material) * 100) / 100;
@@ -232,8 +265,13 @@ export function NewOrder({ onDone, tool }: { onDone: (id: string) => void; tool?
       {src === "upload" && <div className="bo-printbox" data-testid="no-printbox"><b>Ready to print</b>
         <span className={"bo-sub" + (dpi && dpi < MIN_PRINT_DPI ? " err" : "")}>{dpi ? `${dpi} DPI at this size · ${dpi >= 200 ? "very sharp" : dpi >= MIN_PRINT_DPI ? "good from a normal distance" : `below ${MIN_PRINT_DPI} DPI, will look soft`}` : "…"}. The file is exactly {w} × {h} {unit}, in numbered-panel width, {base.kind === "mural" ? "cropped to what you see" : "repeated across the wall as you see it"}.</span>
         {dpi > 0 && dpi < MIN_PRINT_DPI && <label className="bo-inline"><input type="checkbox" checked={anyDpi} onChange={(e) => setAnyDpi(e.target.checked)} /> Make it anyway (the customer accepts a softer print)</label>}
-        <div className="bo-row"><button type="button" className="bo-btn pri" disabled={!!busy} onClick={() => void download("pdf")} data-testid="no-pdf">Download print PDF</button><button type="button" className="bo-btn" disabled={!!busy} onClick={() => void download("tiff")} data-testid="no-tiff">Download print TIFF</button></div>
+        {server ? <><div className="bo-sub">{server.name} is {(server.size / 1073741824).toFixed(1)} GB: too big to open here, so the print service makes it from the full file on the server. The preview above uses the small picture saved inside the file.</div>
+          <div className="bo-row"><button type="button" className="bo-btn pri" disabled={!!busy || (dpi > 0 && dpi < MIN_PRINT_DPI && !anyDpi)} onClick={() => void makeOnServer()} data-testid="no-server">Make the print file on the server</button></div></>
+          : <div className="bo-row"><button type="button" className="bo-btn pri" disabled={!!busy} onClick={() => void download("pdf")} data-testid="no-pdf">Download print PDF</button><button type="button" className="bo-btn" disabled={!!busy} onClick={() => void download("tiff")} data-testid="no-tiff">Download print TIFF</button></div>}
       </div>}</div>}
+      {src === "upload" && (jobs.data?.jobs ?? []).length > 0 && <div className="bo-jobs" data-testid="no-jobs"><b>Print files made on the server</b>
+        <ul>{jobs.data.jobs.slice(0, 8).map((j: any) => <li key={j.id}><span className="bo-jn">{j.name}.tif<small>{new Date(j.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · {j.width_in / 12} × {j.height_in / 12} ft · {j.dpi} DPI{j.bytes ? ` · ${(j.bytes / 1048576).toFixed(0)} MB` : ""}</small></span>
+          {j.status === "done" ? <button type="button" className="bo-btn pri" onClick={() => void downloadJob(j.id)} data-testid="no-job-dl">Download</button> : j.status === "failed" ? <span className="bo-sub err" title={j.error}>Failed: {j.error}</span> : <span className="bo-sub">{j.status === "running" ? "Making it…" : "Waiting…"}</span>}</li>)}</ul></div>}
     </div></div>
     {!tool && <>
     <Field label="Finish"><select className="bo-sel" value={finish} onChange={(e) => setFinish(e.target.value)}>{finishes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Field>

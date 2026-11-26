@@ -729,6 +729,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     if (body.trusted !== undefined) await DB.prepare(`UPDATE designer_profiles SET trusted = ? WHERE user_id = ?`).bind(body.trusted ? 1 : 0, mm[1]).run();
     return j({ ok: true });
   }
+  if (p.startsWith("print-jobs")) { const { printJobRoutes } = await import("./print-jobs"); const r = await printJobRoutes(env, p, m, body, signUrl); if (r) return r; }
   if (p === "visitors" && m === "GET") { const { visitors } = await import("./visits-api"); return j(await visitors(env as any, Number(url.searchParams.get("days")) || 30)); }
   // ----- the owner's own designs: the shop's studio account, so the owner uploads through the same designer flow -----
   if (p === "owner-studio" && m === "POST") {
