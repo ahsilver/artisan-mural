@@ -59,6 +59,10 @@ async function fetchShopData(uploadId?: string): Promise<ShopData> {
     db.from("designer_collections").select("id, designer_slug, title, description, design_slugs").order("created_at", { ascending: false }),
     loadThumbRows(uploadId ? `u-${uploadId}` : undefined),
   ]);
+  // the original print file's width in pixels, for the real sharpness (DPI) shown when customers size a design
+  const origIds = [...new Set((uploads.data ?? []).flatMap((u: any) => u.artwork_colorways.map((c: any) => c.current_original_id).filter(Boolean)))] as string[];
+  const origPx = new Map<string, number>();
+  for (let i = 0; i < origIds.length; i += 100) { const { data } = await db.from("print_originals").select("id, pixel_width").in("id", origIds.slice(i, i + 100)); for (const r of (data ?? []) as any[]) if (r.pixel_width) origPx.set(r.id, Number(r.pixel_width)); }
   const thumbs: Record<string, any> = {};
   for (const r of thumbRows) { try { thumbs[r.slug] = JSON.parse(r.data); } catch {} }
   const overrides = overrideRows.data ?? [];
@@ -101,6 +105,8 @@ async function fetchShopData(uploadId?: string): Promise<ShopData> {
       repeatCm: mural ? undefined : w, printHeightCm: !mural && u.repeat_style === "horizontal" ? h : undefined,
       maxWidthCm: mural ? Number(u.max_print_width_cm) || w : undefined,
       artRatio: mural && w > 0 && h > 0 ? w / h : undefined, // the mural picture's true proportion (orders use it)
+      designWidthCm: mural ? w : undefined, // the designer's own print size; maxWidthCm is the largest they allow
+      printPx: (() => { const c = [...u.artwork_colorways].sort((a: any, b: any) => a.position - b.position)[0] as any; return c?.current_original_id ? origPx.get(c.current_original_id) : undefined; })(),
       orientation: w >= h ? "landscape" : "portrait",
       description: (u as any).description || (mural ? "An original mural from one of our designers, printed and cropped to your exact wall." : "An original repeating pattern from one of our designers, printed to any wall size."),
       story: u.story ?? undefined, orders: 0,

@@ -198,6 +198,10 @@ export type Design = {
   printHeightCm?: number;
   /** Mural picture width ÷ height (from the designer's print size); orders use it so the print matches the preview. */
   artRatio?: number | undefined;
+  /** Width in pixels of the original print file (one repeat, or the whole mural); with the print size it gives the real DPI. */
+  printPx?: number | undefined;
+  /** Murals: the width (cm) the designer made it for; 100% size on the customize page. */
+  designWidthCm?: number | undefined;
   /** Murals: printed width of the full artwork (height follows the image). */
   maxWidthCm?: number;
   orientation: "portrait" | "landscape";

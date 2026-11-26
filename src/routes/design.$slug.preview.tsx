@@ -7,7 +7,7 @@ import { isHidden } from "@/lib/catalog";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Camera, Image, Pencil, RotateCcw, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MuralFramer } from "@/components/mural-framer";
+import { SizeStudio } from "@/components/storefront/size-studio";
 import { MyRoom } from "@/components/my-room";
 import { WallMeasurements } from "@/components/wall-measurements";
 import { MaterialSelector } from "@/components/material-selector";
@@ -108,54 +108,18 @@ function DesignPreview() {
       <div className="pg crumbs-row"><nav className="crumbs" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><Link to="/design/$slug" params={{ slug: design.slug }} search={{ ...selection, color: search.color }}>{design.title}</Link><span>/</span><b>Customize &amp; order</b></nav></div>
       <section className="pg sz">
         <div className="sz-head">
-          <div><span className="k">Made for your wall</span><h1>Your wall, <span>your size.</span></h1></div>
-          <div className="seg sz-tabs" role="tablist" aria-label="Preview view">
-            <button type="button" role="tab" aria-selected={tab === "artwork"} aria-checked={tab === "artwork"} onClick={() => update({ view: "artwork" })}>On your wall<small>Size, crop and print</small></button>
-            <button type="button" role="tab" aria-selected={tab === "room"} aria-checked={tab === "room"} onClick={() => update({ view: "room" })}>In my room<small>Your own photo</small></button>
-          </div>
+          <div><span className="k">{tab === "room" ? "See it in your room" : "Step 2 · Made for your wall"}</span><h1>Your wall, <span>your size.</span></h1></div>
+          <ol className="sz-steps"><li className="on">Wall size</li><li className="on">Size &amp; crop</li><li>Add to cart</li></ol>
         </div>
-        <div className="sz-grid">
-          <div className="sz-stage">
-            {tab === "artwork" ? (
-              <>
-                <MuralFramer design={design} selection={selection} onChange={change} maxHeight="min(560px, 60svh)" />
-                {design.kind === "mural" && <p className="hint">Drag the picture to choose the part you love. Original size keeps your wall measurements; a smaller wall shows part of the mural.</p>}
-              </>
-            ) : (
-              <MyRoom design={design} selection={selection} designerName={designer.name} onAskFit={(w) => { setPrefill(oversizePrefill(design.title, w, muralMaxLabel(design, selection))); setChatOpen(true); }} />
-            )}
-          </div>
-          <aside className="sz-panel">
-            <div className="sz-item"><img src={thumb} alt="" /><div><b>{design.title}{colorway ? ` · ${colorway.name}` : ""}</b><small>by {designer.name} · {design.kind === "mural" ? "Mural" : "Repeating pattern"}</small></div><Link to="/browse">Change</Link></div>
-            <div className="blk">
-              <h3 className="bh"><span>1</span>Your wall</h3>
-              <WallMeasurements selection={selection} onChange={change} />
-              <p className="hint">Wall to wall, floor to ceiling. Trim is added for you.</p>
-            </div>
-            <div className="blk">
-              <h3 className="bh"><span>2</span>Design size</h3>
-              <div className="seg2" role="group" aria-label="Quick sizes">
-                <button type="button" onClick={() => change(designerScaleSelection(design, selection))}>Designer's original size</button>
-                <button type="button" onClick={() => update({ view: "artwork" })}>Adjust on the wall</button>
-              </div>
-              <SizeNotice design={design} designer={designer} selection={selection} onContact={() => ask(true)} />
-              <MatchFixed design={design as any} className="mt-1" />
-            </div>
-            {mounted && materials.length > 0 && (
-              <div className="blk">
-                <h3 className="bh"><span>3</span>Paper</h3>
-                <div className="chips papers" role="radiogroup" aria-label="Paper">
-                  {materials.map((m) => <button key={m.id} type="button" role="radio" aria-checked={m.id === material?.id} className={"chip" + (m.id === material?.id ? " on" : "")} onClick={() => update({ finish: m.id })}>{m.name}<small>{money(unitPrice(design, m))}</small></button>)}
-                </div>
-                {material?.blurb && <p className="hint">{material.blurb}</p>}
-              </div>
-            )}
-            <div className="sz-total"><div><b>{sqft.toFixed(1)} sq ft</b><small>{material ? `${material.name} · ` : ""}{money(rate)} / sq ft</small></div><strong>{money(sqft * rate)}</strong></div>
-            {tooBig ? (
-              <button type="button" className="btn btn-wine big" data-testid="fit-cta" onClick={() => ask(true)}>Chat with the designer to make it fit</button>
-            ) : (
-              <button type="button" className="btn btn-wine big" data-testid="add-to-cart" onClick={addToCart}>{editLine ? `Update ${editLine.name ?? "cart"}` : "Add to cart"}</button>
-            )}
+        <SizeStudio
+          design={design} designerName={designer.name} title={design.title} thumb={thumb} colorName={colorway?.name}
+          selection={selection} onChange={change}
+          materials={mounted ? materials : []} material={material} onMaterial={(id) => update({ finish: id })}
+          addLabel={editLine ? `Update ${editLine.name ?? "cart"}` : "Add to cart"} onAdd={addToCart} onChat={(fit) => ask(fit)}
+          changeHref={<Link to="/design/$slug" params={{ slug: design.slug }} search={{ color: search.color }}>Change</Link>}
+          tryAnother={<Link to="/browse">Try another design</Link>}
+          stageOverride={tab === "room" ? <><MyRoom design={design} selection={selection} designerName={designer.name} onAskFit={(w) => { setPrefill(oversizePrefill(design.title, w, muralMaxLabel(design, selection))); setChatOpen(true); }} /><p className="hint"><button type="button" className="up-link" onClick={() => update({ view: "artwork" })}>← Back to your wall</button></p></> : undefined}
+          below={<>
             {askWall && !editLine && material && (
               <div className="notice" role="dialog" aria-label="Already in your cart" data-testid="add-wall-choice">
                 <b>{design.title} is already in your cart.</b><p>Is this for another wall?</p>
@@ -165,12 +129,9 @@ function DesignPreview() {
                 </div>
               </div>
             )}
-            <p className="sz-note">Printed to order in numbered panels. Ships in 5–7 days.</p>
-            <div className="sz-links"><button type="button" className="up-link" onClick={() => ask()}>Chat with the designer</button><Link to="/browse">Try another design</Link></div>
             <RequestChange design={design} designer={designer} open={chatOpen} onOpenChange={setChatOpen} prefill={prefill} trigger={false} />
-            <OversizePopup open={popup} onOpenChange={setPopup} max={muralMaxLabel(design, selection)} title={design.title} designer={designer.name} onAsk={() => ask(true)} />
-          </aside>
-        </div>
+          </>}
+        />
       </section>
     </div>
   );

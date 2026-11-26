@@ -44,8 +44,8 @@ export const wallSelectionSchema = z.object({
 });
 export type WallSelection = z.infer<typeof wallSelectionSchema>;
 export const initialWall: WallSelection = {
-  width: 10,
-  height: 8,
+  width: 12,
+  height: 9,
   unit: "ft",
   zoom: 0.7,
   x: 0.5,

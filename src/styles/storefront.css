@@ -2922,3 +2922,7 @@
 .am .pdx .qtip{width:17px;height:17px;font-size:10px;border-width:1px}
 .am .pdx .title{font-size:clamp(30px,2.7vw,38px)!important}
 .am .pbanner .pb-tile{position:absolute;inset:0;background-repeat:repeat;background-size:clamp(220px,26vw,380px) auto;background-position:center}
+.am .sz-art{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.am .sz-tile{position:absolute;background-size:100% 100%;background-repeat:no-repeat}
+.am .sz-inputs .iv em select{appearance:none;-webkit-appearance:none;border:0;background:transparent;font:inherit;color:inherit;padding:0;cursor:pointer;text-align:right}
+.am .sz-panel .seg2 button:only-child{grid-column:1/-1}
