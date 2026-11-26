@@ -85,11 +85,15 @@ function DesignDetail() {
     { src: design.image, label: "The wallpaper" },
     ...mockups.slice(1).map((m) => ({ src: m, label: "In a room" })),
   ];
-  const shown = sources.map((s) => ({ ...s, pic: pic(design, s.src, BIG_W) }));
+  const shown: { src: string; label: string; pic: ReturnType<typeof pic>; mat?: boolean }[] = sources.map((s) => ({ ...s, pic: pic(design, s.src, BIG_W) }));
   const [gi, setGi] = useState(0);
   const [viewer, setViewer] = useState<number | null>(null);
   const [finish, setFinish] = useState(search.finish ?? recommendedOf(baseDesign, finishes)[0] ?? finishes[0]?.id);
   const material = finishes.find((m) => m.id === finish) ?? finishes[0];
+  // the material's weave over the design, at real size: a clean texture photo (2.24 in per tile) when the shop has one, else the material photo
+  const grain = material && ["canvas", "linen", "grasscloth", "suede"].includes(material.id) ? { url: `/tex/${material.id}-grain.webp`, inches: 2.24 } : material?.texture ? { url: material.texture, inches: material.sampleIn ?? 2 } : null;
+  if (material && grain) shown.push({ src: grain.url, label: `On ${material.name} · close-up`, pic: undefined, mat: true });
+  const matIndex = grain ? shown.length - 1 : -1;
   const [chatOpen, setChatOpen] = useState(false);
   const [prefill, setPrefill] = useState<RequestPrefill>({});
   const [fav, setFav] = useState(false);
@@ -135,7 +139,10 @@ function DesignDetail() {
       <section className="pd pg">
         <div className="gal">
           <div className="gal-main">
-            {shown[gi] && <img src={shown[gi]!.pic?.src ?? shown[gi]!.src} srcSet={shown[gi]!.pic?.srcSet} sizes="(min-width: 1000px) 58vw, 100vw" alt={`${baseDesign.title}: ${shown[gi]!.label}`} />}
+            {shown[gi]?.mat && material ? <div className="gal-matv" role="img" aria-label={`${baseDesign.title} printed on ${material.name}, about 12 inches of wall at real size`}>
+              <span className="gal-mat-art" style={{ backgroundImage: `url("${pic(design, design.image, BIG_W)?.src ?? design.image}")` }} />
+              <span className="gal-mat-tex" style={{ backgroundImage: `url("${grain?.url}")`, backgroundSize: `${((grain?.inches ?? 2) / 12) * 100}% auto` }} />
+            </div> : shown[gi] && <img src={shown[gi]!.pic?.src ?? shown[gi]!.src} srcSet={shown[gi]!.pic?.srcSet} sizes="(min-width: 1000px) 58vw, 100vw" alt={`${baseDesign.title}: ${shown[gi]!.label}`} />}
             <span className="gal-tag">{shown[gi]?.label}</span>
             <button type="button" className="gal-full" aria-label="See all pictures full size" onClick={() => setViewer(gi)}>⤢ Full size</button>
           </div>
@@ -163,7 +170,7 @@ function DesignDetail() {
             <div className="opt">
               <div className="lbl">Material <span className="mat-name">{material?.name}</span></div>
               <div className="chips" role="radiogroup" aria-label="Material">
-                {finishes.map((m) => <button key={m.id} type="button" role="radio" aria-checked={m.id === material?.id} className={"chip" + (m.id === material?.id ? " on" : "")} onClick={() => setFinish(m.id)}>{m.name}<small>{money(unitPrice(design, m))}</small></button>)}
+                {finishes.map((m) => <button key={m.id} type="button" role="radio" aria-checked={m.id === material?.id} className={"chip" + (m.id === material?.id ? " on" : "")} onClick={() => { setFinish(m.id); if (matIndex >= 0) setGi(matIndex); }}>{m.name}<small>{money(unitPrice(design, m))}</small></button>)}
               </div>
               {material?.blurb && <p className="mat-blurb">{material.blurb}</p>}
               {material && <SampleOrder design={design.slug} title={design.title} finish={material.id} finishName={material.name} color={color} colorName={design.colorways?.find((c: any) => c.id === color)?.name} />}
@@ -209,7 +216,7 @@ function DesignDetail() {
           <div className="gv-top"><b>{baseDesign.title}</b><span>{shown[viewer]!.label} · {viewer + 1} / {shown.length}</span><button type="button" className="gv-x" aria-label="Close" onClick={() => setViewer(null)}>✕</button></div>
           <div className="gv-stage" onClick={(e) => { if (e.target === e.currentTarget) setViewer(null); }}>
             <button type="button" className="gv-a l" aria-label="Previous picture" onClick={() => setViewer((viewer + shown.length - 1) % shown.length)}>‹</button>
-            <img src={shown[viewer]!.src} alt={shown[viewer]!.label} />
+            {shown[viewer]!.mat && material ? <div className="gal-matv gv-matv" role="img" aria-label={`${baseDesign.title} printed on ${material.name}`}><span className="gal-mat-art" style={{ backgroundImage: `url("${design.image}")` }} /><span className="gal-mat-tex" style={{ backgroundImage: `url("${grain?.url}")`, backgroundSize: `${((grain?.inches ?? 2) / 12) * 100}% auto` }} /></div> : <img src={shown[viewer]!.src} alt={shown[viewer]!.label} />}
             <button type="button" className="gv-a r" aria-label="Next picture" onClick={() => setViewer((viewer + 1) % shown.length)}>›</button>
           </div>
           <div className="gv-thumbs">{shown.map((s, k) => <button key={k} type="button" aria-pressed={k === viewer} aria-label={`${s.label} ${k + 1}`} onClick={() => setViewer(k)}><img src={pic(design, s.src, [320])?.src ?? s.src} alt="" /></button>)}</div>

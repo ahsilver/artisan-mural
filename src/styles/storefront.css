@@ -2848,3 +2848,8 @@
 .am .ra-wall{justify-items:center}.am .ra-wall .ra-wh{justify-self:stretch}.am .ra-wall canvas{width:auto;max-width:100%;max-height:24vh}
 @media (max-width:760px){.am .ra-sheet .ra-side canvas{width:100%;height:auto}}
 .am .ra-big-x{background:#201D1D;color:#fff;border-color:#201D1D}
+.am .gal-matv{position:absolute;inset:0;isolation:isolate;overflow:hidden;background:#fff}
+.am .gal-mat-art{position:absolute;inset:0;background-size:320% auto;background-position:center;background-repeat:no-repeat}
+.am .gal-mat-tex{position:absolute;inset:0;background-repeat:repeat;mix-blend-mode:multiply;opacity:.95;pointer-events:none}
+.am .gv-matv{position:relative;inset:auto;width:min(90vw,calc(80vh * 4 / 3));aspect-ratio:4/3}
+.am .gv-matv{position:relative}
