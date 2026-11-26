@@ -2601,6 +2601,10 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 .mk-in{display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0}.mk-in input[type=number]{width:70px}.mk-in input[type=range]{flex:1;accent-color:#201D1D}.mk-wall{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mk-wall label{display:grid;gap:4px;font-size:12.5px}.mk-wall input,.mk-in input[type=number]{border:1px solid var(--line);padding:8px;font:inherit;border-radius:6px}
 .mk-stage{background:#F3EEE6;border-radius:10px;padding:12px;display:grid;place-items:center}.bo-printbox{display:grid;gap:8px;margin-top:10px;padding:12px;border:1px solid #201D1D;border-radius:8px;background:#fff}.bo-printbox .err{color:#B03A2E}.mk-act{display:flex;gap:8px;flex-wrap:wrap}.mk-any{display:flex;gap:8px;align-items:center;font-size:13px}
 @media (max-width:900px){.vz-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.vz-grid,.mk{grid-template-columns:1fr}}
+.mk-drive{display:grid;gap:6px;margin:10px 0}.mk-drow{display:flex;gap:6px}.mk-drow input{flex:1;border:1px solid var(--line);padding:8px;font:inherit;border-radius:6px}
+#mkDFolder{display:grid;gap:6px}.mk-dhead{font-size:13px}.mk-dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;max-height:300px;overflow:auto}
+.mk-dgrid button{display:grid;gap:4px;border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px;cursor:pointer;font:inherit;font-size:11.5px;text-align:left}.mk-dgrid button:hover{border-color:var(--ink)}
+.mk-dgrid img,.mk-dfold{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;background:#F1EDE6;display:grid;place-items:center;font-size:32px}.mk-dgrid span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -6359,13 +6363,14 @@ async function tiffCrop(read, box, sink, onProgress) {
   }
 
   // ---- Make a print file (and New order from a file): upload, crop or line up a repeat, see the wall, download
-  const MK = { img: null, url: '', name: '', kind: 'mural', tile: null, rep: 'both', repeatIn: 24, w: 12, h: 9, zoom: 1, px: 0.5, py: 0.5, ox: 0, oy: 0 };
+  const MK = { img: null, url: '', name: '', kind: 'mural', tile: null, rep: 'both', repeatIn: 24, w: 12, h: 9, zoom: 0, px: 0.5, py: 0.5, ox: 0, oy: 0 };
   function makerHTML(order) {
     return `<h2>${order ? 'New order' : 'Make a print file'}</h2><p class="hint">${order ? 'For orders by phone, email or the showroom. Upload the customer\'s file, crop it or line up the repeat, then add the customer and price.' : 'For yourself: upload any design, crop it or line it up as a repeat, choose the wall size and download the print file. Nothing goes on the website and no order is made.'}</p>
       <div class="mk">
         <div class="mk-l">
           <h3 class="mk-h">1. Design</h3>
           <label class="btn optline btn-sm mk-file">Upload a file<input type="file" id="mkFile" accept="image/*" hidden></label> <span class="hint" id="mkName">JPG, PNG or WebP</span>
+          <div class="mk-drive"><span class="hint">…or from Google Drive: a link to one file or a whole folder</span><div class="mk-drow"><input id="mkDrive" placeholder="https://drive.google.com/…"><button type="button" class="btn optline btn-sm" id="mkDriveGo">Open</button></div><span class="hint" id="mkDriveMsg"></span><div id="mkDFolder"></div></div>
           <div class="mk-seg"><button type="button" data-mk="mural" aria-pressed="true">Mural</button><button type="button" data-mk="repeat" aria-pressed="false">Repeat</button></div>
           <div id="mkRep" hidden><button type="button" class="btn btn-wine btn-sm" id="mkAlign">Line up the repeat</button> <span class="hint" id="mkRepTxt">Drag the copies until they join, zoom on the join, see it on a wall.</span>
             <label class="mk-in">One repeat prints <input type="number" id="mkRepIn" value="24" min="2" step="1"> in wide</label></div>
@@ -6386,7 +6391,7 @@ async function tiffCrop(read, box, sink, onProgress) {
   function wireMaker(order) {
     const box = $('mkWallBox');
     const src = () => (MK.kind === 'repeat' && MK.tile ? MK.tile : MK.img);
-    const L = () => { const W = (+$('mkW').value || 12) * 12, H = (+$('mkH').value || 9) * 12; const s = src(); if (!s) return null; const ar = s.width / s.height;
+    const L = () => { const W = (+$('mkW').value || 12) * 12, H = (+$('mkH').value || 9) * 12; const s0 = src(); if (!s0) return null; const s = { width: MK.realW && MK.kind !== 'repeat' ? MK.realW : s0.width, height: s0.height * ((MK.realW && MK.kind !== 'repeat' ? MK.realW : s0.width) / s0.width) }; const ar = s0.width / s0.height;
       if (MK.kind === 'repeat') { const tw = Math.max(2, +$('mkRepIn').value || 24) * Math.pow(4, MK.zoom - 0.5); /* slider middle = 100%, from half to double */ return { W, H, tw, th: tw / ar, dpi: Math.round(s.width / tw) }; }
       const cover = Math.max(W / H > ar ? W : H * ar, W); const aw = cover * (1 + MK.zoom * 1.5), ah = aw / ar; return { W, H, aw, ah, dpi: Math.round(s.width / aw) }; };
     const draw = () => {
@@ -6401,7 +6406,27 @@ async function tiffCrop(read, box, sink, onProgress) {
       const ok = g.dpi >= 150; $('mkDpi').className = 'hint' + (ok ? '' : ' err'); $('mkDpi').textContent = `${g.dpi} DPI at this size · ${g.dpi >= 200 ? 'very sharp' : ok ? 'good from a normal distance' : 'below 150 DPI, will look soft'}. The file is exactly ${$('mkW').value} × ${$('mkH').value} ft, ${MK.kind === 'repeat' ? 'repeated across the wall' : 'cropped to what you see'}.`;
       $('mkAnyL').hidden = ok; $('mkDl').disabled = !ok && !$('mkAny').checked; if ($('mkSave')) $('mkSave').disabled = $('mkDl').disabled;
     };
-    $('mkFile').onchange = (e) => { const f = e.target.files[0]; if (!f) return; MK.url = URL.createObjectURL(f); MK.name = f.name.replace(/\.[a-z0-9]+$/i, ''); $('mkName').textContent = f.name; const im = new Image(); im.onload = () => { MK.img = im; MK.tile = null; draw(); }; im.src = MK.url; };
+    // Google Drive: one file, or a folder to pick from (sub-folders open too)
+    const loadDrive = async (id, name) => { $('mkDriveMsg').textContent = 'Opening it from Google Drive…';
+      const tif = /\.tiff?$/i.test(name || ''), url = tif ? DRIVE_THUMB + id : `https://lh3.googleusercontent.com/d/${id}=s0`;
+      try { const r = await fetch(url); if (!r.ok) throw 0; const b = await r.blob(); if (!b.type.startsWith('image/')) throw 0; MK.url = URL.createObjectURL(b); }
+      catch (x) { MK.url = `https://drive.google.com/thumbnail?id=${id}&sz=w4000`; }
+      MK.name = (name || 'drive-file').replace(/\.[a-z0-9]+$/i, ''); $('mkName').textContent = name || 'From Google Drive';
+      MK.realW = 0; if (tif) driveTiffSize(id).then((sz) => { if (sz && sz[0]) { MK.realW = sz[0]; draw(); $('mkDriveMsg').textContent = `TIFF, ${sz[0].toLocaleString()} × ${sz[1].toLocaleString()} px. This sample shows the small picture saved inside the file. The real site prints from the whole file when it is under about 400 MB; bigger files need a JPG copy.`; } }).catch(() => {});
+      const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => { MK.img = im; MK.tile = null; $('mkDriveMsg').textContent = tif ? 'TIFF: this sample shows the small picture saved inside the file; the real site reads the whole file.' : ''; draw(); };
+      im.onerror = () => { $('mkDriveMsg').textContent = "Couldn't open that file. Check it's a picture shared as \"Anyone with the link\"."; }; im.src = MK.url; };
+    const openFolder = async (id, stack) => { $('mkDriveMsg').textContent = 'Opening the folder…';
+      try { const r = await fetch(`https://artisan-drive.ahlsholdingsllc.workers.dev/?id=${id}`); const d = await r.json(); if (!d.files) throw 0; const st = [...stack, [id, d.name || 'Folder']];
+        const pics = d.files.filter(f => f.folder || /image|tif/i.test(f.type || '') || /\.(jpe?g|png|webp|tiff?)$/i.test(f.name));
+        $('mkDFolder').innerHTML = `<div class="mk-dhead">${st.map(([fid, n], i) => i < st.length - 1 ? `<button type="button" class="link" data-crumb="${i}">${upEsc(n)}</button> › ` : `<b>${upEsc(n)}</b>`).join('')}</div><div class="mk-dgrid">${pics.map(f => `<button type="button" data-df="${f.id}" data-dn="${upEsc(f.name)}" data-folder="${f.folder ? 1 : ''}">${f.folder ? '<span class="mk-dfold">📁</span>' : `<img src="${/\.tiff?$/i.test(f.name) ? DRIVE_THUMB + f.id : `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`}" alt="" loading="lazy">`}<span>${upEsc(f.name)}</span></button>`).join('')}</div><span class="hint">Tap a picture to use it, or a folder to open it.</span>`;
+        $('mkDFolder').querySelectorAll('[data-df]').forEach(b => b.onclick = () => b.dataset.folder ? openFolder(b.dataset.df, st) : loadDrive(b.dataset.df, b.dataset.dn));
+        $('mkDFolder').querySelectorAll('[data-crumb]').forEach(b => b.onclick = () => { const k = +b.dataset.crumb; openFolder(st[k][0], st.slice(0, k)); });
+        $('mkDriveMsg').textContent = ''; }
+      catch (x) { $('mkDriveMsg').textContent = "Couldn't open that folder. Share it as \"Anyone with the link\" and try again."; } };
+    $('mkDriveGo').onclick = () => { const u = $('mkDrive').value.trim(), fo = u.match(/folders\/([\w-]{10,})/), fi = u.match(/\/file\/d\/([\w-]{10,})/) || u.match(/[?&]id=([\w-]{10,})/);
+      if (fo) openFolder(fo[1], []); else if (fi) loadDrive(fi[1], ''); else $('mkDriveMsg').textContent = 'Paste a Google Drive link to a file or a folder.'; };
+    $('mkDrive').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); $('mkDriveGo').click(); } };
+    $('mkFile').onchange = (e) => { const f = e.target.files[0]; if (!f) return; MK.realW = 0; MK.url = URL.createObjectURL(f); MK.name = f.name.replace(/\.[a-z0-9]+$/i, ''); $('mkName').textContent = f.name; const im = new Image(); im.onload = () => { MK.img = im; MK.tile = null; draw(); }; im.src = MK.url; };
     document.querySelectorAll('[data-mk]').forEach(b => b.onclick = () => { MK.kind = b.dataset.mk; MK.zoom = MK.kind === 'repeat' ? 0.5 : 0; $('mkZoom').value = MK.zoom * 1000; document.querySelectorAll('[data-mk]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); $('mkRep').hidden = MK.kind !== 'repeat'; draw(); });
     $('mkAlign').onclick = () => { if (!MK.img) { $('mkRepTxt').textContent = 'Upload a file first.'; return; } window.AM_REPEAT.open(MK.url, { mode: 'both' }, (r) => {
       const im = MK.img, w = Math.round(im.width * (1 - (r.tx || 0))), h = Math.round(im.height * (1 - (r.ty || 0))), c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h, 0, 0, w, h);
