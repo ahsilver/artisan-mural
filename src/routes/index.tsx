@@ -6,7 +6,7 @@ import { loadSite } from "@/lib/site-settings";
 import { pic } from "@/lib/pics";
 import { StorefrontSprite, Ico, Mark } from "@/components/storefront/icons";
 import { StoreCard } from "@/components/storefront/card";
-import { featuredToday, homeLayout, linkSearch, tilePicture, type HomeLayout } from "@/lib/home-layout";
+import { DEFAULT_STYLE_STRIP, featuredToday, homeLayout, linkSearch, tilePicture, type HomeLayout } from "@/lib/home-layout";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -192,7 +192,7 @@ function Home() {
       {on("duo") && (
         <section className="pg duo-top" aria-label="Artisan Pro and selling your art">
           <div className="duo2">
-            <Link className="d2" to="/pro"><img src={duo.pro?.image || COVER("hotel")} alt="" loading="lazy" /><span className="d2-txt"><span className="k">{duo.pro?.kicker || "For design professionals"}</span><b>{duo.pro?.title || "Artisan Pro"}</b><small>{duo.pro?.text || "Trade pricing, free samples and one specialist for every project."}</small></span><span className="btn btn-wine">{duo.pro?.cta || "Apply"}</span></Link>
+            <Link className="d2" to="/pro"><img src={duo.pro?.image || COVER("commercial")} alt="" loading="lazy" /><span className="d2-txt"><span className="k">{duo.pro?.kicker || "For design professionals"}</span><b>{duo.pro?.title || "Artisan Pro"}</b><small>{duo.pro?.text || "Trade pricing, free samples and one specialist for every project."}</small></span><span className="btn btn-wine">{duo.pro?.cta || "Apply"}</span></Link>
             <Link className="d2" to="/sell"><img src={duo.sell?.image || (big ? flatPic(big) : COVER("living-room"))} alt="" loading="lazy" /><span className="d2-txt"><span className="k">{duo.sell?.kicker || "For artists"}</span><b>{duo.sell?.title || "Sell your designs"}</b><small>{duo.sell?.text || "We print and ship to order. You earn on every sale."}</small></span><span className="btn btn-wine">{duo.sell?.cta || "Apply"}</span></Link>
           </div>
         </section>
@@ -213,7 +213,7 @@ function Home() {
             {layout.rooms.map((r, k) => <Tile key={k + r.title} className={"tile " + (["w7", "w5", "w4", "w8"][k % 4])} to="/browse" search={linkSearch(r.link)} img={tilePic(r, 20 + k)} title={r.title} />)}
           </div>
           {layout.roomStrip.length > 0 && <nav className="room-strip" aria-label="More rooms">
-            {layout.roomStrip.map((r) => <Link key={r.room + r.title} to="/browse" search={{ room: r.room }}>{r.title}</Link>)}<Link className="all" to="/browse">See all rooms <span aria-hidden="true">→</span></Link>
+            {layout.roomStrip.map((r) => <Link key={r.room + r.title} to="/browse" search={{ room: r.room }}>{r.title}</Link>)}<Link className="all" to="/rooms">See all rooms <span aria-hidden="true">→</span></Link>
           </nav>}
         </section>
       )}
@@ -229,6 +229,7 @@ function Home() {
             <div className="ph"><img src={split ? room(split, 2) : COVER("living-room")} alt={split ? `${split.title} in a room` : ""} loading="lazy" /></div>
           </div>
           {withRoom.length > 0 && <div className="g-look">{layout.moods.map((m, n) => <Tile key={n + m.title} to="/browse" search={linkSearch(m.link)} img={tilePic(m, 8 + n)} title={m.title} sub={m.sub} />)}</div>}
+          <nav className="room-strip" aria-label="More styles">{DEFAULT_STYLE_STRIP.map((x) => <Link key={x.title} to="/browse" search={linkSearch(x.link)}>{x.title}</Link>)}<Link className="all" to="/styles">See all styles <span aria-hidden="true">→</span></Link></nav>
         </section>
       )}
 

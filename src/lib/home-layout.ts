@@ -22,10 +22,16 @@ export const DEFAULT_LOOKS: HomeTile[] = [
   { title: "Minimal", sub: "Quiet & calm", link: { kind: "style", value: "Minimal" } },
 ];
 export const DEFAULT_MOODS: HomeTile[] = [
-  { title: "Black & white", link: { kind: "color", value: "black" } },
-  { title: "Moody", link: { kind: "style", value: "Abstract" } },
-  { title: "Tropical", link: { kind: "theme", value: "Tropical" } },
-  { title: "Kids & nursery", link: { kind: "room", value: "Kids & nursery" } },
+  { title: "White & light", sub: "Bright, airy walls", link: { kind: "color", value: "white" } },
+  { title: "Minimal", sub: "Quiet & calm", link: { kind: "style", value: "Minimal" } },
+  { title: "Black & white", sub: "Ink & line", link: { kind: "color", value: "black" } },
+  { title: "Moody", sub: "Deep & dramatic", link: { kind: "style", value: "Abstract" } },
+];
+/** Style links under the mood tiles, before "See all styles". */
+export const DEFAULT_STYLE_STRIP: { title: string; link: TileLink }[] = [
+  { title: "Botanical", link: { kind: "style", value: "Botanical" } }, { title: "Floral", link: { kind: "style", value: "Floral" } },
+  { title: "Tropical", link: { kind: "theme", value: "Tropical" } }, { title: "Line art", link: { kind: "style", value: "Line art" } },
+  { title: "Animals", link: { kind: "theme", value: "Animals & birds" } },
 ];
 export const DEFAULT_ROOM_TILES: HomeTile[] = [
   { title: "Living room", image: "/p/img/cover-living-room.webp", link: { kind: "room", value: "Living room" } },

@@ -2926,3 +2926,4 @@
 .am .sz-tile{position:absolute;background-size:100% 100%;background-repeat:no-repeat}
 .am .sz-inputs .iv em select{appearance:none;-webkit-appearance:none;border:0;background:transparent;font:inherit;color:inherit;padding:0;cursor:pointer;text-align:right}
 .am .sz-panel .seg2 button:only-child{grid-column:1/-1}
+.am .st-h2{font:400 26px/1.2 var(--f-display);margin:26px 0 12px}.am .st-sw{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:7px;vertical-align:-1px;border:1px solid rgba(255,255,255,.7)}

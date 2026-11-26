@@ -93,7 +93,7 @@ export function HomepageEditor() {
     </section>)}
     <section className="st-card"><b>Artisan Pro and Sell boxes</b><div className="af-grid">{(["pro", "sell"] as const).map((k) => <div key={k} className="bo-ed-col"><span className="bo-l">{k === "pro" ? "Artisan Pro box" : "Sell your art box"}</span>
       {txt(["duo", k, "kicker"], "Small line", k === "pro" ? "For design professionals" : "For artists")}{txt(["duo", k, "title"], "Title", k === "pro" ? "Artisan Pro" : "Sell your designs")}{txt(["duo", k, "text"], "Text", k === "pro" ? "Trade pricing, free samples and one specialist for every project." : "We print and ship to order. You earn on every sale.", true)}{txt(["duo", k, "cta"], "Button", "Apply")}
-      <PicturePicker designs={h.designs} value={v.duo?.[k]?.image ?? ""} fallback={k === "pro" ? "/p/img/cover-hotel.webp" : undefined} onChange={(x) => h.set(["duo", k, "image"], x)} /></div>)}</div></section>
+      <PicturePicker designs={h.designs} value={v.duo?.[k]?.image ?? ""} fallback={k === "pro" ? "/p/img/cover-commercial.webp" : undefined} onChange={(x) => h.set(["duo", k, "image"], x)} /></div>)}</div></section>
     <HomeLayoutSections v={v} set={h.set} designs={h.designs} tax={h.tax} />
     <div className="bo-save"><button type="button" className="btn btn-wine" disabled={h.busy} onClick={() => void h.save("Homepage")}>{h.busy ? "Saving…" : "Save homepage"}</button>{h.msg && <span className="rq-ok">{h.msg}</span>}</div>
   </div>;

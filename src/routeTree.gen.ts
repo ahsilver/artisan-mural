@@ -29,9 +29,11 @@ import { Route as MaterialsRouteImport } from './routes/materials'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as OwnRouteImport } from './routes/own'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as RoomsRouteImport } from './routes/rooms'
 import { Route as SellRouteImport } from './routes/sell'
 import { Route as StudioRouteImport } from './routes/studio'
 import { Route as StudioDemoRouteImport } from './routes/studio-demo'
+import { Route as StylesRouteImport } from './routes/styles'
 import { Route as ApiRoomPreviewRouteImport } from './routes/api/room-preview'
 import { Route as ApiWallDetectRouteImport } from './routes/api/wall-detect'
 import { Route as CollectionsIdRouteImport } from './routes/collections.$id'
@@ -146,6 +148,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoomsRoute = RoomsRouteImport.update({
+  id: '/rooms',
+  path: '/rooms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SellRoute = SellRouteImport.update({
   id: '/sell',
   path: '/sell',
@@ -159,6 +166,11 @@ const StudioRoute = StudioRouteImport.update({
 const StudioDemoRoute = StudioDemoRouteImport.update({
   id: '/studio-demo',
   path: '/studio-demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StylesRoute = StylesRouteImport.update({
+  id: '/styles',
+  path: '/styles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRoomPreviewRoute = ApiRoomPreviewRouteImport.update({
@@ -248,9 +260,11 @@ export interface FileRoutesByFullPath {
   '/messages': typeof MessagesRoute
   '/own': typeof OwnRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/rooms': typeof RoomsRoute
   '/sell': typeof SellRoute
   '/studio': typeof StudioRoute
   '/studio-demo': typeof StudioDemoRoute
+  '/styles': typeof StylesRoute
   '/api/room-preview': typeof ApiRoomPreviewRoute
   '/api/wall-detect': typeof ApiWallDetectRoute
   '/collections/$id': typeof CollectionsIdRoute
@@ -286,9 +300,11 @@ export interface FileRoutesByTo {
   '/messages': typeof MessagesRoute
   '/own': typeof OwnRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/rooms': typeof RoomsRoute
   '/sell': typeof SellRoute
   '/studio': typeof StudioRoute
   '/studio-demo': typeof StudioDemoRoute
+  '/styles': typeof StylesRoute
   '/api/room-preview': typeof ApiRoomPreviewRoute
   '/api/wall-detect': typeof ApiWallDetectRoute
   '/collections/$id': typeof CollectionsIdRoute
@@ -325,9 +341,11 @@ export interface FileRoutesById {
   '/messages': typeof MessagesRoute
   '/own': typeof OwnRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/rooms': typeof RoomsRoute
   '/sell': typeof SellRoute
   '/studio': typeof StudioRoute
   '/studio-demo': typeof StudioDemoRoute
+  '/styles': typeof StylesRoute
   '/api/room-preview': typeof ApiRoomPreviewRoute
   '/api/wall-detect': typeof ApiWallDetectRoute
   '/collections/$id': typeof CollectionsIdRoute
@@ -365,9 +383,11 @@ export interface FileRouteTypes {
     | '/messages'
     | '/own'
     | '/reset-password'
+    | '/rooms'
     | '/sell'
     | '/studio'
     | '/studio-demo'
+    | '/styles'
     | '/api/room-preview'
     | '/api/wall-detect'
     | '/collections/$id'
@@ -403,9 +423,11 @@ export interface FileRouteTypes {
     | '/messages'
     | '/own'
     | '/reset-password'
+    | '/rooms'
     | '/sell'
     | '/studio'
     | '/studio-demo'
+    | '/styles'
     | '/api/room-preview'
     | '/api/wall-detect'
     | '/collections/$id'
@@ -441,9 +463,11 @@ export interface FileRouteTypes {
     | '/messages'
     | '/own'
     | '/reset-password'
+    | '/rooms'
     | '/sell'
     | '/studio'
     | '/studio-demo'
+    | '/styles'
     | '/api/room-preview'
     | '/api/wall-detect'
     | '/collections/$id'
@@ -480,9 +504,11 @@ export interface RootRouteChildren {
   MessagesRoute: typeof MessagesRoute
   OwnRoute: typeof OwnRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  RoomsRoute: typeof RoomsRoute
   SellRoute: typeof SellRoute
   StudioRoute: typeof StudioRoute
   StudioDemoRoute: typeof StudioDemoRoute
+  StylesRoute: typeof StylesRoute
   ApiRoomPreviewRoute: typeof ApiRoomPreviewRoute
   ApiWallDetectRoute: typeof ApiWallDetectRoute
   CollectionsIdRoute: typeof CollectionsIdRoute
@@ -640,6 +666,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rooms': {
+      id: '/rooms'
+      path: '/rooms'
+      fullPath: '/rooms'
+      preLoaderRoute: typeof RoomsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sell': {
       id: '/sell'
       path: '/sell'
@@ -659,6 +692,13 @@ declare module '@tanstack/react-router' {
       path: '/studio-demo'
       fullPath: '/studio-demo'
       preLoaderRoute: typeof StudioDemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/styles': {
+      id: '/styles'
+      path: '/styles'
+      fullPath: '/styles'
+      preLoaderRoute: typeof StylesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/room-preview': {
@@ -776,9 +816,11 @@ const rootRouteChildren: RootRouteChildren = {
   MessagesRoute: MessagesRoute,
   OwnRoute: OwnRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  RoomsRoute: RoomsRoute,
   SellRoute: SellRoute,
   StudioRoute: StudioRoute,
   StudioDemoRoute: StudioDemoRoute,
+  StylesRoute: StylesRoute,
   ApiRoomPreviewRoute: ApiRoomPreviewRoute,
   ApiWallDetectRoute: ApiWallDetectRoute,
   CollectionsIdRoute: CollectionsIdRoute,
