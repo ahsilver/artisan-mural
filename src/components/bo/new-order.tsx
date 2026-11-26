@@ -21,6 +21,32 @@ async function putFile(orderId: string, blob: Blob, ext: "jpg" | "png", label: s
   if (!up.ok) throw new Error("The file upload failed.");
   await api(`admin/orders/${orderId}/files`, { body: { path: t.path, label, width, height } });
 }
+/** A shared Google Drive file, read in pieces through the site (Drive blocks reading it straight from the browser). */
+async function driveFile(id: string, say: (t: string) => void): Promise<File> {
+  const info = (await api("designer/drive/info", { body: { ids: [id] } })).info?.[0];
+  if (!info?.ok) throw new Error("Google Drive didn't share that file. Set sharing to 'Anyone with the link' and try again.");
+  if (info.size > 400 * 1024 * 1024) throw new Error(`That file is ${Math.round(info.size / 1048576).toLocaleString()} MB, too big for a web browser to open. Save a JPG copy of it (up to about 15,000 pixels on the longest side) and use that here.`);
+  const out = new Uint8Array(info.size); const CH = 8 * 1024 * 1024; let done = 0;
+  const ranges: [number, number][] = []; for (let o = 0; o < info.size; o += CH) ranges.push([o, Math.min(CH, info.size - o)]);
+  for (let i = 0; i < ranges.length; i += 6) {
+    const batch = ranges.slice(i, i + 6);
+    const r = await api("designer/drive/ranges", { body: { id, ranges: batch }, raw: true }) as Response;
+    if (!r.ok) throw new Error("Could not read the file from Google Drive.");
+    const buf = new Uint8Array(await r.arrayBuffer()); const dv = new DataView(buf.buffer); let o = 0;
+    for (const [start] of batch) { const len = dv.getUint32(o); o += 4; out.set(buf.subarray(o, o + len), start); o += len; done += len; }
+    say(`Reading from Google Drive… ${Math.round((done / info.size) * 100)}%`);
+  }
+  let file = new File([out], info.name || `drive-${id}`, { type: info.mime || "application/octet-stream" });
+  if (/tiff/.test(file.type) || /\.tiff?$/i.test(file.name)) {
+    // TIFF: turned into a PNG of the same size, which the print file is made from
+    say("Opening the TIFF…"); const { originalBitmap } = await import("@/lib/original-preview");
+    const bmp = await originalBitmap(new File([out], file.name, { type: "image/tiff" })); const c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height; c.getContext("2d")!.drawImage(bmp, 0, 0); bmp.close();
+    const png: Blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("This TIFF is too large to open here."))), "image/png"));
+    file = new File([png], file.name.replace(/\.tiff?$/i, ".png"), { type: "image/png" });
+  }
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) throw new Error("That file isn't a JPG, PNG, WebP or TIFF picture.");
+  return file;
+}
 async function loadImg(src: string) { const im = new Image(); im.crossOrigin = "anonymous"; im.src = src; await im.decode(); return im; }
 /** Crop the wall area out of the artwork (same rectangle as the preview) and save it as the order's print file. */
 async function saveCrop(orderId: string, src: string, sel: WallSelection, label: string) {
@@ -56,6 +82,18 @@ export function NewOrder({ onDone, tool }: { onDone: (id: string) => void; tool?
   const [tile, setTile] = useState<{ blob: Blob; url: string; w: number; h: number } | null>(null);
   const [srcPx, setSrcPx] = useState<{ w: number; h: number } | null>(null);
   const [anyDpi, setAnyDpi] = useState(false);
+  // Google Drive: one file, or a folder to choose from
+  const [dLink, setDLink] = useState(""); const [dBusy, setDBusy] = useState(""); const [dErr, setDErr] = useState("");
+  const [dFolder, setDFolder] = useState<{ name: string; files: any[]; stack: { id: string; name: string }[] } | null>(null);
+  const useFile = (f: File) => { setFile(f); setFileUrl(URL.createObjectURL(f)); };
+  async function openDrive(link: string, stack: { id: string; name: string }[] = []) {
+    setDErr(""); const fid = link.match(/\/file\/d\/([\w-]{10,})/)?.[1] || (!/folders/.test(link) ? link.match(/[?&]id=([\w-]{10,})/)?.[1] : undefined);
+    try {
+      if (fid) { setDBusy("Reading from Google Drive…"); useFile(await driveFile(fid, setDBusy)); setDFolder(null); }
+      else { setDBusy("Opening the folder…"); const r = await api("designer/drive/list", { body: { link } }); setDFolder({ name: r.name || "Folder", files: r.files, stack: [...stack, { id: r.folderId, name: r.name || "Folder" }] }); }
+    } catch (e: any) { setDErr(e.message || "Could not open that link."); }
+    setDBusy("");
+  }
   const [w, setW] = useState("12"); const [h, setH] = useState("9"); const [unit, setUnit] = useState<Unit>("ft");
   const [finish, setFinish] = useState("");
   const [cust, setCust] = useState<"existing" | "new">("existing");
@@ -158,6 +196,7 @@ export function NewOrder({ onDone, tool }: { onDone: (id: string) => void; tool?
     {tool ? <><h2>Make a print file</h2><div className="bo-sub" style={{ marginBottom: 12 }}>For yourself: upload any design, crop it or line it up as a repeat, choose the wall size, and download a print-ready PDF or TIFF. Nothing goes on the website and no order is made. To charge a customer for it, use Orders → New order instead.</div></>
       : <><h2>New order</h2><div className="bo-sub" style={{ marginBottom: 12 }}>For orders that came by phone, email or the showroom.</div></>}
     <Msg m={msg} />
+    <div className={tool ? "mk" : undefined}><div className={tool ? "mk-l" : undefined}>
     <h3 className="bo-h3">1. Design</h3>
     {!tool && <div className="bo-row" style={{ marginBottom: 8 }}><button type="button" className={seg(src === "pick")} onClick={() => setSrc("pick")}>Pick a design</button><button type="button" className={seg(src === "upload")} onClick={() => setSrc("upload")} data-testid="no-upload-tab">Upload a file</button></div>}
     {src === "pick" ? <div>
@@ -165,7 +204,14 @@ export function NewOrder({ onDone, tool }: { onDone: (id: string) => void; tool?
       <div className="bo-pick">{list.map((d) => <button type="button" key={d.slug} className={"bo-pick-item" + (d.slug === slug ? " on" : "")} onClick={() => { setSlug(d.slug); setColor(d.colorways?.[0]?.id); }}><img src={d.image} alt="" loading="lazy" /><span>{d.title}<small>{d.kind === "repeating" ? "Repeat" : "Mural"}</small></span></button>)}</div>
       {base?.colorways && base.colorways.length > 1 && <Field label="Color"><select className="bo-sel" value={color} onChange={(e) => setColor(e.target.value)}>{base.colorways.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>}
     </div> : <div>
-      <Field label="Customer's file (JPG or PNG)"><input type="file" accept="image/jpeg,image/png,image/webp" data-testid="no-file" onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); setFileUrl(f ? URL.createObjectURL(f) : ""); }} /></Field>
+      <Field label={tool ? "The design (JPG, PNG or WebP)" : "Customer's file (JPG, PNG or WebP)"}><input type="file" accept="image/jpeg,image/png,image/webp" data-testid="no-file" onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); setFileUrl(f ? URL.createObjectURL(f) : ""); }} /></Field>
+      <Field label="…or from Google Drive: a link to one file or a whole folder (JPG, PNG, WebP or TIFF)"><div className="bo-row"><input className="bo-in" style={{ flex: 1 }} placeholder="https://drive.google.com/…" value={dLink} onChange={(e) => setDLink(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void openDrive(dLink.trim()); } }} data-testid="no-drive" /><button type="button" className="bo-btn" disabled={!!dBusy || !dLink.trim()} onClick={() => void openDrive(dLink.trim())} data-testid="no-drive-go">Open</button></div></Field>
+      {dBusy && <div className="bo-sub" role="status">{dBusy}</div>}{dErr && <div className="bo-sub err" role="alert">{dErr}</div>}
+      {dFolder && <div className="bo-dfolder" data-testid="no-dfolder">
+        <div className="bo-row" style={{ justifyContent: "space-between" }}><span className="bo-sub">{dFolder.stack.map((x, i) => <span key={x.id}>{i ? " › " : ""}{i < dFolder.stack.length - 1 ? <button type="button" className="up-link" onClick={() => void openDrive(`https://drive.google.com/drive/folders/${x.id}`, dFolder.stack.slice(0, i))}>{x.name}</button> : <b>{x.name}</b>}</span>)}</span><button type="button" className="up-link" onClick={() => setDFolder(null)}>Close</button></div>
+        <div className="bo-dgrid">{dFolder.files.filter((f: any) => f.folder || /image|tif/i.test(f.type) || /\.(jpe?g|png|webp|tiff?)$/i.test(f.name)).map((f: any) => <button key={f.id} type="button" disabled={!!dBusy} onClick={() => void (f.folder ? openDrive(f.link, dFolder.stack) : openDrive(`https://drive.google.com/file/d/${f.id}/view`))}>
+          {f.folder ? <span className="bo-dfold">📁</span> : <img src={/\.tiff?$/i.test(f.name) || /tif/.test(f.type) ? `/backend/public/drive-thumb?id=${f.id}` : `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`} alt="" loading="lazy" />}<span>{f.name}</span></button>)}</div>
+        <div className="bo-sub">Tap a picture to use it, or a folder to open it.</div></div>}
       <div className="bo-row"><button type="button" className={seg(upKind === "mural")} onClick={() => setUpKind("mural")}>Mural</button><button type="button" className={seg(upKind === "repeating")} onClick={() => setUpKind("repeating")} data-testid="no-kind-repeat">Repeat</button>
         {upKind === "repeating" && <label className="bo-inline">Repeat width <input className="bo-in" style={{ width: 70 }} type="number" value={repeatIn} onChange={(e) => setRepeatIn(e.target.value)} /> in</label>}</div>
       {upKind === "repeating" && fileUrl && <div className="bo-row" style={{ marginTop: 8, alignItems: "center" }}>
@@ -177,15 +223,18 @@ export function NewOrder({ onDone, tool }: { onDone: (id: string) => void; tool?
         <RepeatAligner src={fileUrl} mode={repMode === "horizontal" ? "sideways" : repMode === "halfdrop" ? "halfdrop" : "straight"} {...(fit ? { initial: fit } : {})} onSave={(f) => void useFit(f).catch((e) => setMsg({ ok: false, text: e.message }))} onCancel={() => setAlign(false)} />
       </div></div></div>, document.body)}
     </div>}
-    <h3 className="bo-h3">2. Wall and finish</h3>
+    <h3 className="bo-h3">{tool ? "2. Wall" : "2. Wall and finish"}</h3>
     <div className="bo-grid3 bo-wall"><Field label="Wall width"><input className="bo-in" type="number" value={w} onChange={(e) => setW(e.target.value)} data-testid="no-w" /></Field><Field label="Wall height"><input className="bo-in" type="number" value={h} onChange={(e) => setH(e.target.value)} data-testid="no-h" /></Field><Field label="Unit"><select className="bo-sel" value={unit} onChange={(e) => setUnit(e.target.value as Unit)}><option value="ft">feet</option><option value="in">inches</option><option value="cm">cm</option></select></Field></div>
-    {base && sel && <div className="bo-preview" data-testid="no-preview"><MuralFramer design={base} selection={sel} onChange={setSel} maxHeight="300px" />
+    </div><div className={tool ? "mk-r" : undefined}>
+    {tool && !(base && sel) && <div className="mk-empty">Upload a design or open it from Google Drive. Your wall shows here, with the print file box under it.</div>}
+    {base && sel && <div className="bo-preview" data-testid="no-preview"><MuralFramer design={base} selection={sel} onChange={setSel} maxHeight={tool ? "min(460px, 56svh)" : "300px"} />
       <div className="bo-sub" style={{ marginTop: 6 }}>{base.kind === "mural" ? (tool ? "Drag the picture to choose the part that goes on the wall. The print file is exactly what you see." : "Drag the picture to choose the part that goes on the wall. This crop is saved as the print file.") : "The pattern repeats across the wall in panels. Use the size slider to change the scale."}</div>
       {src === "upload" && <div className="bo-printbox" data-testid="no-printbox"><b>Ready to print</b>
         <span className={"bo-sub" + (dpi && dpi < MIN_PRINT_DPI ? " err" : "")}>{dpi ? `${dpi} DPI at this size · ${dpi >= 200 ? "very sharp" : dpi >= MIN_PRINT_DPI ? "good from a normal distance" : `below ${MIN_PRINT_DPI} DPI, will look soft`}` : "…"}. The file is exactly {w} × {h} {unit}, in numbered-panel width, {base.kind === "mural" ? "cropped to what you see" : "repeated across the wall as you see it"}.</span>
         {dpi > 0 && dpi < MIN_PRINT_DPI && <label className="bo-inline"><input type="checkbox" checked={anyDpi} onChange={(e) => setAnyDpi(e.target.checked)} /> Make it anyway (the customer accepts a softer print)</label>}
         <div className="bo-row"><button type="button" className="bo-btn pri" disabled={!!busy} onClick={() => void download("pdf")} data-testid="no-pdf">Download print PDF</button><button type="button" className="bo-btn" disabled={!!busy} onClick={() => void download("tiff")} data-testid="no-tiff">Download print TIFF</button></div>
       </div>}</div>}
+    </div></div>
     {!tool && <>
     <Field label="Finish"><select className="bo-sel" value={finish} onChange={(e) => setFinish(e.target.value)}>{finishes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Field>
     <h3 className="bo-h3">3. Customer</h3>

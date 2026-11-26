@@ -2948,3 +2948,15 @@
 .vz-tip{min-height:22px;font-size:13px;margin:4px 0}.vz-none{color:#B03A2E;font-weight:600}
 @media (max-width:900px){.vz-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.vz-grid{grid-template-columns:1fr}}
 .vz-grid{align-items:start}.vz .st-card{align-content:start}
+.bo-dfolder{border:1px solid var(--line,#E6E1D8);border-radius:8px;padding:10px;margin:8px 0;display:grid;gap:8px;background:#fff}
+.bo-dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;max-height:340px;overflow:auto}
+.bo-dgrid button{display:grid;gap:4px;border:1px solid var(--line,#E6E1D8);background:#FCFBF8;border-radius:6px;padding:4px;cursor:pointer;font:inherit;font-size:11.5px;text-align:left}
+.bo-dgrid button:hover{border-color:#201D1D}.bo-dgrid img,.bo-dfold{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;background:#F1EDE6;display:grid;place-items:center;font-size:34px}
+.bo-dgrid span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Make a print file: controls on the left, the wall and "Ready to print" on the right (as on the sample) */
+.bo-new-order .mk{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:24px;align-items:start}
+.bo-new-order .mk-r{position:sticky;top:16px;display:grid;gap:10px}
+.bo-new-order .mk-r .bo-preview{background:#F3EEE6;border-radius:10px;padding:12px}
+.bo-new-order .mk-empty{min-height:320px;border-radius:10px;background:#F3EEE6;display:grid;place-items:center;text-align:center;padding:24px;color:#6F6A66;font-size:14px}
+.bo-new-order .mk .bo-grid3{grid-template-columns:1fr 1fr 1fr}
+@media (max-width:980px){.bo-new-order .mk{grid-template-columns:1fr}.bo-new-order .mk-r{position:static}}
