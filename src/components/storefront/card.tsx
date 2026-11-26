@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import type { Design } from "@/lib/catalog";
-import { designRate, designerBySlug, money } from "@/lib/catalog";
+import { designerBySlug, materials, money, offeredFinishes, unitPrice } from "@/lib/catalog";
+import { useCompare } from "@/lib/compare";
 import { pic } from "@/lib/pics";
 import { Ico } from "./icons";
 
@@ -41,8 +42,21 @@ export function StoreCard({ d }: { d: Design }) {
       <h3><Link to="/design/$slug" params={{ slug: d.slug }}>{d.title}</Link></h3>
       <div className="meta">
         <span><Link to="/designers/$slug" params={{ slug: d.designer }}>{by}</Link> · {d.kind === "repeating" ? "Repeat" : "Mural"}</span>
-        <span>from {money(designRate(d))} / sq ft</span>
+        <span>{priceRange(d)} / sq ft</span>
       </div>
+      <CompareBox slug={d.slug} />
     </article>
   );
+}
+
+/** "$5.00–5.50": the cheapest and dearest material for this design, as on the sample. */
+function priceRange(d: Design) {
+  const ps = offeredFinishes(d, materials).map((m) => unitPrice(d, m)).filter((x) => x > 0);
+  if (!ps.length) return money(0);
+  const lo = Math.min(...ps), hi = Math.max(...ps);
+  return hi - lo < 0.005 ? money(lo) : `${money(lo)}–${money(hi).replace(/^\$/, "")}`;
+}
+function CompareBox({ slug }: { slug: string }) {
+  const c = useCompare(); const on = c.has(slug);
+  return <label className="cmpchk"><input type="checkbox" checked={on} disabled={!on && c.full} onChange={() => c.toggle(slug)} /> Compare</label>;
 }

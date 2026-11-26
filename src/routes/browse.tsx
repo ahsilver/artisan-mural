@@ -60,7 +60,7 @@ function Shop() {
   const designersInShop = allDesigners().filter((x) => designs.some((d) => d.designer === x.slug));
   const groups: Group[] = [
     { key: "room", label: "Room", opts: tax.rooms.map((r) => ({ v: r, label: r })) },
-    { key: "category", label: "Style", opts: tax.styles.map((s) => ({ v: s, label: s })) },
+    { key: "category", label: "Style", opts: [...tax.styles, ...tax.themes.filter((t) => !tax.styles.includes(t))].map((s) => ({ v: s, label: s })) }, // themes are listed under Style, like the sample
     { key: "theme", label: "Theme", opts: tax.themes.map((s) => ({ v: s, label: s })) },
     { key: "color", label: "Color", opts: tax.colors.map((c) => ({ v: c.id, label: c.label, swatch: c.swatch })) },
     { key: "designer", label: "Designer", opts: designersInShop.map((x) => ({ v: x.slug, label: x.name })) },
@@ -112,19 +112,12 @@ function Shop() {
       <div className="pg crumbs-row"><nav className="crumbs" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><b>Shop</b></nav></div>
       <section className="pg shop">
         <div className="shop-head"><h1>{title}</h1>{q && found.closest ? <p className="hint">No design has all of those words, so here are the closest ones. Try fewer words, or <Link to="/custom-request">ask a designer to create it</Link>.</p> : null}</div>
-        <nav className="kinds" aria-label="Choose murals or repeating patterns">
-          {([["", "All designs", "Murals and repeating patterns together"], ["mural", "Murals", "One big scene, printed once and sized to your wall"], ["repeating", "Repeating patterns", "A pattern that repeats to cover any wall size"]] as const).map(([k, b, s]) => (
-            <Link key={k || "all"} to="/browse" search={(prev: any) => ({ ...prev, kind: k || undefined })} aria-current={kind === k}>
-              {kindPic(k) && <img src={kindPic(k)} alt="" />}<span><b>{b}</b><small>{s}</small></span>
-            </Link>
-          ))}
-        </nav>
         <div className="fbar" ref={barRef}>
           <button type="button" className="fb fb-all" onClick={(e) => { e.stopPropagation(); setPop(null); setDraft({ ...sel, kind }); setDrawer(true); }}>
             <svg className="ico" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>All filters
           </button>
           <div className="fb-list">
-            {groups.filter((g) => g.opts.length).map((g) => (
+            {groups.filter((g) => g.opts.length && g.key !== "theme").map((g) => ( /* a "theme" link from the homepage still filters; it shows as a pill */
               <button key={g.key} type="button" className={"fb" + (sel[g.key].length ? " has" : "")} aria-expanded={pop === g.key}
                 onClick={(e) => { e.stopPropagation(); const r = (e.currentTarget as HTMLElement).getBoundingClientRect(), b = barRef.current!.getBoundingClientRect(); setPopX(Math.max(0, Math.min(r.left - b.left, b.width - 260))); setPop(pop === g.key ? null : g.key); }}>
                 {g.label}{sel[g.key].length > 0 && <span className="n">{sel[g.key].length}</span>}
@@ -132,11 +125,6 @@ function Shop() {
               </button>
             ))}
           </div>
-          <label className="fsort"><span className="sr">Sort</span>
-            <select value={sort} onChange={(e) => set({ sort: e.target.value === "featured" ? undefined : e.target.value })}>
-              <option value="featured">Featured</option><option value="new">Newest</option><option value="popular">Most loved</option><option value="az">A to Z</option>
-            </select>
-          </label>
           <span className="fbar-count">{list.length} design{list.length === 1 ? "" : "s"}</span>
           {pop && (() => { const g = groups.find((x) => x.key === pop)!; return (
             <div className="fpop" role="dialog" aria-label={`${g.label} options`} style={{ left: popX, top: "calc(100% + 6px)" }} onClick={(e) => e.stopPropagation()}>
