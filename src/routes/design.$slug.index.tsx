@@ -17,7 +17,7 @@ import { ProductCarousel } from "@/components/product-carousel";
 import { RequestChange } from "@/components/projects";
 import { Reviews, DesignRating } from "@/components/community";
 import { useCommunity } from "@/lib/community";
-import { SampleOrder } from "@/components/storefront/sample-order";
+import { SampleOrder, useSampleLabel } from "@/components/storefront/sample-order";
 import { AskDesignerButton, oversizePrefill, wallLabel, type RequestPrefill } from "@/components/oversize";
 import { muralMaxLabel } from "@/components/size-notice";
 import {
@@ -81,9 +81,8 @@ function DesignDetail() {
   const colorway = baseDesign.colorways?.find((c) => c.id === color);
   const mockups = roomSources(design);
   const sources: { src: string; label: string }[] = [
-    ...(mockups[0] ? [{ src: mockups[0], label: "In a room" }] : []),
     { src: design.image, label: "The wallpaper" },
-    ...mockups.slice(1).map((m) => ({ src: m, label: "In a room" })),
+    ...mockups.map((m) => ({ src: m, label: "In a room" })),
   ];
   const shown: { src: string; label: string; pic: ReturnType<typeof pic>; mat?: boolean }[] = sources.map((s) => ({ ...s, pic: pic(design, s.src, BIG_W) }));
   const [gi, setGi] = useState(0);
@@ -97,6 +96,10 @@ function DesignDetail() {
   const [chatOpen, setChatOpen] = useState(false);
   const [prefill, setPrefill] = useState<RequestPrefill>({});
   const [fav, setFav] = useState(false);
+  const [sampleOpen, setSampleOpen] = useState(false); const sampleLabel = useSampleLabel();
+  const recs = recommendedOf(baseDesign, finishes);
+  const ballOf = (m: { id: string; ball?: string | undefined; texture?: string | undefined }) => m.ball || (["canvas", "linen", "grasscloth", "suede"].includes(m.id) ? `/tex/${m.id}-ball.webp` : m.texture);
+  const collPics = collection ? collection.designs.slice(0, 3).map((slug: string) => liveDesigns(shop).find((d) => d.slug === slug)?.image).filter(Boolean) as string[] : [];
   const ask = () => { setPrefill({ wallSize: wallLabel(search) }); setChatOpen(true); };
   const rate = unitPrice(design, material);
   const mural = design.kind === "mural";
@@ -117,11 +120,11 @@ function DesignDetail() {
   ];
 
   return (
-    <div className="am">
+    <div className="am"><div className="pdx">
       <StorefrontSprite />
       <section className="pbanner pg" aria-label="Design">
         <div className="pb-in">
-          <img src={pic(design, design.image, BIG_W)?.src ?? design.image} alt="" />
+          {mural ? <img src={pic(design, design.image, BIG_W)?.src ?? design.image} alt="" /> : <span className="pb-tile" style={{ backgroundImage: `url("${pic(design, design.image, BIG_W)?.src ?? design.image}")` }} />}
           <div className="pb-copy"><h1>{baseDesign.title}</h1>{design.description && <p>{design.description}</p>}</div>
           {baseDesign.colorways && baseDesign.colorways.length > 1 && (
             <div className="pb-dots" role="group" aria-label="Colorways">
@@ -144,7 +147,8 @@ function DesignDetail() {
               <span className="gal-mat-tex" style={{ backgroundImage: `url("${grain?.url}")`, backgroundSize: `${((grain?.inches ?? 2) / 12) * 100}% auto` }} />
             </div> : shown[gi] && <img src={shown[gi]!.pic?.src ?? shown[gi]!.src} srcSet={shown[gi]!.pic?.srcSet} sizes="(min-width: 1000px) 58vw, 100vw" alt={`${baseDesign.title}: ${shown[gi]!.label}`} />}
             <span className="gal-tag">{shown[gi]?.label}</span>
-            <button type="button" className="gal-full" aria-label="See all pictures full size" onClick={() => setViewer(gi)}>⤢ Full size</button>
+            <Link className="gal-room" to="/design/$slug/preview" params={{ slug: design.slug }} search={{ ...search, color, finish, view: "room" }}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>See it in your room</Link>
+            <button type="button" className="gal-full" aria-label="See all pictures full size" onClick={() => setViewer(gi)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" /></svg></button>
           </div>
           <div className="gal-thumbs" role="group" aria-label="Pictures">
             {shown.map((s, k) => <button key={k} type="button" aria-pressed={k === gi} aria-label={`${s.label} ${k + 1}`} onClick={() => setGi(k)}><img src={pic(design, s.src, [320])?.src ?? s.src} alt="" loading="lazy" /><small>{s.label}</small></button>)}
@@ -153,7 +157,7 @@ function DesignDetail() {
         <div className="buy">
           <h2 className="title">{baseDesign.title}</h2>
           <div className="by">by <Link to="/designers/$slug" params={{ slug: designer.slug }}>{designer.name}</Link>{designer.reviews > 0 && <> <span className="stars" aria-label={`${designer.rating} out of 5`}>★★★★★</span> <span className="muted">{designer.rating} · {designer.reviews} reviews</span></>}</div>
-          {collection && <div className="coll-note">Part of the <Link to="/collections/$id" params={{ id: collection.id }}>{collection.title}</Link> collection</div>}
+          {collection && <div className="coll-note"><Link className="cn-card" to="/collections/$id" params={{ id: collection.id }}><span className="cn-th">{collPics.map((u, k) => <img key={k} src={u} alt="" />)}</span><span className="cn-t"><small>Part of a collection</small><b>{collection.title}</b></span><span className="cn-go">See all {collection.designs.length}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></span></Link></div>}
           {baseDesign.colorways && baseDesign.colorways.length > 1 && (
             <div className="opt">
               <div className="lbl">Colorway <span className="mat-name">{colorway?.name}</span></div>
@@ -164,25 +168,25 @@ function DesignDetail() {
           )}
           <div className="opt">
             <div className="lbl">Type</div>
-            <div className="kind-row"><span className="chip on">{mural ? "Mural" : "Repeating pattern"}</span><button type="button" className="qtip" aria-label="What does this mean?" title={kindHint}>?</button><span className="qbox" role="tooltip">{kindHint}</span></div>
+            <div className="kind-row"><span className="chip on">{mural ? "Mural · sized to your wall" : "Repeating · fits any wall"}</span><button type="button" className="qtip" aria-label="What does this mean?" title={kindHint}>?</button><span className="qbox" role="tooltip">{kindHint}</span></div>
           </div>
           {finishes.length > 0 && (
             <div className="opt">
               <div className="lbl">Material <span className="mat-name">{material?.name}</span></div>
-              <div className="chips" role="radiogroup" aria-label="Material">
-                {finishes.map((m) => <button key={m.id} type="button" role="radio" aria-checked={m.id === material?.id} className={"chip" + (m.id === material?.id ? " on" : "")} onClick={() => { setFinish(m.id); if (matIndex >= 0) setGi(matIndex); }}>{m.name}<small>{money(unitPrice(design, m))}</small></button>)}
+              <div className="chips mat-grid" role="radiogroup" aria-label="Material">
+                {finishes.map((m) => <button key={m.id} type="button" role="radio" aria-checked={m.id === material?.id} className="chip" onClick={() => { setFinish(m.id); if (matIndex >= 0) setGi(matIndex); }}><span className="mat-ball" style={{ backgroundImage: `url("${ballOf(m)}")` }} />{m.name}<small>{money(unitPrice(design, m))} / sq ft</small>{recs.includes(m.id) && <span className="pick-tag">Designer's pick</span>}</button>)}
               </div>
               {material?.blurb && <p className="mat-blurb">{material.blurb}</p>}
-              {material && <SampleOrder design={design.slug} title={design.title} finish={material.id} finishName={material.name} color={color} colorName={design.colorways?.find((c: any) => c.id === color)?.name} />}
             </div>
           )}
           <div className="pcta">
             <div className="price-line"><b>{money(rate)}</b> / sq ft {material && <span className="pl-paper">· {material.name}</span>}</div>
             <Link className="btn btn-wine big" to="/design/$slug/preview" params={{ slug: design.slug }} search={{ ...search, color, finish }}>Customize size &amp; order</Link>
             <div className="row">
+              {material && <button type="button" className="btn optline" aria-expanded={sampleOpen} onClick={() => setSampleOpen(!sampleOpen)}>Order a sample{sampleLabel ? ` · ${sampleLabel}` : ""}</button>}
               <Link className="btn optline" to="/design/$slug/preview" params={{ slug: design.slug }} search={{ ...search, color, finish, view: "room" }}>See it in my room</Link>
-              <button type="button" className={"btn optline fav-btn"} aria-pressed={fav} onClick={() => setFav(!fav)}><Ico id="i-heart" /> {fav ? "Saved" : "Save"}</button>
             </div>
+            {material && sampleOpen && <SampleOrder design={design.slug} title={design.title} finish={material.id} finishName={material.name} color={color} colorName={design.colorways?.find((c: any) => c.id === color)?.name} open noTrigger onOpenChange={setSampleOpen} />}
           </div>
           <div className="change">
             <div className="ch-head">
@@ -222,7 +226,7 @@ function DesignDetail() {
           <div className="gv-thumbs">{shown.map((s, k) => <button key={k} type="button" aria-pressed={k === viewer} aria-label={`${s.label} ${k + 1}`} onClick={() => setViewer(k)}><img src={pic(design, s.src, [320])?.src ?? s.src} alt="" /></button>)}</div>
         </div>
       )}
-    </div>
+    </div></div>
   );
 }
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);

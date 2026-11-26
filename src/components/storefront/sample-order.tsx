@@ -5,8 +5,17 @@ import { useProMe, useProSettings } from "@/lib/pro";
 import { money } from "@/lib/catalog";
 
 /** "Order a sample" on the design page. The server sets the price (free for approved Pro members). */
-export function SampleOrder({ design, title, finish, finishName, color, colorName }: { design: string; title: string; finish: string; finishName: string; color?: string | undefined; colorName?: string | undefined }) {
-  const [open, setOpen] = useState(false);
+/** The price shown on the "Order a sample" button (free for Pro members). */
+export function useSampleLabel() {
+  const [price, setPrice] = useState<number | null>(null);
+  const { me } = useProMe(); const pro = useProSettings();
+  useEffect(() => { loadSite().then((s: any) => setPrice(Number(s?.shipping?.samplePrice ?? 5))).catch(() => setPrice(5)); }, []);
+  const freePro = me?.status === "approved" && pro.freeSamples !== false;
+  return freePro ? "Free" : price != null ? (price > 0 ? money(price) : "Free") : "";
+}
+export function SampleOrder({ design, title, finish, finishName, color, colorName, open: openProp, onOpenChange, noTrigger }: { design: string; title: string; finish: string; finishName: string; color?: string | undefined; colorName?: string | undefined; open?: boolean | undefined; onOpenChange?: ((v: boolean) => void) | undefined; noTrigger?: boolean | undefined }) {
+  const [openSelf, setOpenSelf] = useState(false);
+  const open = openProp ?? openSelf; const setOpen = (v: boolean) => { setOpenSelf(v); onOpenChange?.(v); };
   const [price, setPrice] = useState<number | null>(null);
   const [email, setEmail] = useState(""); const [busy, setBusy] = useState(false); const [err, setErr] = useState(""); const [done, setDone] = useState<any>(null);
   const { me } = useProMe(); const pro = useProSettings();
@@ -25,7 +34,7 @@ export function SampleOrder({ design, title, finish, finishName, color, colorNam
     setBusy(false);
   };
   return <div className="so">
-    {!open ? <button type="button" className="so-open" onClick={() => setOpen(true)}>Order a sample of {finishName}{label && <span> · {label}</span>}</button>
+    {!open ? noTrigger ? null : <button type="button" className="so-open" onClick={() => setOpen(true)}>Order a sample of {finishName}{label && <span> · {label}</span>}</button>
       : done ? <div className="so-done" role="status"><b>Sample ordered · {done.order}</b><p>{done.free ? `Free with your ${pro.name} account. We'll email you when it ships.` : `${money(done.price)}. We'll email you a payment link, then it ships.`}</p></div>
       : <form className="so-form" onSubmit={submit}>
         <div className="so-h"><b>A sample of {title}</b><span>{finishName}{colorName ? ` · ${colorName}` : ""} · {label}</span><button type="button" className="so-x" aria-label="Close" onClick={() => setOpen(false)}>✕</button></div>
