@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { driveFolderFull, driveTiffThumb, type DriveEntry } from "@/lib/designer-files";
+import { driveFolderFull, type DriveEntry } from "@/lib/designer-files";
 import { importDrive, importLocal, newDraft, niceName } from "@/lib/design-import";
 
 /** The approved preview's "Add a design" first step: From my computer | From Google Drive, half and half.
@@ -52,35 +52,11 @@ export function StudioUpload({ rules }: { rules: any }) {
       await Promise.all(subs.slice(i, i + 4).map(async (f) => { try { const r = await driveFolderFull(f.link); setCache((c) => (c[f.id] ? c : { ...c, [f.id]: r.files })); } catch {} }));
     }
   }
-  // sharp pictures of TIFF print files (Google can't show those): read just enough of the file, 4 at a time
-  const running = useRef(0);
-  useEffect(() => {
-    const want = (files ?? []).filter((f) => !f.folder && isTiff(f.name) && !thumbs[f.id]);
-    const pump = () => {
-      while (running.current < 4) {
-        const f = want.shift(); if (!f) return;
-        running.current++; setThumbs((t) => ({ ...t, [f.id]: "busy" }));
-        driveTiffThumb(f.id, 720).then((u) => u || "none", () => "none").then((u) => { running.current--; setThumbs((t) => ({ ...t, [f.id]: u })); });
-      }
-    };
-    pump();
-  }, [files, thumbs]);
-
-  const coverRun = useRef(new Set<string>());
-  useEffect(() => {
-    const subs = (files ?? []).filter((f) => f.folder && cache[f.id]);
-    for (const f of subs) {
-      if (coverRun.current.has(f.id)) continue;
-      const firstTif = (cache[f.id] ?? []).find((x) => !x.folder && isTiff(x.name));
-      const hasJpg = (cache[f.id] ?? []).some((x) => !x.folder && /\.(jpe?g|png|webp|gif)$/i.test(x.name));
-      if (!firstTif || hasJpg || thumbs[firstTif.id]) continue;
-      coverRun.current.add(f.id);
-      setThumbs((t) => ({ ...t, [firstTif.id]: "busy" }));
-      driveTiffThumb(firstTif.id, 360).then((u) => u || "none", () => "none").then((u) => setThumbs((t) => ({ ...t, [firstTif.id]: t[firstTif.id] && t[firstTif.id] !== "busy" ? t[firstTif.id]! : u })));
-    }
-  }, [files, cache]);
+  // TIFF print files: their built-in small picture shows at once (no waiting while browsing); the big, sharp picture
+  // is made only for the designs that are chosen, from the full-size copy in our storage
+  const builtIn = (id: string) => `/backend/public/drive-thumb?id=${encodeURIComponent(id)}`;
   const coverOf = (id: string) => {
-    for (const x of cache[id] ?? []) { if (x.folder) continue; const t = thumbs[x.id]; if (t?.startsWith("blob:")) return t; if (/\.(jpe?g|png|webp|gif)$/i.test(x.name)) return `https://drive.google.com/thumbnail?id=${x.id}&sz=w400`; }
+    for (const x of cache[id] ?? []) { if (x.folder) continue; const t = thumbs[x.id]; if (t?.startsWith("blob:")) return t; if (isTiff(x.name)) return builtIn(x.id); if (/\.(jpe?g|png|webp|gif)$/i.test(x.name)) return `https://drive.google.com/thumbnail?id=${x.id}&sz=w400`; }
     return "";
   };
   const pickedLocal = local.filter((p) => sel.includes((p as any).key));
@@ -141,8 +117,6 @@ export function StudioUpload({ rules }: { rules: any }) {
   const subFolders = (files ?? []).filter((f) => f.folder && folderPics(f.id).length);
   const allFolders = subFolders.length > 0 && subFolders.every((f) => sel.includes("f:" + f.id));
   const allOn = drivePics.length > 0 && drivePics.every((f) => sel.includes(f.id));
-  const tiffIds = (files ?? []).filter((f) => !f.folder && isTiff(f.name)).map((f) => f.id);
-  const tiffReady = tiffIds.filter((id) => thumbs[id] && thumbs[id] !== "busy").length;
   const toggle = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   if (work) return (
@@ -183,7 +157,6 @@ export function StudioUpload({ rules }: { rules: any }) {
 
       {cur && <div className="up-gdf">
         <div className="up-gdf-h"><div className="up-crumbs">{stack.map((s, i) => i < stack.length - 1 ? <span key={s.id}><button type="button" className="up-crumb" onClick={() => void openFolder(s.id, s.name)}>{s.name}</button><span>›</span></span> : <b key={s.id}>{s.name}</b>)}</div><span className="up-gdf-acts"><a href={`https://drive.google.com/drive/folders/${cur.id}`} target="_blank" rel="noopener noreferrer">Open in Drive ↗</a><button type="button" className="up-x" aria-label="Close this Google Drive folder" title="Close" onClick={closeDrive}>✕</button></span></div>
-        {tiffIds.length > 0 && tiffReady < tiffIds.length && <p className="up-prog" role="status"><span className="up-spin" aria-hidden="true" />Making pictures of your designs… <b>{tiffReady} of {tiffIds.length} ready</b>. Big print files take a few seconds each. You can keep choosing while they load.</p>}
         {subFolders.length > 1 && drivePics.length === 0 && <div className="up-selbar"><button type="button" className="up-link" onClick={() => setSel((s) => (allFolders ? s.filter((x) => !subFolders.some((f) => "f:" + f.id === x)) : [...new Set([...s, ...subFolders.map((f) => "f:" + f.id)])]))}>{allFolders ? "Clear selection" : `Choose all ${subFolders.length} folders (one design each)`}</button><small>Tap "Choose" on a folder to make it one design. Tap the folder to look inside.</small></div>}
         {drivePics.length > 0 && <div className="up-selbar"><button type="button" className="up-link" onClick={() => setSel((s) => (allOn ? s.filter((x) => !drivePics.some((f) => f.id === x)) : [...new Set([...s, ...drivePics.map((f) => f.id)])]))}>{allOn ? "Clear selection" : `Select all in this folder (${drivePics.length})`}</button><small>Tap pictures to choose them. You can choose in several folders.</small></div>}
         {busy && !files ? <p className="up-gdl-msg"><span className="up-spin" aria-hidden="true" />Opening your folder in Google Drive…</p>
@@ -193,7 +166,7 @@ export function StudioUpload({ rules }: { rules: any }) {
             ) : (
               <button key={f.id} type="button" className={"up-gdt" + (sel.includes(f.id) ? " on" : "") + (f.copied ? " used" : "")} aria-pressed={sel.includes(f.id)} disabled={!isPic(f)} onClick={() => toggle(f.id)}>
                 <span className="th"><span className="ext">{extOf(f.name)}</span>
-                  {thumbs[f.id]?.startsWith("blob:") ? <img src={thumbs[f.id]} alt="" /> : thumbs[f.id] === "busy" ? <span className="up-mk"><span className="up-spin" aria-hidden="true" />Making preview…</span> : !isTiff(f.name) && isPic(f) ? <img src={`https://drive.google.com/thumbnail?id=${f.id}&sz=w400`} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => e.currentTarget.remove()} /> : null}
+                  {thumbs[f.id]?.startsWith("blob:") ? <img src={thumbs[f.id]} alt="" /> : isTiff(f.name) ? <img src={builtIn(f.id)} alt="" onError={(e) => e.currentTarget.remove()} /> : isPic(f) ? <img src={`https://drive.google.com/thumbnail?id=${f.id}&sz=w400`} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => e.currentTarget.remove()} /> : null}
                   <em>{sel.includes(f.id) ? "✓ Selected" : f.copied ? "Used before" : isPic(f) ? "Select" : "Not a picture"}</em></span>
                 <small title={f.name}>{f.name}</small>
               </button>

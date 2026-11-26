@@ -262,6 +262,8 @@ export async function handleApp(req: Request, env: Env, who: Who, origin: string
       await alertOwners(env as any, { kind: "order", title: `Sample ${no}: ${title}`, body: `${name} · ${finish || "any finish"} · ${free ? "free (Pro)" : `$${price.toFixed(2)}`}`, link: `/admin#orders:${id}` });
       return j({ ok: true, order: no, free, price });
     }
+    // a Drive TIFF's built-in small picture, so the designer studio shows a folder's designs at once
+    if (p === "public/drive-thumb" && m === "GET") { const { driveThumb } = await import("./drive-thumb"); return driveThumb(new URL(req.url).searchParams.get("id") ?? ""); }
     // "Track my order" page: order number (the 8 letters from the emails) + the email it was ordered with
     if (p === "public/track" && m === "POST") {
       const no = String(body.order ?? "").trim().replace(/^#/, "").toLowerCase(), em = String(body.email ?? "").trim().toLowerCase();
