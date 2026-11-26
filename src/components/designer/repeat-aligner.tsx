@@ -51,8 +51,11 @@ export function findRepeat(g: Float32Array, W: number, H: number, mode: RepeatMo
   let w = W, blend = false, verdict: RepeatVerdict = "joins";
   if (sx.c < 0.35) { w = sx.p; verdict = "inside"; }
   else {
-    let edge = 0, k = 0; for (let y = 0; y < H; y += 2) { edge += Math.abs(g[y * W + W - 1]! - g[y * W]!); k++; }
-    if (edge / k / base > 1.6) {
+    // do the ends meet? a band at the end against the band at the start, shape for shape, compared with how the end
+    // continues into the band just before it (a real continuation). The same answer on small and large pictures.
+    const bw = Math.max(4, Math.round(W * 0.006)); let jn = 0, inn = 0;
+    for (let y = 0; y < H; y += 2) for (let d = 0; d < bw; d++) { jn += Math.abs(g[y * W + W - bw + d]! - g[y * W + d]!); inn += Math.abs(g[y * W + W - bw + d]! - g[y * W + W - 2 * bw + d]!); }
+    if (jn / (inn || 1) > 1.1) {
       // the ends don't join. Is the end a real continuation of the start (an overlap)? Try 4% to 25% and keep the
       // best only if it is far better than the typical overlap; otherwise the file simply isn't a repeat.
       const tries: [number, number][] = [];
@@ -76,7 +79,9 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
   const [err, setErr] = useState("");
   const [mode, setMode] = useState<RepeatMode>(mode0);
   const [pw, setPw] = useState(0); const [ph, setPh] = useState(0);
-  const [zoom, setZoom] = useState(8);
+  const [zoom, setZoom] = useState(4);
+  const [showJoin, setShowJoin] = useState(true); const [big, setBig] = useState(false);
+  const wallRef = useRef<HTMLCanvasElement>(null); const bigRef = useRef<HTMLCanvasElement>(null);
   const [focus, setFocus] = useState({ x: 0.5, y: 0.5 }); // where the magnifiers look along each join
   const [auto, setAuto] = useState("");
   const [blend, setBlend] = useState<boolean>(!!initial?.blend);
@@ -132,26 +137,38 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
       const dy = mode === "halfdrop" && c % 2 ? tileH / 2 : 0;
       x.drawImage(tile!, c * pw * k, (r * tileH + dy) * k, pw * k, tileH * k);
     }
-    x.setLineDash([5, 5]); x.strokeStyle = "rgba(176,58,46,.55)"; x.lineWidth = 1;
-    x.beginPath(); x.moveTo(pw * k + 0.5, 0); x.lineTo(pw * k + 0.5, cv.height); if (rows > 1) { x.moveTo(0, tileH * k + 0.5); x.lineTo(cv.width, tileH * k + 0.5); } x.stroke();
+    if (showJoin) {
+      x.beginPath(); x.moveTo(pw * k, 0); x.lineTo(pw * k, cv.height); if (rows > 1) { x.moveTo(0, tileH * k); x.lineTo(cv.width, tileH * k); }
+      x.lineWidth = 4; x.strokeStyle = "rgba(255,255,255,.85)"; x.stroke(); x.setLineDash([10, 7]); x.lineWidth = 2; x.strokeStyle = "rgba(32,29,29,.75)"; x.stroke();
+    }
     x.setLineDash([]); x.strokeStyle = "#201D1D"; x.lineWidth = 2; x.strokeRect(pw * k - 26, focus.y * tileH * k - 26, 52, 52);
     if (rows > 1) x.strokeRect(focus.x * pw * k - 26, tileH * k - 26, 52, 52);
     // magnifiers: the exact pixels where the copies meet
     const lens = (cv2: HTMLCanvasElement | null, cx: number, cy: number) => {
-      if (!cv2) return; const S = 220; cv2.width = S; cv2.height = S; const g = cv2.getContext("2d")!; g.imageSmoothingEnabled = false;
+      if (!cv2) return; const S = 300; cv2.width = S; cv2.height = S; const g = cv2.getContext("2d")!; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
       const half = S / zoom / 2; g.fillStyle = "#eee"; g.fillRect(0, 0, S, S);
       for (let c = 0; c < 2; c++) for (let r = -1; r <= 1; r++) {
         const dy = mode === "halfdrop" && c % 2 ? tileH / 2 : 0;
         const ox = c * pw - (cx - half), oy = r * tileH + dy - (cy - half);
         g.drawImage(tile!, ox * zoom, oy * zoom, pw * zoom, tileH * zoom);
       }
-      g.strokeStyle = "rgba(176,58,46,.6)"; g.setLineDash([4, 4]); g.beginPath();
-      const jx = (pw - (cx - half)) * zoom, jy = (tileH - (cy - half)) * zoom;
-      if (jx > 0 && jx < S) { g.moveTo(jx, 0); g.lineTo(jx, S); } if (rows > 1 && jy > 0 && jy < S) { g.moveTo(0, jy); g.lineTo(S, jy); } g.stroke();
+      // small marks on the edges show where the copies meet, without covering the join itself
+      const jx = (pw - (cx - half)) * zoom, jy = (tileH - (cy - half)) * zoom; g.fillStyle = "#201D1D"; g.beginPath();
+      if (jx > 0 && jx < S) { g.moveTo(jx - 7, 0); g.lineTo(jx + 7, 0); g.lineTo(jx, 10); g.moveTo(jx - 7, S); g.lineTo(jx + 7, S); g.lineTo(jx, S - 10); }
+      if (rows > 1 && jy > 0 && jy < S) { g.moveTo(0, jy - 7); g.lineTo(0, jy + 7); g.lineTo(10, jy); g.moveTo(S, jy - 7); g.lineTo(S, jy + 7); g.lineTo(S - 10, jy); }
+      g.fill();
     };
     lens(lSide.current, pw, focus.y * tileH);
     if (rows > 1) lens(lTop.current, focus.x * pw, tileH);
-  }, [img, pw, ph, tileH, mode, zoom, focus, tile]);
+    // on a wall: four repeats side by side (two rows for all-sides repeats), as it will be printed
+    const paintWall = (wc: HTMLCanvasElement | null, scale: number) => {
+      if (!wc) return; const cols = 4, wr = mode === "sideways" ? 1 : 2;
+      wc.width = Math.round(pw * cols * scale); wc.height = Math.round(tileH * wr * scale); const w2 = wc.getContext("2d")!; w2.imageSmoothingQuality = "high";
+      for (let c = 0; c < cols; c++) for (let r = -1; r <= wr; r++) { const dy = mode === "halfdrop" && c % 2 ? tileH / 2 : 0; w2.drawImage(tile!, c * pw * scale, (r * tileH + dy) * scale, pw * scale, tileH * scale); }
+    };
+    const wbox = wallRef.current?.parentElement?.clientWidth || 900; paintWall(wallRef.current, Math.min(1, wbox / (pw * 4)));
+    if (big) paintWall(bigRef.current, 1);
+  }, [img, pw, ph, tileH, mode, zoom, focus, tile, showJoin, big]);
   useEffect(() => { draw(); }, [draw]);
   useEffect(() => { const r = () => draw(); window.addEventListener("resize", r); return () => window.removeEventListener("resize", r); }, [draw]);
 
@@ -194,18 +211,23 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
         <div className="ra-side">
           <figure><figcaption>Side join · {zoom}×{score && <span className={"ra-q " + word(score.side)[0]}>{word(score.side)[1]}</span>}</figcaption><canvas ref={lSide} /></figure>
           {mode !== "sideways" && <figure><figcaption>Top / bottom join · {zoom}×{score && <span className={"ra-q " + word(score.top)[0]}>{word(score.top)[1]}</span>}</figcaption><canvas ref={lTop} /></figure>}
-          <label className="ra-zoom"><span>Magnifier</span><input type="range" min={2} max={16} step={1} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} /></label>
+          <div className="ra-zoom2"><span>Zoom on the join</span>{[2, 4, 8].map((z) => <button key={z} type="button" aria-pressed={zoom === z} onClick={() => setZoom(z)}>{z}×</button>)}</div>
+          <label className="sa-check"><input type="checkbox" checked={showJoin} onChange={(e) => setShowJoin(e.target.checked)} /><span>Show the join on the picture</span></label>
         </div>
       </div>
       <div className="ra-ctl">
+        <label className="ra-sl"><span>Bring copies closer sideways</span><input type="range" min={0} max={70} step={0.5} value={Math.round((1 - pw / W) * 1000) / 10} onChange={(e) => setPw(clampW(W * (1 - Number(e.target.value) / 100)))} /></label>
+        {mode !== "sideways" && <label className="ra-sl"><span>Up / down</span><input type="range" min={0} max={70} step={0.5} value={Math.round((1 - ph / H) * 1000) / 10} onChange={(e) => setPh(clampH(H * (1 - Number(e.target.value) / 100)))} /></label>}
         <div className="ra-n"><span>Repeat width</span><button type="button" onClick={() => setPw((v) => clampW(v - 1))} aria-label="Repeat width one pixel less">−</button><b>{pct(pw, W)}</b><button type="button" onClick={() => setPw((v) => clampW(v + 1))} aria-label="Repeat width one pixel more">+</button></div>
         {mode !== "sideways" && <div className="ra-n"><span>Repeat height</span><button type="button" onClick={() => setPh((v) => clampH(v - 1))} aria-label="Repeat height one pixel less">−</button><b>{pct(ph, H)}</b><button type="button" onClick={() => setPh((v) => clampH(v + 1))} aria-label="Repeat height one pixel more">+</button></div>}
         <button type="button" className="btn optline btn-sm" onClick={() => findIt()}>Find the repeat for me</button>
-        {pw < W && <label className="sa-check ra-blend"><input type="checkbox" checked={blend} onChange={(e) => setBlend(e.target.checked)} /><span><b>Blend the overlap</b> · the copies lie one on top of the other and fade softly into each other, so no line shows (for designs that weren't drawn to repeat)</span></label>}
+        {pw < W && <label className="sa-check ra-blend"><input type="checkbox" checked={blend} onChange={(e) => setBlend(e.target.checked)} /><span><b>Fade the overlapping ends together</b> · your repeat is now shorter than the file, so the end of one copy lies on top of the start of the next. This mixes those two parts softly into each other, so there is no hard line where the copies meet. Use it only if the join still shows a small step.</span></label>}
         <button type="button" className="up-link" onClick={() => { setPw(W); setPh(H); setAuto(""); setNotRepeat(false); }}>Back to the whole file</button>
       </div>
       {auto && <p className={"ra-auto" + (notRepeat ? " warn" : "")} role="status">{auto}</p>}
       {(pw < W || (mode !== "sideways" && ph < H)) && <p className="hint">When you save, we make a corrected print file with only the repeat ({pct(pw, W)} of the width{mode !== "sideways" ? `, ${pct(ph, H)} of the height` : ""}). Your original file is kept.</p>}
+      <div className="ra-wall"><div className="ra-wh"><b>On a wall · 4 repeats</b><button type="button" className="btn optline btn-sm" onClick={() => setBig(true)}>⤢ Open full size to zoom</button></div><canvas ref={wallRef} onClick={() => setBig(true)} title="Open full size to zoom" /></div>
+      {big && <div className="ra-big" role="dialog" aria-modal="true" aria-label="The wall at full size"><div className="ra-big-h"><b>On a wall · full size</b><span className="hint">Scroll to look around; this is the real detail of your file.</span><button type="button" className="btn optline btn-sm" onClick={() => setBig(false)}>Close</button></div><div className="ra-big-in"><canvas ref={bigRef} /></div></div>}
       <div className="up-row"><button type="button" className="btn btn-wine btn-sm" disabled={busy} onClick={() => onSave({ w: pw / W, h: mode === "sideways" ? 1 : ph / H, mode, blend: blend && pw < W })}>{busy ? "Saving…" : "Use this repeat"}</button><button type="button" className="btn optline btn-sm" disabled={busy} onClick={onCancel}>Cancel</button></div>
     </div>
   );
