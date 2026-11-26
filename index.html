@@ -1364,7 +1364,7 @@ a.s:hover,a.s:focus-visible{transform:translateY(-6px) rotate(0deg)!important;bo
 .up-pv span{position:absolute;right:6px;bottom:6px;background:rgba(20,10,12,.6);color:#fff;font:600 11px/1 var(--f-body);padding:5px 7px}
 .up-pvt{font-size:13px;margin-top:2px}.up-pvs{color:var(--ink-2);font-size:11.5px;line-height:1.4}
 .up-seambox{cursor:zoom-in}
-.up-lb{position:fixed;inset:0;z-index:200;background:rgba(15,8,10,.82);display:flex;flex-direction:column}
+.up-lb{position:fixed;inset:0;z-index:600;background:rgba(15,8,10,.82);display:flex;flex-direction:column}
 .up-lb-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;color:#fff;font-size:13px}.up-lb-bar span{opacity:.7;font-size:12px}
 .up-lb-bar button{margin-left:auto;border:0;background:rgba(255,255,255,.15);color:#fff;width:34px;height:34px;font-size:16px;cursor:pointer}
 .up-lb-body{flex:1;overflow:auto;padding:0 16px 16px;display:grid;place-items:center}
@@ -6675,20 +6675,20 @@ async function tiffCrop(read, box, sink, onProgress) {
 (() => {
   const css = `
 .rt-bg{position:fixed;inset:0;z-index:300;background:rgba(32,29,29,.55);display:flex;align-items:center;justify-content:center;padding:14px}
-.rt{background:var(--paper,#FCFBF8);width:min(1240px,100%);max-height:100%;overflow:auto;border-radius:14px;padding:18px;display:grid;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.rt-h{display:flex;justify-content:space-between;align-items:center;gap:10px}.rt-h h3{margin:0;font:400 24px/1.2 var(--f-display,Georgia,serif)}
+.rt{background:var(--paper,#FCFBF8);width:min(1180px,100%);max-height:100%;overflow:auto;border-radius:14px;padding:14px 16px;display:grid;gap:9px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.rt-h{display:flex;justify-content:space-between;align-items:center;gap:10px}.rt-h h3{margin:0;font:400 20px/1.2 var(--f-display,Georgia,serif)}
 .rt-x{border:1px solid var(--line,#E6E1D8);background:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px}
-.rt-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.rt-grid{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start}
 .rt-stage{position:relative;border-radius:10px;overflow:hidden;background:#e9e5de;cursor:move;touch-action:none;user-select:none}
-.rt-stage canvas{display:block;width:100%;height:auto}
+.rt-stage{display:flex;justify-content:center}.rt-stage canvas{display:block;max-width:100%;max-height:40vh;width:auto;height:auto}
 .rt-hint{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(32,29,29,.82);color:#fff;font-size:12.5px;padding:6px 12px;border-radius:999px;pointer-events:none;white-space:nowrap}
 .rt-side{display:grid;gap:10px}.rt-side figure{margin:0;display:grid;gap:6px}.rt-side figcaption{font-size:12.5px;font-weight:700;display:flex;justify-content:space-between}
 .rt-side canvas{width:100%;height:auto;border-radius:8px;background:#eee;border:1px solid var(--line,#E6E1D8)}
 .rt-zoom{display:flex;gap:4px}.rt-zoom button{border:1px solid var(--line,#E6E1D8);background:#fff;font:inherit;font-size:12px;padding:4px 9px;border-radius:6px;cursor:pointer}.rt-zoom button[aria-pressed=true]{background:#201D1D;color:#fff;border-color:#201D1D}
 .rt-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .rt-n{display:flex;align-items:center;gap:6px;font-size:13px}.rt-n input[type=range]{width:150px;accent-color:#201D1D}.rt-n button{border:1px solid var(--line,#E6E1D8);background:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer}
-.rt-msg{margin:0;padding:10px 12px;border-radius:8px;font-size:13.5px;background:#F3EEE6}.rt-msg.ok{background:#E7F1EA;color:#2F6B4F}.rt-msg.warn{background:#F6E9E1;color:#8A3F22}
-.rt-wall canvas{display:block;width:100%;height:auto;border-radius:8px}
+.rt-msg{margin:0;padding:7px 11px;font-size:12.5px!important;border-radius:8px;font-size:13.5px;background:#F3EEE6}.rt-msg.ok{background:#E7F1EA;color:#2F6B4F}.rt-msg.warn{background:#F6E9E1;color:#8A3F22}
+.rt-wall{display:grid;justify-items:center}.rt-wall canvas{display:block;max-width:100%;max-height:24vh;width:auto;height:auto;border-radius:8px}.rt-wall .rt-wh{justify-self:stretch}
 .rt-chk{display:inline-flex;gap:8px;align-items:center;font-size:13.5px;cursor:pointer;margin-left:6px}.rt-chk input{position:static;margin:0;flex:none;width:17px;height:17px;accent-color:#201D1D}.rt-why{margin:0;font-size:12.5px;color:var(--ink-2,#6F6A66);max-width:760px}.rt-wh{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 6px}.rt-wh b{font-size:13.5px}.rt-wall canvas{cursor:zoom-in}
 @media (max-width:860px){.rt-grid{grid-template-columns:1fr}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.append(st);
@@ -6723,8 +6723,8 @@ async function tiffCrop(read, box, sink, onProgress) {
       <div class="rt-grid">
         <div class="rt-stage" id="rtStage"><canvas id="rtCv"></canvas><span class="rt-hint" id="rtHint">Drag ${mode === 'horizontal' ? 'left or right' : 'in any direction'} to bring the copies together</span></div>
         <div class="rt-side">
-          <div class="rt-ctl"><span style="font-size:12.5px;font-weight:700">Zoom on the join</span><label class="rt-chk" style="margin-left:auto"><input type="checkbox" id="rtShow" checked> Show the join</label><span class="rt-zoom" id="rtZoom"><button data-z="2">2×</button><button data-z="4" aria-pressed="true">4×</button><button data-z="8">8×</button></span></div>
-          <figure><figcaption><span>Side join</span></figcaption><canvas id="rtL1" width="300" height="300"></canvas></figure>
+          <div class="rt-ctl"><span style="font-size:12.5px;font-weight:700">Zoom on the join</span><label class="rt-chk" style="margin-left:auto"><input type="checkbox" id="rtShow"> Thin line at the join</label><span class="rt-zoom" id="rtZoom"><button data-z="2">2×</button><button data-z="4" aria-pressed="true">4×</button><button data-z="8">8×</button></span></div>
+          <figure><figcaption><span>Side join</span></figcaption><canvas id="rtL1" width="300" height="240"></canvas></figure>
           ${mode !== 'horizontal' ? '<figure><figcaption><span>Top / bottom join</span></figcaption><canvas id="rtL2" width="300" height="160"></canvas></figure>' : ''}
         </div>
       </div>
@@ -6752,7 +6752,7 @@ async function tiffCrop(read, box, sink, onProgress) {
       const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); x.drawImage(img, 0, 0, W, H);
       base = c; src4 = x.getImageData(0, 0, W, H).data; g = new Float32Array(W * H); for (let i = 0, j = 0; i < g.length; i++, j += 4) g[i] = 0.299 * src4[j] + 0.587 * src4[j + 1] + 0.114 * src4[j + 2];
       pw = Math.round(W * (1 - (opts.tx || 0))); ph = mode === 'horizontal' ? H : Math.round(H * (1 - (opts.ty || 0))); $('rtBlend').checked = !!opts.blend;
-      $('rtMsg').className = 'rt-msg'; $('rtMsg').textContent = 'Drag the picture, or press "Find the repeat for me". Watch the zoom windows: when the shapes continue across the dashed line, the copies join.';
+      $('rtMsg').className = 'rt-msg'; $('rtMsg').textContent = 'Drag the picture, or press "Find the repeat for me". Watch the zoom windows: the black arrows mark where the copies meet; when the shapes flow on across that spot, the copies join.';
       draw();
     };
     function tile() {
@@ -6773,9 +6773,8 @@ async function tiffCrop(read, box, sink, onProgress) {
       // wide designs: show about one and a half copies so the view is large enough to see; tall ones: two
       cv.width = Math.round(W * (W / H > 1.6 ? 1.45 : 2)); cv.height = mode === 'horizontal' ? H : Math.round(H * 1.6); const x = cv.getContext('2d'); x.imageSmoothingQuality = 'high'; x.fillStyle = '#e9e5de'; x.fillRect(0, 0, cv.width, cv.height);
       paint(cv, t, Math.ceil(cv.width / pw) + 1, Math.ceil(cv.height / ph) + 1);
-      if (showJoin) { x.save(); x.lineWidth = 4; x.strokeStyle = 'rgba(255,255,255,.85)'; x.beginPath(); x.moveTo(pw, 0); x.lineTo(pw, cv.height); if (rows > 1) { x.moveTo(0, ph); x.lineTo(cv.width, ph); } x.stroke(); x.lineWidth = 2; x.setLineDash([12, 8]); x.strokeStyle = 'rgba(32,29,29,.75)'; x.stroke(); x.restore(); }
       // zoom: 2× / 4× / 8× of what you see above, smooth; small marks at the edges show where the copies meet
-      const ds = (stage.clientWidth || 800) / cv.width;
+      const ds = (cv.clientWidth || 800) / cv.width;
       const loupe = (id, cx, cy, vertical) => { const l = $(id); if (!l) return; const lx = l.getContext('2d'), vw = l.width / (zoom * ds) / (l.clientWidth ? l.width / l.clientWidth : 1), vh = vw * l.height / l.width;
         lx.imageSmoothingEnabled = true; lx.imageSmoothingQuality = 'high'; lx.fillStyle = '#eee'; lx.fillRect(0, 0, l.width, l.height);
         lx.drawImage(cv, cx - vw / 2, Math.max(0, Math.min(cv.height - vh, cy - vh / 2)), vw, vh, 0, 0, l.width, l.height);
@@ -6784,6 +6783,13 @@ async function tiffCrop(read, box, sink, onProgress) {
         else { const m2 = l.height / 2; lx.moveTo(0, m2 - 7); lx.lineTo(0, m2 + 7); lx.lineTo(10, m2); lx.moveTo(l.width, m2 - 7); lx.lineTo(l.width, m2 + 7); lx.lineTo(l.width - 10, m2); }
         lx.fill(); };
       loupe('rtL1', pw, look * Math.min(cv.height, ph), false); loupe('rtL2', look * Math.min(cv.width, pw), ph, true);
+      // where the copies meet: arrows on the edges, never over the picture itself (a thin line only if asked for)
+      { const a = Math.max(10, cv.width / 70); x.save(); x.fillStyle = '#201D1D'; x.strokeStyle = '#fff'; x.lineWidth = a / 6; x.beginPath();
+        x.moveTo(pw - a, 0); x.lineTo(pw + a, 0); x.lineTo(pw, a * 1.4); x.closePath(); x.moveTo(pw - a, cv.height); x.lineTo(pw + a, cv.height); x.lineTo(pw, cv.height - a * 1.4); x.closePath();
+        if (rows > 1) { x.moveTo(0, ph - a); x.lineTo(0, ph + a); x.lineTo(a * 1.4, ph); x.closePath(); x.moveTo(cv.width, ph - a); x.lineTo(cv.width, ph + a); x.lineTo(cv.width - a * 1.4, ph); x.closePath(); }
+        x.fill(); x.stroke();
+        if (showJoin) { x.beginPath(); x.moveTo(pw, a * 1.4); x.lineTo(pw, cv.height - a * 1.4); if (rows > 1) { x.moveTo(a * 1.4, ph); x.lineTo(cv.width - a * 1.4, ph); } x.lineWidth = Math.max(1, cv.width / 900); x.setLineDash([a, a]); x.strokeStyle = 'rgba(32,29,29,.45)'; x.stroke(); }
+        x.restore(); }
       $('rtBlendL').hidden = !(pw < W); $('rtWhy').hidden = !(pw < W); if (!(pw < W)) $('rtBlend').checked = false;
       const wall = $('rtWall'), cols = 4, wr = mode === 'horizontal' ? 1 : 2; wall.width = pw * cols; wall.height = ph * wr; paint(wall, t, cols, wr);
       const cx = Math.round((1 - pw / W) * 1000) / 10, cy = Math.round((1 - ph / H) * 1000) / 10;
@@ -6795,8 +6801,8 @@ async function tiffCrop(read, box, sink, onProgress) {
       }
     }
     const set = (w, h) => { pw = Math.round(Math.max(W * 0.5, Math.min(W, w))); if (mode !== 'horizontal') ph = Math.round(Math.max(H * 0.5, Math.min(H, h))); found = null; draw(); };
-    let drag = null, showJoin = true; const stage = $('rtStage');
-    const pos = (e) => { const r = stage.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * $('rtCv').width, (e.clientY - r.top) / r.height * $('rtCv').height]; };
+    let drag = null, showJoin = false; const stage = $('rtStage');
+    const pos = (e) => { const r = $('rtCv').getBoundingClientRect(); return [(e.clientX - r.left) / r.width * $('rtCv').width, (e.clientY - r.top) / r.height * $('rtCv').height]; };
     stage.addEventListener('pointerdown', (e) => { drag = { p: pos(e), pw, ph }; stage.setPointerCapture(e.pointerId); $('rtHint').hidden = true; });
     stage.addEventListener('pointermove', (e) => { const r = stage.getBoundingClientRect(); look = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)); if (drag) { const [x, y] = pos(e); set(drag.pw + (x - drag.p[0]), drag.ph + (y - drag.p[1])); } else draw(); });
     stage.addEventListener('pointerup', () => { drag = null; }); stage.addEventListener('pointercancel', () => { drag = null; });
