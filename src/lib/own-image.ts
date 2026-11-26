@@ -1,3 +1,4 @@
+import { ownImageRate } from "@/lib/catalog";
 import type { WallSelection } from "@/lib/wall-selection";
 
 /** "Your own image": the customer's own picture, stored full size in their private folder, printed as a mural. */
@@ -24,5 +25,5 @@ export function ownDpi(o: { wallW: number; wallH: number; picW: number; picH: nu
 }
 /** A design-like line for the cart and checkout. */
 export function ownDesign(own: OwnFile) {
-  return { slug: OWN_SLUG, title: "Your own image", image: own.thumb || "", kind: "mural" as const, repeat: "none" as const, designer: "", categories: [] as string[], room: [] as string[] } as any;
+  return { slug: OWN_SLUG, title: "Your own image", image: own.thumb || "", kind: "mural" as const, repeat: "none" as const, designer: "", categories: [] as string[], room: [] as string[], pricePerSqft: ownImageRate() || undefined } as any;
 }

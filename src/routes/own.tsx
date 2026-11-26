@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { materials, money, registerShop, unitPrice } from "@/lib/catalog";
+import { materials, money, ownImagePrice, registerShop } from "@/lib/catalog";
 import { ensureShop } from "@/lib/shop";
 import { useSession } from "@/hooks/use-session";
 import { AuthPanel } from "@/components/auth-panel";
@@ -46,7 +46,7 @@ function Own() {
   useEffect(() => { loadSite().then((st: any) => { const v = Number(st?.general?.ownGoodDpi); if (v > 0) setGoodDpi(v); }).catch(() => {}); }, []);
   const wallRef = useRef<HTMLDivElement>(null); const drag = useRef<{ x: number; y: number; p: [number, number] } | null>(null);
   const m = materials.find((x) => x.id === mat) ?? materials[0];
-  const rate = unitPrice(undefined, m);
+  const rate = ownImagePrice(m);
   const sqft = w * h;
   // the picture covers the wall; zoom makes it bigger than the wall
   const ar = px[0] && px[1] ? px[0] / px[1] : 1.5, wallAr = w / h;
@@ -165,7 +165,7 @@ function Own() {
                 <div className="sharp"><div className="sharp-top"><span>Measured from your file</span><b>{dpiWord}</b></div><div className="meter own-meter"><i style={{ width: `${Math.min(100, (dpi / (goodDpi * 1.4)) * 100)}%`, background: sharp ? "#4E7A4A" : dpi >= goodDpi * 0.6 ? "#C9A24D" : "#B03A2E" }} /><span style={{ left: `${(0.6 / 1.4) * 100}%` }} /><span style={{ left: `${(1 / 1.4) * 100}%` }} /></div></div>
                 <p className="hint">{sharp ? `Sharp on a ${w} × ${h} ft wall. Made bigger on the wall, it gets softer.` : "Low resolution for this wall: it can look soft or blurry up close, but often fine from across the room. Make the picture smaller on the wall, choose a smaller wall, or have a designer sharpen it."}</p></div>
               <div className="blk"><h3 className="bh"><span>3</span>Paper</h3>
-                <div className="chips papers" role="radiogroup" aria-label="Paper">{materials.map((x) => <button key={x.id} type="button" role="radio" aria-checked={x.id === mat} className={"chip" + (x.id === mat ? " on" : "")} onClick={() => setMat(x.id)}>{x.name}<small>{money(unitPrice(undefined, x))}</small></button>)}</div></div>
+                <div className="chips papers" role="radiogroup" aria-label="Paper">{materials.map((x) => <button key={x.id} type="button" role="radio" aria-checked={x.id === mat} className={"chip" + (x.id === mat ? " on" : "")} onClick={() => setMat(x.id)}>{x.name}<small>{money(ownImagePrice(x))}</small></button>)}</div></div>
               <div className="sz-total"><div><b>{sqft} sq ft</b><small>{m?.name} · {money(rate)} / sq ft</small></div><strong>{money(sqft * rate)}</strong></div>
               <label className="co-check own-rights"><input type="checkbox" checked={rights} onChange={(e) => setRights(e.target.checked)} /><span>I own this image or have permission to print it.</span></label>
               {sharp ? <>

@@ -238,6 +238,12 @@ export function designRate(design?: Pick<Design, "pricePerSqft">): number {
 export function unitPrice(design?: Pick<Design, "pricePerSqft">, material?: Pick<Material, "factor" | "priceAdj"> | null): number {
   return Math.max(0, Math.round((designRate(design) * (material?.factor ?? 1) + (material?.priceAdj ?? 0)) * 100) / 100);
 }
+/** "Your own image": the owner's own-image price per sq ft (back office → Prices; empty = the standard rate) + the paper's add-on. */
+let ownRate = 0;
+export const ownImageRate = () => ownRate;
+export function ownImagePrice(material?: Pick<Material, "factor" | "priceAdj"> | null): number {
+  return unitPrice(ownRate > 0 ? { pricePerSqft: ownRate } : undefined, material);
+}
 export function finishPriceLabel(m: Pick<Material, "priceAdj" | "standard">): string {
   const a = m.priceAdj ?? 0;
   if (m.standard || !a) return "Standard price";
@@ -394,7 +400,7 @@ const extraDesigns = new Map<string, Design>();
 const extraDesigners = new Map<string, Designer>();
 let hiddenSlugs = new Set<string>();
 
-export type ShopData = { taxonomy?: Taxonomy; thumbs?: Record<string, ThumbSet>; defaultRate?: number; designs: Design[]; designers: Designer[]; hidden: string[]; materialSettings?: MaterialSetting[]; overrides?: DesignOverride[]; ratings?: { slug: string; rating: number; reviews: number }[]; designRatings?: { slug: string; rating: number; reviews: number }[]; collections?: { id: string; designerSlug: string; title: string; description: string; designs: string[] }[] };
+export type ShopData = { taxonomy?: Taxonomy; thumbs?: Record<string, ThumbSet>; defaultRate?: number; ownRate?: number | undefined; designs: Design[]; designers: Designer[]; hidden: string[]; materialSettings?: MaterialSetting[]; overrides?: DesignOverride[]; ratings?: { slug: string; rating: number; reviews: number }[]; designRatings?: { slug: string; rating: number; reviews: number }[]; collections?: { id: string; designerSlug: string; title: string; description: string; designs: string[] }[] };
 const ratingMap = new Map<string, { rating: number; reviews: number }>();
 // Only real reviews count: a designer with none shows "No reviews yet" (sample numbers are never shown).
 const withRating = (d: Designer): Designer => { const r = ratingMap.get(d.slug); return r ? { ...d, rating: r.rating, reviews: r.reviews } : { ...d, rating: 0, reviews: 0 }; };
@@ -412,6 +418,7 @@ export function registerShop(shop: ShopData) {
   setTaxonomy(shop.taxonomy);
   if (shop.thumbs) { thumbMap.clear(); Object.entries(shop.thumbs).forEach(([k, v]) => thumbMap.set(k, v)); }
   defaultRate = shop.defaultRate && shop.defaultRate > 0 ? shop.defaultRate : PRICE_PER_SQFT;
+  ownRate = shop.ownRate && shop.ownRate > 0 ? shop.ownRate : 0;
   materials.splice(0, materials.length, ...resolvedMaterials(shop.materialSettings));
   extraDesigns.clear(); extraDesigners.clear();
   shop.designs.forEach((d) => extraDesigns.set(d.slug, d));

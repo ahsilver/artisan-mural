@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { unitPrice, designBySlug, isHidden, registerShop, materials, designRate } from "@/lib/catalog";
+import { unitPrice, ownImagePrice, designBySlug, isHidden, registerShop, materials, designRate } from "@/lib/catalog";
 import { orderSqft, repeatStyle, sizeIssue, wallSelectionSchema } from "@/lib/wall-selection";
 
 /** Saves every cart item as an order awaiting payment for the signed-in customer. Prices are recomputed from the catalog. */
@@ -30,7 +30,7 @@ export const createCartOrder = createServerFn({ method: "POST" })
         if (!item.own.key.startsWith(`customer-originals/${context.userId}/`) || item.own.key.includes("..")) throw new Error("Please upload your picture again.");
         const sqft = orderSqft(item.selection);
         const selection = { ...item.selection, own: item.own, ...(item.name ? { wallName: item.name } : {}) };
-        return { user_id: context.userId, cart_id: cartId, design_slug: "own-image", finish: material.id, selection, square_feet: Math.round(sqft * 100) / 100, estimated_total: Math.round(sqft * unitPrice(undefined, material) * 100) / 100, customer_name: data.name, customer_email: email, phone: data.phone || null, shipping_address: data.address, billing_address: data.billing || data.address, notes: data.notes || null, status: "awaiting_payment" } as any;
+        return { user_id: context.userId, cart_id: cartId, design_slug: "own-image", finish: material.id, selection, square_feet: Math.round(sqft * 100) / 100, estimated_total: Math.round(sqft * ownImagePrice(material) * 100) / 100, customer_name: data.name, customer_email: email, phone: data.phone || null, shipping_address: data.address, billing_address: data.billing || data.address, notes: data.notes || null, status: "awaiting_payment" } as any;
       }
       const design = designBySlug(item.design);
       const material = materials.find((m) => m.id === item.finish);
