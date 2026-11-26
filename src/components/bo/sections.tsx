@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { api, useApi, money, fmtDate, fmtDateTime, Pill, Msg, Field, Switch, Drawer, useSaver } from "./common";
 import { STATUS_TONE, statusLabel } from "./orders";
 import { loadSite } from "@/lib/site-settings";
-import { getTaxonomy, setTaxonomy, canonicalCategories, canonicalRooms } from "@/lib/design-taxonomy";
+import { categoryGroups, getTaxonomy, setTaxonomy, canonicalCategories, canonicalRooms } from "@/lib/design-taxonomy";
 import { defaultMockupRooms } from "@/lib/auto-mockup";
 import { MockupRoomPicker, remakeRoomMockups } from "@/components/mockup-rooms";
 function downloadCsv(name: string, rows: Record<string, any>[]) {
@@ -183,8 +183,7 @@ function EditDesign({ d, onDone, onChanged, defaultRate }: { d: any; onDone: () 
     <Field label="Price per sq ft ($)" hint={`Empty = the site price${defaultRate ? ` (${money(defaultRate)})` : ""}.${d.suggestedPrice ? ` Designer suggests $${Number(d.suggestedPrice).toFixed(2)}.` : ""}`}><div className="bo-row" style={{ flexWrap: "nowrap" }}><input className="bo-in" type="number" step="0.01" value={f.pricePerSqft} onChange={(e) => setF({ ...f, pricePerSqft: e.target.value })} data-testid="edit-price" />{d.suggestedPrice ? <button type="button" className="bo-btn sm" onClick={() => setF({ ...f, pricePerSqft: d.suggestedPrice })}>Use suggested</button> : null}</div></Field>
     {up && <AdminRepeatType d={d} />}
     {up && <Field label="Design size (inches)" hint={d.kind === "mural" ? "The full picture size the designer gave. The product page and size calculator use it." : "The size of one repeat tile. Printing uses it to scale the pattern."}><div className="bo-row" style={{ flexWrap: "nowrap", gap: 6 }}><input className="bo-in" type="number" step="0.1" value={g.widthIn} onChange={(e) => setG({ ...g, widthIn: e.target.value })} aria-label="Width in inches" style={{ maxWidth: 120 }} /><span>×</span><input className="bo-in" type="number" step="0.1" value={g.heightIn} onChange={(e) => setG({ ...g, heightIn: e.target.value })} aria-label="Height in inches" style={{ maxWidth: 120 }} /><span className="bo-sub">in{g.widthIn && g.heightIn ? ` (${(Number(g.widthIn) / 12).toFixed(1)} × ${(Number(g.heightIn) / 12).toFixed(1)} ft)` : ""}</span></div></Field>}
-    <Field label="Style" hint="Shop filters and category links use these. Edit the lists in Settings > Categories.">{chips("categories", tax.styles)}</Field>
-    <Field label="Theme / subject">{chips("categories", tax.themes)}</Field>
+    <Field label="Style & subject" hint="Pick every one that fits: the menu, shop filters and search use these. Edit the lists in Website > Categories.">{categoryGroups(tax).map((g) => <div key={g.title} className="de-catg"><div className="de-catg-h">{g.title}</div>{chips("categories", g.items)}</div>)}</Field>
     <Field label="Rooms">{chips("rooms", tax.rooms)}</Field>
     {up && <Field label="Search keywords" hint="Separated by commas. Shop search finds the design by these."><input className="bo-in" value={g.tags} onChange={(e) => setG({ ...g, tags: e.target.value })} data-testid="edit-tags" /></Field>}
     {up && <Field label="Main colors"><input className="bo-in" value={g.palette} onChange={(e) => setG({ ...g, palette: e.target.value })} /></Field>}

@@ -3,7 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { shopQuery } from "@/lib/shop";
 import { liveDesigns, registerShop, resolvedMaterials, unitPrice, withColorway, type Design } from "@/lib/catalog";
 import { designerScaleSelection, frameGeometry, measurementInches, orderSqft, type WallSelection } from "@/lib/wall-selection";
+import { createPortal } from "react-dom";
 import { MuralFramer } from "@/components/mural-framer";
+import { RepeatAligner, type RepeatFit } from "@/components/designer/repeat-aligner";
+import { oneRepeat } from "@/lib/repeat-fix";
+import { MIN_PRINT_DPI, createPrintPdf, effectivePrintDpi, printGeometry } from "@/lib/print-pdf";
 import { api, useApi, money, Msg, Field } from "./common";
 
 type Unit = "ft" | "in" | "cm";
@@ -43,6 +47,12 @@ export function NewOrder({ onDone }: { onDone: (id: string) => void }) {
   const [fileUrl, setFileUrl] = useState("");
   const [upKind, setUpKind] = useState<"mural" | "repeating">("mural");
   const [repeatIn, setRepeatIn] = useState("24");
+  // repeat from an outside file: the owner lines it up on screen; the result is one clean repeat tile (PNG)
+  const [repMode, setRepMode] = useState<"both" | "horizontal" | "halfdrop">("both");
+  const [align, setAlign] = useState(false); const [fit, setFit] = useState<RepeatFit | null>(null);
+  const [tile, setTile] = useState<{ blob: Blob; url: string; w: number; h: number } | null>(null);
+  const [srcPx, setSrcPx] = useState<{ w: number; h: number } | null>(null);
+  const [anyDpi, setAnyDpi] = useState(false);
   const [w, setW] = useState("12"); const [h, setH] = useState("9"); const [unit, setUnit] = useState<Unit>("ft");
   const [finish, setFinish] = useState("");
   const [cust, setCust] = useState<"existing" | "new">("existing");
@@ -58,8 +68,39 @@ export function NewOrder({ onDone }: { onDone: (id: string) => void }) {
   const base: Design | null = useMemo(() => {
     if (src === "pick") { const d = designs.find((x) => x.slug === slug); return d ? withColorway(d, color) : null; }
     if (!fileUrl) return null;
-    return { slug: "outside-file", title: file?.name ?? "Customer file", image: fileUrl, kind: upKind, ...(upKind === "repeating" ? { repeat: "both", repeatCm: (Number(repeatIn) || 24) * 2.54 } : {}) } as any;
-  }, [src, designs, slug, color, fileUrl, file, upKind, repeatIn]);
+    const rcm = (Number(repeatIn) || 24) * 2.54, tr = tile ? tile.w / tile.h : srcPx ? srcPx.w / srcPx.h : 1;
+    return { slug: "outside-file", title: file?.name ?? "Customer file", image: upKind === "repeating" && tile ? tile.url : fileUrl, kind: upKind,
+      ...(upKind === "repeating" ? { repeat: repMode === "horizontal" ? "horizontal" : "both", match: repMode === "halfdrop" ? "halfdrop" : undefined, repeatCm: rcm, printHeightCm: repMode === "horizontal" ? rcm / tr : undefined } : {}) } as any;
+  }, [src, designs, slug, color, fileUrl, file, upKind, repeatIn, repMode, tile, srcPx]);
+  useEffect(() => { setFit(null); setTile((t) => { if (t) URL.revokeObjectURL(t.url); return null; }); setSrcPx(null); if (fileUrl) loadImg(fileUrl).then((im) => setSrcPx({ w: im.naturalWidth, h: im.naturalHeight })).catch(() => {}); }, [fileUrl]);
+  async function useFit(f: RepeatFit) {
+    const im = await loadImg(fileUrl); const c = oneRepeat(im, im.naturalWidth, im.naturalHeight, f);
+    const blob: Blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("This file is too large for the browser."))), "image/png"));
+    setTile((t) => { if (t) URL.revokeObjectURL(t.url); return { blob, url: URL.createObjectURL(blob), w: c.width, h: c.height }; });
+    setFit(f); setRepMode(f.mode === "sideways" ? "horizontal" : f.mode === "halfdrop" ? "halfdrop" : "both"); setAlign(false);
+  }
+  /** The exact bytes that get printed: the lined-up tile for repeats, the customer's file for murals (webp turned into PNG). */
+  async function printSource(): Promise<{ bytes: Uint8Array; type: string; px: { w: number; h: number } }> {
+    if (upKind === "repeating" && tile) return { bytes: new Uint8Array(await tile.blob.arrayBuffer()), type: "image/png", px: { w: tile.w, h: tile.h } };
+    if (!file) throw new Error("Upload the customer's file first.");
+    if (/png|jpe?g/.test(file.type)) return { bytes: new Uint8Array(await file.arrayBuffer()), type: file.type, px: srcPx ?? { w: 0, h: 0 } };
+    const im = await loadImg(fileUrl); const c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext("2d")!.drawImage(im, 0, 0);
+    const b: Blob = await new Promise((res, rej) => c.toBlob((x) => (x ? res(x) : rej(new Error("Could not read the file."))), "image/png"));
+    return { bytes: new Uint8Array(await b.arrayBuffer()), type: "image/png", px: { w: c.width, h: c.height } };
+  }
+  async function download(kind: "pdf" | "tiff") {
+    if (!base || !sel) return;
+    setMsg(null); setBusy(kind === "pdf" ? "Making the print PDF…" : "Making the print TIFF…");
+    try {
+      const s0 = await printSource(); const min = anyDpi ? 1 : MIN_PRINT_DPI; const name = `${(file?.name || "print").replace(/\.[a-z0-9]+$/i, "")}-${w}x${h}${unit}`;
+      let blob: Blob;
+      if (kind === "pdf") { const r = await createPrintPdf(s0.bytes, base as any, sel, name, min); blob = new Blob([new Uint8Array(r.bytes)], { type: "application/pdf" }); }
+      else { const { createPrintTiff } = await import("@/lib/print-tiff"); const r = await createPrintTiff(s0.bytes, s0.type, base as any, sel, name, min); blob = r.blob; }
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${name}.${kind === "pdf" ? "pdf" : "tif"}`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      setMsg({ ok: true, text: `Print file ready: ${a.download}. It prints at the exact wall size (${w} × ${h} ${unit}).` });
+    } catch (e: any) { setMsg({ ok: false, text: e.message || "Could not make the print file." }); }
+    setBusy("");
+  }
   const dims = { width: Number(w) || 0, height: Number(h) || 0, unit };
   const [sel, setSel] = useState<WallSelection | null>(null);
   // new design or new wall size -> start from the design's own scale, centred
@@ -76,6 +117,8 @@ export function NewOrder({ onDone }: { onDone: (id: string) => void }) {
   useEffect(() => { if (base?.image) loadImg(base.image).then((im) => setSel((s) => (s ? { ...s, artRatio: im.naturalWidth / im.naturalHeight } : s))).catch(() => {}); }, [base?.image]);
   useEffect(() => { if (!finish && finishes[0]) setFinish(finishes[0].id); }, [finishes]);
   const material = finishes.find((m) => m.id === finish) ?? finishes[0];
+  const px = upKind === "repeating" && tile ? { w: tile.w, h: tile.h } : srcPx;
+  let dpi = 0; try { if (src === "upload" && base && sel && px) dpi = Math.floor(effectivePrintDpi(px.w, px.h, printGeometry(base as any, sel))); } catch {}
   const sqft = dims.width && dims.height ? orderSqft(dims as any) : 0;
   const auto = Math.round(sqft * unitPrice(src === "pick" ? base ?? undefined : undefined, material) * 100) / 100;
   useEffect(() => { if (!touched) setTotal(auto ? String(auto) : ""); }, [auto, touched]);
@@ -91,12 +134,13 @@ export function NewOrder({ onDone }: { onDone: (id: string) => void }) {
     if (file && file.size > 95 * 1024 * 1024) return setMsg({ ok: false, text: "That file is over 95 MB. Send it to the order after saving, or use a smaller copy." });
     try {
       setBusy("Saving the order…");
-      const selection = { ...sel, color: src === "pick" ? color : undefined, colorName: src === "pick" ? base.colorways?.find((c) => c.id === color)?.name : undefined, outside: { kind: base.kind, repeatIn: base.kind === "repeating" && src === "upload" ? Number(repeatIn) : undefined, file: file?.name } };
+      const selection = { ...sel, color: src === "pick" ? color : undefined, colorName: src === "pick" ? base.colorways?.find((c) => c.id === color)?.name : undefined, outside: { kind: base.kind, repeatIn: base.kind === "repeating" && src === "upload" ? Number(repeatIn) : undefined, repeat: base.kind === "repeating" && src === "upload" ? repMode : undefined, fit: fit ?? undefined, file: file?.name } };
       const r = await api("admin/orders", { body: { design: src === "pick" ? base.slug : "outside-file", finish: material?.name ?? finish, selection, sqft: Math.round(sqft * 10) / 10, total: Number(total) || 0,
         customer: custName.trim(), email: cust === "existing" ? picked?.email ?? "" : nc.email, phone: cust === "existing" ? picked?.phone || null : nc.phone || null, userId: cust === "existing" ? picked?.user_id || undefined : undefined,
         address, notes, paymentStatus: pay, paidBy } });
       const wall = `${w} x ${h} ${unit}`;
-      if (file) { setBusy("Uploading the customer's file…"); await putFile(r.id, file, file.type === "image/png" ? "png" : "jpg", base.kind === "repeating" ? `Customer file (repeat tile, ${repeatIn} in wide)` : "Customer file (original)"); }
+      if (file) { setBusy("Uploading the customer's file…"); await putFile(r.id, file, file.type === "image/png" ? "png" : "jpg", base.kind === "repeating" && !tile ? `Customer file (repeat tile, ${repeatIn} in wide)` : "Customer file (original)"); }
+      if (tile && base.kind === "repeating") { setBusy("Saving the lined-up repeat…"); await putFile(r.id, tile.blob, "png", `Print tile: one repeat, ${repeatIn} in wide (${repMode === "horizontal" ? "sideways" : repMode === "halfdrop" ? "half-drop" : "all sides"})`, tile.w, tile.h); }
       if (base.kind === "mural") {
         setBusy("Saving the crop as the print file…");
         let src2 = base.image, full = !!file;
@@ -120,11 +164,24 @@ export function NewOrder({ onDone }: { onDone: (id: string) => void }) {
       <Field label="Customer's file (JPG or PNG)"><input type="file" accept="image/jpeg,image/png,image/webp" data-testid="no-file" onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); setFileUrl(f ? URL.createObjectURL(f) : ""); }} /></Field>
       <div className="bo-row"><button type="button" className={seg(upKind === "mural")} onClick={() => setUpKind("mural")}>Mural</button><button type="button" className={seg(upKind === "repeating")} onClick={() => setUpKind("repeating")} data-testid="no-kind-repeat">Repeat</button>
         {upKind === "repeating" && <label className="bo-inline">Repeat width <input className="bo-in" style={{ width: 70 }} type="number" value={repeatIn} onChange={(e) => setRepeatIn(e.target.value)} /> in</label>}</div>
+      {upKind === "repeating" && fileUrl && <div className="bo-row" style={{ marginTop: 8, alignItems: "center" }}>
+        <button type="button" className="bo-btn pri" onClick={() => setAlign(true)} data-testid="no-align">{fit ? "Line up the repeat again" : "Line up the repeat"}</button>
+        {tile ? <span className="bo-sub">✓ One clean repeat: {tile.w.toLocaleString()} × {tile.h.toLocaleString()} px · {repMode === "horizontal" ? "sideways only" : repMode === "halfdrop" ? "half-drop" : "all sides"}{fit?.blend ? " · ends faded together" : ""}</span>
+          : <span className="bo-sub">Drag the copies until they join, zoom on the join, see it on a wall. Or use the whole file as one repeat.</span>}
+      </div>}
+      {align && typeof document !== "undefined" && createPortal(<div className="am"><div className="ra-modal" role="dialog" aria-modal="true" aria-label="Line up the repeat"><div className="ra-sheet"><div className="ra-head"><b>Line up the repeat</b></div>
+        <RepeatAligner src={fileUrl} mode={repMode === "horizontal" ? "sideways" : repMode === "halfdrop" ? "halfdrop" : "straight"} {...(fit ? { initial: fit } : {})} onSave={(f) => void useFit(f).catch((e) => setMsg({ ok: false, text: e.message }))} onCancel={() => setAlign(false)} />
+      </div></div></div>, document.body)}
     </div>}
     <h3 className="bo-h3">2. Wall and finish</h3>
     <div className="bo-grid3 bo-wall"><Field label="Wall width"><input className="bo-in" type="number" value={w} onChange={(e) => setW(e.target.value)} data-testid="no-w" /></Field><Field label="Wall height"><input className="bo-in" type="number" value={h} onChange={(e) => setH(e.target.value)} data-testid="no-h" /></Field><Field label="Unit"><select className="bo-sel" value={unit} onChange={(e) => setUnit(e.target.value as Unit)}><option value="ft">feet</option><option value="in">inches</option><option value="cm">cm</option></select></Field></div>
     {base && sel && <div className="bo-preview" data-testid="no-preview"><MuralFramer design={base} selection={sel} onChange={setSel} maxHeight="300px" />
-      <div className="bo-sub" style={{ marginTop: 6 }}>{base.kind === "mural" ? "Drag the picture to choose the part that goes on the wall. This crop is saved as the print file." : "The pattern repeats across the wall in panels. Use the size slider to change the scale."}</div></div>}
+      <div className="bo-sub" style={{ marginTop: 6 }}>{base.kind === "mural" ? "Drag the picture to choose the part that goes on the wall. This crop is saved as the print file." : "The pattern repeats across the wall in panels. Use the size slider to change the scale."}</div>
+      {src === "upload" && <div className="bo-printbox" data-testid="no-printbox"><b>Ready to print</b>
+        <span className={"bo-sub" + (dpi && dpi < MIN_PRINT_DPI ? " err" : "")}>{dpi ? `${dpi} DPI at this size · ${dpi >= 200 ? "very sharp" : dpi >= MIN_PRINT_DPI ? "good from a normal distance" : `below ${MIN_PRINT_DPI} DPI, will look soft`}` : "…"}. The file is exactly {w} × {h} {unit}, in numbered-panel width, {base.kind === "mural" ? "cropped to what you see" : "repeated across the wall as you see it"}.</span>
+        {dpi > 0 && dpi < MIN_PRINT_DPI && <label className="bo-inline"><input type="checkbox" checked={anyDpi} onChange={(e) => setAnyDpi(e.target.checked)} /> Make it anyway (the customer accepts a softer print)</label>}
+        <div className="bo-row"><button type="button" className="bo-btn pri" disabled={!!busy} onClick={() => void download("pdf")} data-testid="no-pdf">Download print PDF</button><button type="button" className="bo-btn" disabled={!!busy} onClick={() => void download("tiff")} data-testid="no-tiff">Download print TIFF</button></div>
+      </div>}</div>}
     <Field label="Finish"><select className="bo-sel" value={finish} onChange={(e) => setFinish(e.target.value)}>{finishes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Field>
     <h3 className="bo-h3">3. Customer</h3>
     <div className="bo-row" style={{ marginBottom: 8 }}><button type="button" className={seg(cust === "existing")} onClick={() => setCust("existing")}>Existing customer</button><button type="button" className={seg(cust === "new")} onClick={() => setCust("new")} data-testid="no-cust-new">New customer</button></div>

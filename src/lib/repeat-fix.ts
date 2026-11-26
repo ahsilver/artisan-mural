@@ -34,7 +34,7 @@ async function cropTiffToStorage(uploadId: string, url: string, box: { x: number
 
 /** JPG / PNG / WebP: cut in the browser and saved as a lossless PNG. */
 /** One repeat from a picture; with blend the strip past the end fades into the start (same as the print file). */
-function oneRepeat(src: CanvasImageSource, W: number, H: number, fit: { w: number; h: number; blend?: boolean }) {
+export function oneRepeat(src: CanvasImageSource, W: number, H: number, fit: { w: number; h: number; blend?: boolean }) {
   const w = Math.round(W * fit.w), h = Math.round(H * fit.h);
   const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d")!; x.drawImage(src, 0, 0, w, h, 0, 0, w, h);
   const ov = Math.min(W - w, w);

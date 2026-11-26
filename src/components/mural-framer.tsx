@@ -363,7 +363,7 @@ export function MuralFramer({ design, selection, onChange, compact = false, maxH
                 aria-pressed={on}
                 title={aria}
                 onClick={() => (set as (f: (v: boolean) => boolean) => void)((v) => !v)}
-                className={`inline-flex h-8 items-center gap-1.5 rounded-[6px] border px-2.5 text-[13.5px] transition-colors ${on ? "border-[#111827] bg-[#111827] text-white" : "border-[#E5E7EB] bg-white text-[#374151] hover:bg-[#F9FAFB]"}`}
+                className={`inline-flex h-8 items-center gap-1.5 rounded-[6px] border px-2.5 text-[13.5px] transition-colors ${on ? "border-[#111827] bg-[#111827] !text-white" : "border-[#E5E7EB] bg-white text-[#374151] hover:bg-[#F9FAFB]"}`}
               >
                 <Icon className="h-4 w-4" strokeWidth={1.75} />
                 {label}

@@ -14,7 +14,7 @@ import { MockupRoomPicker, remakeRoomMockups, sceneMockup, designerRoom, picture
 import { DriveFolderPicker } from "@/components/designer/drive-folder";
 import { dominantColor } from "@/lib/designer-files";
 import { loadSite } from "@/lib/site-settings";
-import { getTaxonomy, setTaxonomy, canonicalCategories, canonicalRooms } from "@/lib/design-taxonomy";
+import { categoryGroups, getTaxonomy, setTaxonomy, canonicalCategories, canonicalRooms } from "@/lib/design-taxonomy";
 import { useQuery } from "@tanstack/react-query";
 import { shopQuery } from "@/lib/shop";
 import { resolvedMaterials, swatchStyle } from "@/lib/catalog";
@@ -220,8 +220,8 @@ export function DesignEditor({ design, rules, onChanged, onClose, ensure, page }
         {hasArt && rt !== "mural" && <RepeatStep design={design} onChanged={onChanged} />}
         <div className="de-box"><div className="de-h">Where it fits</div>
           <div className="de-lbl">Good for rooms</div>{chips(ROOMS, (r) => basic.madeFor.includes(r), flipRoom)}
-          <div className="de-lbl">Style</div>{chips(STYLES, (r) => basic.categories.includes(r), flipCat)}
-          <div className="de-lbl">Theme / subject</div>{chips(THEMES, (r) => basic.categories.includes(r), flipCat)}
+          <div className="de-lbl">Style &amp; subject <small className="bo-sub">pick every one that fits: customers find it under each in the menu, filters and search</small></div>
+          {categoryGroups(tax).map((g) => <div key={g.title} className="de-catg"><div className="de-catg-h">{g.title}</div>{chips(g.items, (r) => basic.categories.includes(r), flipCat)}</div>)}
           <div className="de-lbl">Main colors <span className="bo-sub">(found from the picture when you upload it; shoppers filter by these)</span></div>
           <div className="de-chips">{tax.colors.map((c) => { const on = palList().some((x) => x.toLowerCase() === c.label.toLowerCase()); return <button key={c.id} type="button" aria-pressed={on} className={"de-chip" + (on ? " on" : "")} onClick={() => flipColor(c.label)}><i className="de-sw" style={{ background: c.swatch }} />{c.label}</button>; })}</div>
           {hasArtNow() && <div className="bo-row" style={{ marginTop: 8 }}><button type="button" className="bo-btn sm" onClick={async () => { const src = design.colors?.[0]?.preview; if (!src) return; const found = await findColors(src, tax.colors).catch(() => []); setBasic((b: any) => ({ ...b, palette: [...new Set([...found, ...splitPal(b.palette).filter((x: string) => !tax.colors.some((c) => c.label.toLowerCase() === x.toLowerCase()))])].join(", ") })); setColorMsg(found.length ? `Found: ${found.join(", ")}. Save to keep them.` : "No clear main colors found; pick them by hand."); }}>Find the colors in the picture</button>{colorMsg && <span className="bo-sub">{colorMsg}</span>}</div>}

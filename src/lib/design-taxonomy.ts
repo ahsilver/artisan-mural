@@ -112,6 +112,14 @@ const COLS: [string, string[]][] = [
   ["Styles", ["Art deco", "Boho", "Coastal", "Funky & quirky", "Japanese", "Maximalist", "Mid-century", "Minimal", "Modern", "Retro", "Scandinavian", "Traditional", "Vintage"]],
   ["General", ["Panoramic", "Feature wall", "Maps & travel", "City & architecture", "Fruit & food", "Kids & nursery", "Hospitality"]],
 ];
+/** The same columns as the menu, as plain category names: the upload forms group their style buttons this way. */
+export function categoryGroups(t: Taxonomy = current): { title: string; items: string[] }[] {
+  const all = [...t.styles, ...t.themes]; const placed = new Set<string>();
+  const groups = COLS.map(([title, names]) => ({ title, items: names.filter((n) => all.includes(n) && !placed.has(n) && (placed.add(n), true)) }));
+  for (const x of t.styles) if (!placed.has(x)) { groups[2]!.items.push(x); placed.add(x); }
+  for (const x of t.themes) if (!placed.has(x)) { groups[3]!.items.push(x); placed.add(x); }
+  return groups.filter((g) => g.items.length);
+}
 export function menuColumns(t: Taxonomy = current): { title: string; links: MenuLink[] }[] {
   const link = (x: string): MenuLink => ({ label: x === "Stripes" ? "Striped" : x, search: t.themes.includes(x) && !t.styles.includes(x) ? { theme: x } : { category: x } });
   const all = new Set([...t.styles, ...t.themes]); const placed = new Set<string>();
