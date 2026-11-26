@@ -2588,6 +2588,8 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 .pf-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;align-items:start}.pf-form{display:grid;gap:14px}.pf-pics{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:stretch}.pf-photo{width:120px;height:120px;border-radius:50%;border:2px dashed var(--line);display:grid;place-items:center;overflow:hidden;cursor:pointer;background:var(--soft);font-size:13px;font-weight:600;color:var(--ink-2)}.pf-photo img{width:100%;height:100%;object-fit:cover}.pf-cover{position:relative;border-radius:12px;overflow:hidden;cursor:pointer;min-height:120px;background:var(--soft)}.pf-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.pf-cover span{position:absolute;right:8px;bottom:8px;background:rgba(32,29,29,.8);color:#fff;font-size:12px;padding:5px 10px;border-radius:99px}.lbl2{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin-bottom:6px}.pf-port{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}.pf-port figure{margin:0;display:grid;gap:4px}.pf-port img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px}.pf-port figcaption{font-size:12px}.pf-add{display:grid;place-items:center;aspect-ratio:1;border:2px dashed var(--line);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink-2)}.pf-prev{position:sticky;top:140px}.pf-card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}.pf-cv img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}.pf-cb{display:grid;gap:4px;padding:0 16px 16px;justify-items:start}.pf-av{width:72px;height:72px;border-radius:50%;margin-top:-36px;border:3px solid #fff;background:#C9A24D center/cover;display:grid;place-items:center;color:#fff;font-weight:700;font-size:22px}.pf-cb small{font-size:12.5px;color:var(--ink-2)}.pf-cb .btn{margin-top:8px}@media (max-width:900px){.pf-grid{grid-template-columns:1fr}.pf-prev{position:static}}
 .st-h2{font:400 26px/1.2 var(--f-display);margin:26px 0 12px}.st-sw{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:7px;vertical-align:-1px;border:1px solid rgba(255,255,255,.7)}
 .pr-h3{font:400 22px/1.2 var(--f-display);margin:22px 0 4px}.pr-th{width:40px;height:40px;object-fit:cover;border-radius:6px;float:left;margin-right:10px}.pr-base .hint{display:block;margin-top:4px}
+.mega-cols{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px 26px;align-items:start}.mega-cols b{display:block;font:400 18px/1.2 var(--f-display);margin-bottom:8px}.mega-cols ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}.mega-cols a{display:block;padding:4px 0;font-size:13.5px;color:var(--ink-2);text-decoration:none}.mega-cols a:hover{color:var(--ink);text-decoration:underline}.mega-cols-all{grid-column:1/-1;display:flex;gap:24px;border-top:1px solid var(--line);padding-top:12px}.mega-cols-all a{font-weight:700;color:var(--ink)}
+@media (max-width:900px){.mega-cols{grid-template-columns:1fr 1fr}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -3809,6 +3811,16 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
   applyPricing();
   const ROOMS = { living: 'Living room', bedroom: 'Bedroom', dining: 'Dining room', kitchen: 'Kitchen', bathroom: 'Bathroom', kids: 'Kids & nursery', playroom: 'Playroom', office: 'Office', entry: 'Hallway & entry', hotel: 'Hotels & restaurants' };
   const STYLES = { tropical: 'Tropical', botanical: 'Botanical', animals: 'Animals', 'line-art': 'Line art', 'black-white': 'Black & white', shadows: 'Shadows', ombre: 'Ombre', minimal: 'Minimal', floral: 'Floral', moody: 'Moody', jungle: 'Jungle' };
+  // every category the site has, in the menu's columns; ones the sample has no designs for yet are added to STYLES so they can be chosen on upload and opened
+  const CAT_COLS = [
+    ['Art & design', ['Abstract', 'Geometric', 'Striped', 'Watercolor', 'Ombre', 'Hand-painted', 'Line art', 'Art', 'Marble & stone', 'Textures', 'Faux finishes', 'Damask', 'Toile', 'Chinoiserie']],
+    ['Animals & nature', ['Floral', 'Botanical', 'Tropical', 'Jungle', 'Leaves', 'Trees & forest', 'Animals', 'Butterflies', 'Landscape', 'Mountains', 'Sky & clouds', 'Ocean & water', 'Nature', 'Celestial']],
+    ['Styles', ['Art deco', 'Boho', 'Coastal', 'Funky & quirky', 'Japanese', 'Maximalist', 'Mid-century', 'Minimal', 'Modern', 'Moody', 'Black & white', 'Retro', 'Scandinavian', 'Traditional', 'Vintage']],
+    ['General', ['Panoramic', 'Feature wall', 'Shadows', 'Maps & travel', 'City & architecture', 'Fruit & food', 'Kids & nursery', 'Hospitality']],
+  ];
+  { const slug = (t) => t.toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); const have = new Set(Object.values(STYLES).map(v => v.toLowerCase()));
+    CAT_COLS.forEach(([, list]) => list.forEach(n => { if (!have.has(n.toLowerCase())) { STYLES[slug(n)] = n; have.add(n.toLowerCase()); } })); }
+  const styleKey = (n) => Object.keys(STYLES).find(k => STYLES[k].toLowerCase() === n.toLowerCase());
   const COLORS = { white: ['White', '#F4F2EC'], beige: ['Beige', '#D9CDB8'], grey: ['Grey', '#9A9A98'], black: ['Black', '#2A2A2A'], brown: ['Brown', '#7A5236'], gold: ['Gold', '#B48A4E'], yellow: ['Yellow', '#DDBA4E'], orange: ['Orange', '#D6783A'], red: ['Red', '#B23A3A'], pink: ['Pink', '#DE97A2'], purple: ['Purple', '#71508C'], blue: ['Blue', '#4A6FAA'], navy: ['Navy', '#26314F'], teal: ['Teal', '#357876'], green: ['Green', '#5D7A55'] };
   // detected from each design's own pixels on upload (main colors with at least 6% of the picture)
   const AUTO_COLORS = {"animal-kingdom": ["grey", "green", "white", "gold"], "calendula": ["grey", "beige"], "in-harmony": ["white", "grey", "beige"], "jumbo-dog-sketch": ["beige", "grey", "yellow"], "luxury-henley": ["navy", "beige", "grey"], "my-favorite-dogs": ["grey", "beige", "red"], "ombre-smokey": ["grey", "white"], "palm-leaves-shadow": ["white", "grey"], "shadow-leaf": ["grey", "white"], "sumatra-classic": ["green", "yellow", "beige", "white"], "swaying-palm-leaves": ["white", "beige"], "vine-charcoal": ["white"], "vine-oatmeal": ["white", "beige"], "wild-bouquet": ["white", "grey"]};
@@ -4262,6 +4274,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
   const MEGA = [
     ['type', 'Type', () => [['#shop', 'All designs', 'd/sumatra-classic-room1.webp'], ['#shop-murals', 'Murals', 'd/animal-kingdom-room1.webp'], ['#shop-repeats', 'Repeating patterns', 'd/my-favorite-dogs-room1.webp'], ['#own', 'Your own image', 'img/living-the-glade.webp'], ['#request', 'Made for you', 'img/forest-after.webp']]],
     ['rooms', 'Rooms', () => Object.entries(ROOMS).map(([k, n]) => [`#room-${k}`, n, `img/cover-${COVER[k] || 'living-room'}.webp`]).concat([['#rooms-all', 'All rooms', 'img/cover-living-room.webp']])],
+    ['design', 'Shop by design', 'cols'],
     ['style', 'Style', () => Object.entries(STYLES).map(([k, n]) => [`#style-${k}`, n, styleImg(k)]).filter(x => x[2])],
     ['color', 'Color', null],
     ['designers', 'Designers', () => DESIGNERS.map(x => [`#designer-${x.slug}`, x.name, `d/${designsOf(x)[0].slug}-room1.webp`]).concat([['#designers-all', 'All designers', 'd/in-harmony-room2.webp']])],
@@ -4272,7 +4285,11 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
     $('megaCats').innerHTML = MEGA.map(([k, n]) => `<button type="button" data-k="${k}" aria-current="${k === megaCat}">${n}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5 8 6l-3.5 3.5"/></svg></button>`).join('');
     $('megaCats').querySelectorAll('button').forEach(b => { b.onclick = () => { megaCat = b.dataset.k; renderMega(); }; b.onmouseenter = () => { if (matchMedia('(hover:hover)').matches && megaCat !== b.dataset.k) { megaCat = b.dataset.k; renderMega(); } }; });
     const cat = MEGA.find(m => m[0] === megaCat);
-    if (megaCat === 'color') {
+    if (megaCat === 'design') {
+      const popular = [['#shop', 'Best sellers'], ['#shop-new', 'New in'], ['#shop-murals', 'Murals'], ['#shop-repeats', 'Repeating patterns'], ...['Floral', 'Botanical', 'Abstract', 'Geometric', 'Tropical', 'Kids & nursery'].map(n => [`#style-${styleKey(n)}`, n])];
+      const col = (t, links) => `<div><b>${t}</b><ul>${links.map(([h, n]) => `<li><a href="${h}">${n}</a></li>`).join('')}</ul></div>`;
+      $('megaPanel').innerHTML = `<div class="mega-cols">${col('Popular', popular)}${CAT_COLS.map(([t, list]) => col(t, list.map(n => [`#style-${styleKey(n)}`, n]))).join('')}<div class="mega-cols-all"><a href="#styles-all">See all styles →</a><a href="#shop">Shop all designs →</a></div></div>`;
+    } else if (megaCat === 'color') {
       $('megaPanel').innerHTML = `<div class="mega-colors">${Object.entries(COLORS).map(([k, [n, hex]]) => `<a href="#color-${k}"><span style="background:${hex}"></span>${n}</a>`).join('')}</div>`;
     } else {
       $('megaPanel').innerHTML = `<div class="mega-tiles">${cat[2]().map(([h, n, img]) => `<a href="${h}"><span class="mt-img"><img src="${img}" alt="" loading="lazy"></span><b>${n}</b></a>`).join('')}</div>`;
@@ -4939,7 +4956,7 @@ document.addEventListener('click',e=>{const q=e.target.closest('.qtip');document
   function renderStyles() {
     const used = new Set(); // each card shows a different design where it can
     const pic = (list) => { const d = list.find(x => !used.has(x.slug)) || list[0]; if (!d) return 'img/cover-living-room.webp'; used.add(d.slug); return `d/${d.slug}-room1.webp`; };
-    $('stylesGrid').innerHTML = Object.entries(STYLES).map(([k, name]) => { const ds = DESIGNS.filter(d => d.styles.includes(k)), n = ds.length;
+    $('stylesGrid').innerHTML = Object.entries(STYLES).map(([k, name]) => { const ds = DESIGNS.filter(d => d.styles.includes(k)), n = ds.length; if (!n) return '';
       return `<a class="rcard" href="#style-${k}"><img src="${pic(ds)}" alt="" loading="lazy"><span><b>${name}</b><small>${n} design${n === 1 ? '' : 's'}</small></span></a>`; }).join('');
     $('colorsGrid').innerHTML = Object.entries(COLORS).map(([k, [name, sw]]) => { const ds = DESIGNS.filter(d => d.colors.includes(k)), n = ds.length; if (!n) return '';
       return `<a class="rcard" href="#color-${k}"><img src="${pic(ds)}" alt="" loading="lazy"><span><b><i class="st-sw" style="background:${sw}"></i>${name}</b><small>${n} design${n === 1 ? '' : 's'}</small></span></a>`; }).join('');
