@@ -2591,6 +2591,16 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 .mega-cols{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px 26px;align-items:start}.mega-cols b{display:block;font:400 18px/1.2 var(--f-display);margin-bottom:8px}.mega-cols ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}.mega-cols a{display:block;padding:4px 0;font-size:13.5px;color:var(--ink-2);text-decoration:none}.mega-cols a:hover{color:var(--ink);text-decoration:underline}.mega-cols-all{grid-column:1/-1;display:flex;gap:24px;border-top:1px solid var(--line);padding-top:12px}.mega-cols-all a{font-weight:700;color:var(--ink)}
 @media (max-width:900px){.mega-cols{grid-template-columns:1fr 1fr}}
 .de-catg{margin:6px 0 10px}.de-catg-h{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:0 0 5px}
+.bo-hrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.bo-hrow h2{margin:0}
+.vz-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:12px 0}.vz-tiles>div{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fff;display:grid;gap:2px}.vz-tiles span{font-size:12px;color:var(--ink-2)}.vz-tiles b{font:400 28px/1.1 var(--f-display);color:var(--ink)}.vz-tiles small{font-size:11.5px;color:var(--ink-2)}
+.vz-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;margin-top:12px}.vz-grid .st-card,#boMain .st-card{border:1px solid var(--line);border-radius:10px;padding:14px;background:#fff;display:grid;gap:6px;align-content:start}
+.vz-bars,.vz-funnel{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}.vz-bars li,.vz-funnel li{display:grid;grid-template-columns:minmax(0,150px) 1fr 54px;gap:8px;align-items:center;font-size:13px}.vz-funnel li{grid-template-columns:150px 1fr 54px 44px}.vz-funnel small{color:var(--ink-2);font-size:12px}
+.vz-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vz-t{height:10px;background:#F1EDE6;border-radius:4px;overflow:hidden}.vz-t i{display:block;height:100%;background:#7A5236;border-radius:0 4px 4px 0;min-width:2px}.vz-bars b,.vz-funnel b{text-align:right;font-variant-numeric:tabular-nums}
+.vz-daily svg{width:100%;height:auto;display:block}.vz-bar{fill:#7A5236}.vz-bar.on{fill:#201D1D}.vz-ax{font-size:11px;fill:var(--ink-2)}.vz-tip{min-height:22px;font-size:13px}.vz-none{color:#B03A2E;font-weight:600}
+.mk{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:22px;align-items:start}.mk-h{font:400 18px/1.2 var(--f-display);margin:16px 0 8px}.mk-seg{display:flex;gap:6px;margin:10px 0}.mk-seg button{border:1px solid var(--line);background:#fff;font:inherit;font-size:13px;padding:7px 14px;border-radius:6px;cursor:pointer}.mk-seg button[aria-pressed=true]{background:#201D1D;color:#fff;border-color:#201D1D}
+.mk-in{display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0}.mk-in input[type=number]{width:70px}.mk-in input[type=range]{flex:1;accent-color:#201D1D}.mk-wall{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mk-wall label{display:grid;gap:4px;font-size:12.5px}.mk-wall input,.mk-in input[type=number]{border:1px solid var(--line);padding:8px;font:inherit;border-radius:6px}
+.mk-stage{background:#F3EEE6;border-radius:10px;padding:12px;display:grid;place-items:center}.bo-printbox{display:grid;gap:8px;margin-top:10px;padding:12px;border:1px solid #201D1D;border-radius:8px;background:#fff}.bo-printbox .err{color:#B03A2E}.mk-act{display:flex;gap:8px;flex-wrap:wrap}.mk-any{display:flex;gap:8px;align-items:center;font-size:13px}
+@media (max-width:900px){.vz-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.vz-grid,.mk{grid-template-columns:1fr}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -6194,7 +6204,7 @@ async function tiffCrop(read, box, sink, onProgress) {
   // ---- owner back office (same sections as the old site's /admin, plus the new storefront parts)
   const BO_IMGS = ["d/animal-kingdom-close.webp", "d/animal-kingdom-full.webp", "d/animal-kingdom-peel.webp", "d/animal-kingdom-room1.webp", "d/animal-kingdom-room2.webp", "d/animal-kingdom-room3.webp", "d/calendula-close.webp", "d/calendula-full.webp", "d/calendula-peel.webp", "d/calendula-room1.webp", "d/calendula-room2.webp", "d/calendula-room3.webp", "d/in-harmony-close.webp", "d/in-harmony-full.webp", "d/in-harmony-peel.webp", "d/in-harmony-room1.webp", "d/in-harmony-room2.webp", "d/in-harmony-room3.webp", "d/jumbo-dog-sketch-close.webp", "d/jumbo-dog-sketch-full.webp", "d/jumbo-dog-sketch-peel.webp", "d/jumbo-dog-sketch-roll.webp", "d/jumbo-dog-sketch-room1.webp", "d/jumbo-dog-sketch-room2.webp", "d/jumbo-dog-sketch-room3.webp", "d/luxury-henley-close.webp", "d/luxury-henley-full.webp", "d/luxury-henley-peel.webp", "d/luxury-henley-room1.webp", "d/luxury-henley-room2.webp", "d/luxury-henley-room3.webp", "d/my-favorite-dogs-close.webp", "d/my-favorite-dogs-full.webp", "d/my-favorite-dogs-peel.webp", "d/my-favorite-dogs-roll.webp", "d/my-favorite-dogs-room1.webp", "d/my-favorite-dogs-room2.webp", "d/my-favorite-dogs-room3.webp", "d/ombre-smokey-close.webp", "d/ombre-smokey-full.webp", "d/ombre-smokey-peel.webp", "d/ombre-smokey-room1.webp", "d/ombre-smokey-room2.webp", "d/ombre-smokey-room3.webp", "d/palm-leaves-shadow-close.webp", "d/palm-leaves-shadow-full.webp", "d/palm-leaves-shadow-peel.webp", "d/palm-leaves-shadow-room1.webp", "d/palm-leaves-shadow-room2.webp", "d/palm-leaves-shadow-room3.webp", "d/shadow-leaf-close.webp", "d/shadow-leaf-full.webp", "d/shadow-leaf-peel.webp", "d/shadow-leaf-room1.webp", "d/shadow-leaf-room2.webp", "d/shadow-leaf-room3.webp", "d/sumatra-classic-close.webp", "d/sumatra-classic-full.webp", "d/sumatra-classic-peel.webp", "d/sumatra-classic-room1.webp", "d/sumatra-classic-room2.webp", "d/sumatra-classic-room3.webp", "d/swaying-palm-leaves-close.webp", "d/swaying-palm-leaves-full.webp", "d/swaying-palm-leaves-peel.webp", "d/swaying-palm-leaves-room1.webp", "d/swaying-palm-leaves-room2.webp", "d/swaying-palm-leaves-room3.webp", "d/vine-charcoal-close.webp", "d/vine-charcoal-full.webp", "d/vine-charcoal-peel.webp", "d/vine-charcoal-roll.webp", "d/vine-charcoal-room1.webp", "d/vine-charcoal-room2.webp", "d/vine-charcoal-room3.webp", "d/vine-oatmeal-close.webp", "d/vine-oatmeal-full.webp", "d/vine-oatmeal-peel.webp", "d/vine-oatmeal-roll.webp", "d/vine-oatmeal-room1.webp", "d/vine-oatmeal-room2.webp", "d/vine-oatmeal-room3.webp", "d/wild-bouquet-close.webp", "d/wild-bouquet-full.webp", "d/wild-bouquet-peel.webp", "d/wild-bouquet-room1.webp", "d/wild-bouquet-room2.webp", "d/wild-bouquet-room3.webp", "img/R4H-film.webp", "img/bedroom-linen-jute.webp", "img/bedroom-watercolor-mountain.webp", "img/cover-bathroom.webp", "img/cover-bedroom.webp", "img/cover-commercial.webp", "img/cover-dining-room.webp", "img/cover-hallway.webp", "img/cover-hotel.webp", "img/cover-kids.webp", "img/cover-kitchen.webp", "img/cover-living-room.webp", "img/cover-nursery.webp", "img/cover-office.webp", "img/cover-restaurant.webp", "img/entry-sisal-grasscloth.webp", "img/forest-after.webp", "img/forest-before.webp", "img/hero-poster.webp", "img/living-the-glade.webp", "img/p-cranes-at-dusk.webp", "img/p-deco-arches.webp", "img/p-fernhouse.webp", "img/p-long-mist.webp", "img/pw-romantic.webp", "img/style-abstract.webp", "img/style-art-deco.webp", "img/style-botanical.webp", "img/style-chinoiserie.webp", "img/style-floral.webp", "img/style-geometric.webp", "img/style-japanese.webp", "img/style-landscape.webp", "img/style-minimal.webp", "img/style-textured-neutrals.webp", "img/style-tropical.webp", "img/sw-banana.webp", "img/sw-cranes.webp", "img/sw-deco.webp", "img/sw-fern.webp", "img/sw-floral.webp", "img/sw-forest.webp", "img/sw-geometric.webp", "img/sw-japanese.webp", "img/sw-landscape.webp", "img/tree-after.webp", "img/tree-before.webp"];
   const BO_GROUPS = [
-    ['Sales', [['overview', 'Overview'], ['orders', 'Orders'], ['print', 'Print files'], ['invoices', 'Invoices'], ['estimates', 'Estimates'], ['customers', 'Customers'], ['codes', 'Discount codes']]],
+    ['Sales', [['overview', 'Overview'], ['visitors', 'Visitors'], ['orders', 'Orders'], ['maker', 'Make a print file'], ['print', 'Print files'], ['invoices', 'Invoices'], ['estimates', 'Estimates'], ['customers', 'Customers'], ['codes', 'Discount codes']]],
     ['Designs', [['designs', 'Designs'], ['collections', 'Collections'], ['requests', 'Design requests'], ['reviews', 'Reviews']]],
     ['Designers', [['designers', 'Designers'], ['payouts', 'Payouts']]],
     ['Website', [['homepage', 'Homepage & banners'], ['site-pages', 'Pages'], ['site-texts', 'Page texts'], ['site-cats', 'Categories & colors'], ['menu', 'Menu pictures'], ['site-footer', 'Footer']]],
@@ -6320,6 +6330,95 @@ async function tiffCrop(read, box, sink, onProgress) {
 
   const BO_CUSTOMERS = [['Sarah Klein', 'Brooklyn, NY', 3, 1284], ['James Park', 'Austin, TX', 1, 567], ['Studio Nord Interiors', 'Chicago, IL', 6, 4120], ['Maya Chen', 'Seattle, WA', 2, 742], ['Daniel Ross', 'Miami, FL', 1, 360]];
   let curTab = 'overview', designFilter = 'all', designQ = '';
+  // ---- Visitors: on the real site these are counted by the site itself; here they are made-up sample numbers
+  let NEW_ORDER = false;
+  function visitorsHTML() {
+    const n = (x) => x.toLocaleString('en-US');
+    const bars = (rows) => { const mx = Math.max(...rows.map(r => r[1])); return `<ul class="vz-bars">${rows.map(([l, v]) => `<li title="${l}: ${n(v)}"><span class="vz-l">${l}</span><span class="vz-t"><i style="width:${(v / mx) * 100}%"></i></span><b>${n(v)}</b></li>`).join('')}</ul>`; };
+    const days = Array.from({ length: 30 }, (_, i) => Math.round(120 + 60 * Math.sin(i / 3.2) + i * 4 + ((i * 37) % 23)));
+    const mx = Math.max(...days), W = 900, H = 170, bw = W / 30;
+    const svg = `<svg viewBox="0 0 ${W} ${H + 20}" role="img" aria-label="Visitors per day">${days.map((v, i) => `<rect class="vz-bar" data-i="${i}" x="${i * bw + 2}" y="${H - (v / mx) * (H - 10)}" width="${bw - 4}" height="${(v / mx) * (H - 10)}" rx="4"></rect>`).join('')}<line x1="0" x2="${W}" y1="${H}" y2="${H}" stroke="currentColor" opacity=".25"/><text x="0" y="${H + 15}" class="vz-ax">30 days ago</text><text x="${W}" y="${H + 15}" text-anchor="end" class="vz-ax">Today</text></svg>`;
+    const total = days.reduce((a, b) => a + b, 0);
+    const funnel = [['Visited the site', 3184], ['Opened a design', 1912], ['Customized the size', 604], ['Added to cart', 171], ['Placed an order', 38]];
+    return `<div class="bo-hrow"><h2>Visitors</h2><div class="bo-tabs"><button type="button">7 days</button><button type="button" aria-pressed="true">30 days</button><button type="button">3 months</button><button type="button">12 months</button></div></div>
+      <p class="hint"><b>Sample numbers.</b> On the real site this page shows your real visitors, counted by the site itself: no outside tracker, no cookies, no names or IP addresses. Your own visits to the back office and studio are not counted.</p>
+      <div class="vz-tiles"><div><span>Visitors</span><b>${n(3184)}</b><small>▲ 18% vs the 30 days before</small></div><div><span>New visitors</span><b>${n(2611)}</b><small>first time on the site</small></div><div><span>Pages seen</span><b>${n(total * 3)}</b><small>3.0 per visit</small></div><div><span>Orders</span><b>38</b><small>1.2% of visitors</small></div><div><span>On the site now</span><b>7</b><small>last 5 minutes</small></div></div>
+      <section class="st-card"><b>Visitors per day</b><div class="vz-tip" id="vzTip"><span class="hint">Point at a day to see its numbers.</span></div><div class="vz-daily">${svg}</div></section>
+      <div class="vz-grid">
+        <section class="st-card"><b>Where they come from</b>${bars([['Search engines', 1240], ['Social media', 905], ['Direct', 611], ['Other websites', 230], ['Email', 128], ['Ads', 70]])}<details><summary class="hint">Every source</summary>${bars([['Google', 1176], ['Instagram', 512], ['Pinterest', 301], ['Direct', 611], ['Houzz', 140], ['Email', 128], ['Facebook', 92], ['Ad: Facebook', 70], ['Bing', 64], ['somedesignblog.com', 90]])}</details></section>
+        <section class="st-card"><b>Countries</b>${bars([['United States', 2104], ['Canada', 312], ['United Kingdom', 288], ['Australia', 170], ['Israel', 96], ['Germany', 61]])}</section>
+        <section class="st-card"><b>Phone or computer</b>${bars([['Phone', 1830], ['Computer', 1150], ['Tablet', 204]])}</section>
+        <section class="st-card"><b>How far they go</b><ul class="vz-funnel">${funnel.map(([l, v], i) => `<li><span>${l}</span><span class="vz-t"><i style="width:${(v / 3184) * 100}%"></i></span><b>${n(v)}</b><small>${i ? Math.round((v / 3184) * 1000) / 10 + '%' : ''}</small></li>`).join('')}</ul></section>
+        <section class="st-card"><b>Most seen designs</b>${bars(DESIGNS.slice(0, 6).map((d, i) => [d.name, 640 - i * 83]))}</section>
+        <section class="st-card"><b>What they search for</b><p class="hint">"Found nothing" = designs people want that the shop doesn't have yet.</p><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Search</th><th>Times</th><th>Designs found</th></tr></thead><tbody>${[['palm', 84, 4], ['dogs', 61, 2], ['kids jungle', 55, 3], ['navy', 40, 2], ['art deco gold', 31, 0], ['world map', 27, 0], ['pink', 22, 1]].map(([q, t, f]) => `<tr><td>${q}</td><td>${t}</td><td>${f ? f : '<span class="vz-none">found nothing</span>'}</td></tr>`).join('')}</tbody></table></div></section>
+      </div>`;
+  }
+  function wireVisitors() {
+    const days = Array.from({ length: 30 }, (_, i) => Math.round(120 + 60 * Math.sin(i / 3.2) + i * 4 + ((i * 37) % 23)));
+    document.querySelectorAll('#boMain .vz-bar').forEach(r => r.onmouseenter = () => { const i = +r.dataset.i, d = new Date(Date.now() - (29 - i) * 864e5); document.querySelectorAll('#boMain .vz-bar').forEach(x => x.classList.toggle('on', x === r)); $('vzTip').innerHTML = `<b>${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</b> · ${days[i]} visitors · ${days[i] * 3} pages seen`; });
+  }
+
+  // ---- Make a print file (and New order from a file): upload, crop or line up a repeat, see the wall, download
+  const MK = { img: null, url: '', name: '', kind: 'mural', tile: null, rep: 'both', repeatIn: 24, w: 12, h: 9, zoom: 1, px: 0.5, py: 0.5, ox: 0, oy: 0 };
+  function makerHTML(order) {
+    return `<h2>${order ? 'New order' : 'Make a print file'}</h2><p class="hint">${order ? 'For orders by phone, email or the showroom. Upload the customer\'s file, crop it or line up the repeat, then add the customer and price.' : 'For yourself: upload any design, crop it or line it up as a repeat, choose the wall size and download the print file. Nothing goes on the website and no order is made.'}</p>
+      <div class="mk">
+        <div class="mk-l">
+          <h3 class="mk-h">1. Design</h3>
+          <label class="btn optline btn-sm mk-file">Upload a file<input type="file" id="mkFile" accept="image/*" hidden></label> <span class="hint" id="mkName">JPG, PNG or WebP</span>
+          <div class="mk-seg"><button type="button" data-mk="mural" aria-pressed="true">Mural</button><button type="button" data-mk="repeat" aria-pressed="false">Repeat</button></div>
+          <div id="mkRep" hidden><button type="button" class="btn btn-wine btn-sm" id="mkAlign">Line up the repeat</button> <span class="hint" id="mkRepTxt">Drag the copies until they join, zoom on the join, see it on a wall.</span>
+            <label class="mk-in">One repeat prints <input type="number" id="mkRepIn" value="24" min="2" step="1"> in wide</label></div>
+          <h3 class="mk-h">2. Wall</h3>
+          <div class="mk-wall"><label>Width <input type="number" id="mkW" value="12" min="1" step="0.5"> ft</label><label>Height <input type="number" id="mkH" value="9" min="1" step="0.5"> ft</label></div>
+          <label class="mk-in">Design size <input type="range" id="mkZoom" min="0" max="1000" value="0"></label>
+          ${order ? `<h3 class="mk-h">3. Customer and price</h3><div class="mk-wall"><label>Name <input id="mkCust"></label><label>Total ($) <input type="number" id="mkTot"></label></div>` : ''}
+        </div>
+        <div class="mk-r">
+          <div class="mk-stage"><div class="sz-wall" id="mkWallBox"><div class="sz-art" id="mkArt"></div><div class="sz-guides" id="mkGuides"></div><span class="sz-dim w" id="mkDimW"></span><span class="sz-dim h" id="mkDimH"></span><span class="sz-hint" id="mkHint">Upload a file to start</span></div></div>
+          <div class="bo-printbox"><b>Ready to print</b><span class="hint" id="mkDpi">Upload a file to see how sharp it prints.</span>
+            <label class="mk-any" id="mkAnyL" hidden><input type="checkbox" id="mkAny"> Make it anyway (the customer accepts a softer print)</label>
+            <div class="mk-act"><button type="button" class="btn btn-wine btn-sm" id="mkDl" disabled>Download print file</button>${order ? '<button type="button" class="btn optline btn-sm" id="mkSave" disabled>Save order</button>' : ''}</div>
+            <small class="hint">On the real site this downloads an exact-size print PDF or TIFF; this sample saves a picture of the print file.</small></div>
+        </div>
+      </div>`;
+  }
+  function wireMaker(order) {
+    const box = $('mkWallBox');
+    const src = () => (MK.kind === 'repeat' && MK.tile ? MK.tile : MK.img);
+    const L = () => { const W = (+$('mkW').value || 12) * 12, H = (+$('mkH').value || 9) * 12; const s = src(); if (!s) return null; const ar = s.width / s.height;
+      if (MK.kind === 'repeat') { const tw = Math.max(2, +$('mkRepIn').value || 24) * Math.pow(4, MK.zoom - 0.5); /* slider middle = 100%, from half to double */ return { W, H, tw, th: tw / ar, dpi: Math.round(s.width / tw) }; }
+      const cover = Math.max(W / H > ar ? W : H * ar, W); const aw = cover * (1 + MK.zoom * 1.5), ah = aw / ar; return { W, H, aw, ah, dpi: Math.round(s.width / aw) }; };
+    const draw = () => {
+      const g = L(), W = (+$('mkW').value || 12) * 12, H = (+$('mkH').value || 9) * 12;
+      const mw = box.parentElement.clientWidth - 24, bh = Math.min(380, mw * H / W), bw = bh * W / H; Object.assign(box.style, { width: bw + 'px', height: bh + 'px' });
+      $('mkDimW').textContent = `${$('mkW').value} ft`; $('mkDimH').textContent = `${$('mkH').value} ft`;
+      const n = W <= 52 ? 1 : 1 + Math.ceil((W - 52) / 49); let gd = ''; for (let k = 1; k < n; k++) gd += `<i style="left:${((52 + (k - 1) * 49) / W) * 100}%"></i>`; for (let k = 0; k < n; k++) gd += `<b style="left:calc(${((k ? 52 + (k - 1) * 49 : 0) / W) * 100}% + 6px)">${k + 1}</b>`; $('mkGuides').innerHTML = gd;
+      if (!g) return; const art = $('mkArt'), url = MK.kind === 'repeat' && MK.tile ? MK.tileUrl : MK.url;
+      if (MK.kind === 'repeat') Object.assign(art.style, { backgroundImage: `url(${url})`, backgroundRepeat: 'repeat', backgroundSize: `${(g.tw / W) * bw}px ${(g.th / H) * bh}px`, backgroundPosition: `${MK.ox}px ${MK.oy}px` });
+      else Object.assign(art.style, { backgroundImage: `url(${url})`, backgroundRepeat: 'no-repeat', backgroundSize: `${(g.aw / W) * 100}% ${(g.ah / H) * 100}%`, backgroundPosition: `${MK.px * 100}% ${MK.py * 100}%` });
+      $('mkHint').textContent = 'Drag to move';
+      const ok = g.dpi >= 150; $('mkDpi').className = 'hint' + (ok ? '' : ' err'); $('mkDpi').textContent = `${g.dpi} DPI at this size · ${g.dpi >= 200 ? 'very sharp' : ok ? 'good from a normal distance' : 'below 150 DPI, will look soft'}. The file is exactly ${$('mkW').value} × ${$('mkH').value} ft, ${MK.kind === 'repeat' ? 'repeated across the wall' : 'cropped to what you see'}.`;
+      $('mkAnyL').hidden = ok; $('mkDl').disabled = !ok && !$('mkAny').checked; if ($('mkSave')) $('mkSave').disabled = $('mkDl').disabled;
+    };
+    $('mkFile').onchange = (e) => { const f = e.target.files[0]; if (!f) return; MK.url = URL.createObjectURL(f); MK.name = f.name.replace(/\.[a-z0-9]+$/i, ''); $('mkName').textContent = f.name; const im = new Image(); im.onload = () => { MK.img = im; MK.tile = null; draw(); }; im.src = MK.url; };
+    document.querySelectorAll('[data-mk]').forEach(b => b.onclick = () => { MK.kind = b.dataset.mk; MK.zoom = MK.kind === 'repeat' ? 0.5 : 0; $('mkZoom').value = MK.zoom * 1000; document.querySelectorAll('[data-mk]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); $('mkRep').hidden = MK.kind !== 'repeat'; draw(); });
+    $('mkAlign').onclick = () => { if (!MK.img) { $('mkRepTxt').textContent = 'Upload a file first.'; return; } window.AM_REPEAT.open(MK.url, { mode: 'both' }, (r) => {
+      const im = MK.img, w = Math.round(im.width * (1 - (r.tx || 0))), h = Math.round(im.height * (1 - (r.ty || 0))), c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h, 0, 0, w, h);
+      MK.tile = c; MK.tileUrl = c.toDataURL('image/png'); $('mkRepTxt').textContent = `✓ One clean repeat: ${w.toLocaleString()} × ${h.toLocaleString()} px`; draw(); }); };
+    ['mkW', 'mkH', 'mkRepIn'].forEach(id => $(id).oninput = draw); $('mkZoom').oninput = () => { MK.zoom = +$('mkZoom').value / 1000; draw(); }; $('mkAny').onchange = draw;
+    let st = null; box.onpointerdown = (e) => { st = { x: e.clientX, y: e.clientY, px: MK.px, py: MK.py, ox: MK.ox, oy: MK.oy }; box.setPointerCapture(e.pointerId); };
+    box.onpointermove = (e) => { if (!st) return; const dx = e.clientX - st.x, dy = e.clientY - st.y; if (MK.kind === 'repeat') { MK.ox = st.ox + dx; MK.oy = st.oy + dy; } else { MK.px = Math.min(1, Math.max(0, st.px - dx / box.clientWidth)); MK.py = Math.min(1, Math.max(0, st.py - dy / box.clientHeight)); } draw(); };
+    box.onpointerup = () => { st = null; };
+    $('mkDl').onclick = async () => { const g = L(); if (!g) return; const W = (+$('mkW').value || 12) * 12, H = (+$('mkH').value || 9) * 12, k = Math.min(30, 4000 / W), c = document.createElement('canvas'); c.width = Math.round(W * k); c.height = Math.round(H * k);
+      const x = c.getContext('2d'), s = src(); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+      if (MK.kind === 'repeat') { const tw = g.tw * k, th = g.th * k, bx = box.clientWidth / c.width; for (let yy = (MK.oy / bx) % th - th; yy < c.height; yy += th) for (let xx = (MK.ox / bx) % tw - tw; xx < c.width; xx += tw) x.drawImage(s, xx, yy, tw, th); }
+      else { const aw = g.aw * k, ah = g.ah * k; x.drawImage(s, -(aw - c.width) * MK.px, -(ah - c.height) * MK.py, aw, ah); }
+      const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.92)), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${MK.name || 'print'}-${$('mkW').value}x${$('mkH').value}ft.jpg`; a.click(); toast('Print file downloaded'); };
+    if ($('mkSave')) $('mkSave').onclick = () => { const nm = ($('mkCust').value || '').trim(); if (!nm) { $('mkCust').focus(); return; } ORDERS.unshift([`AM-${20420 + ORDERS.length}`, 'Today', DESIGNS[0].slug, `${$('mkW').value} × ${$('mkH').value} ft · ${nm} · own file`, 'New', 'wait', +$('mkTot').value || 0]); toast('Order saved'); location.hash = 'admin-orders'; };
+    draw();
+  }
+
   function renderAdmin(tab) {
     curTab = tab = tab || 'overview';
     const c = counts();
@@ -6329,7 +6428,7 @@ async function tiffCrop(read, box, sink, onProgress) {
     const M = {};
     M.overview = `<div class="stats"><div class="stat"><b>${ORDERS.length}</b><small>Open orders</small></div><div class="stat"><b>$4,235</b><small>Sales, last 30 days</small></div><a class="stat" href="#admin-designs"><b>${c.designs}</b><small>Designs to review</small></a><a class="stat" href="#admin-designers"><b>${c.designers}</b><small>Designers waiting for approval</small></a></div>
       <h2>Latest orders</h2>${ordersT(ORDERS.slice(0, 4))}`;
-    M.orders = `<h2>Orders</h2><p class="hint">Every order saves the customer's exact wall, crop or repeat and points to the original file that was sold, so you can always reprint it.</p>${ordersT(ORDERS)}`;
+    M.orders = `<div class="bo-hrow"><h2>Orders</h2><a class="btn btn-wine btn-sm" href="#admin-maker" data-neworder>+ New order</a></div><p class="hint">"New order" is for orders by phone, email or the showroom: pick a design or upload the customer's file, crop it or line up the repeat, then add the customer and price.</p><p class="hint">Every order saves the customer's exact wall, crop or repeat and points to the original file that was sold, so you can always reprint it.</p>${ordersT(ORDERS)}`;
     M.print = `<h2>Print files</h2><p class="hint">Paid orders ready for the printer. The print file is made from the designer's original at 250 DPI, cut into numbered panels with overlap. The original is never changed.</p>${ordersT(ORDERS.slice(0, 3), true)}`;
     M.invoices = `<h2>Invoices</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>${ORDERS.map(([id, dt, , , , , tot], i) => `<tr><td>INV-${id.slice(3)}</td><td>${BO_CUSTOMERS[i % 5][0]}</td><td>${dt}</td><td>${money(tot)}</td><td><span class="pill ${i ? 'ok' : 'wait'}">${i ? 'Paid' : 'Sent'}</span></td><td><button class="btn btn-sm optline" onclick="this.textContent='PDF ready ✓'">Download PDF</button></td></tr>`).join('')}</tbody></table></div>`;
     M.estimates = `<h2>Estimates</h2><p class="hint">Quotes for big or commercial jobs. Send one, and the customer can accept it and pay online.</p><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Estimate</th><th>Customer</th><th>Job</th><th>Amount</th><th>Status</th></tr></thead><tbody><tr><td>EST-118</td><td>Studio Nord Interiors</td><td>Hotel lobby · 3 walls · Grasscloth</td><td>${money(6840)}</td><td><span class="pill wait">Sent</span></td></tr><tr><td>EST-117</td><td>Maya Chen</td><td>Nursery · 1 wall · Linen</td><td>${money(612)}</td><td><span class="pill ok">Accepted</span></td></tr></tbody></table></div>`;
@@ -6340,7 +6439,7 @@ async function tiffCrop(read, box, sink, onProgress) {
     const shown = rows.filter(r => designFilter === 'all' || dState(r.key) === designFilter).filter(r => !designQ || (r.d.name + ' ' + r.cw + ' ' + r.d.by + ' ' + r.d.sku).toLowerCase().includes(designQ));
     const ups = BO_UPLOADS.filter(u => designFilter === 'all' || upState(u) === designFilter);
     const n = (f) => rows.filter(r => dState(r.key) === f).length + BO_UPLOADS.filter(u => upState(u) === f).length;
-    M.designs = `<h2>Designs</h2><p class="hint">Every design and color. Open one to see the original print file, download it, edit its details, or approve, hide or decline it. Hidden designs leave the shop, but past orders keep their files.</p>
+    M.designs = `<div class="bo-hrow"><h2>Designs</h2><a class="btn btn-wine btn-sm" href="#studio-upload">+ Upload a design</a></div><p class="hint">"Upload a design" is for your own designs: the same upload designers use (computer or Google Drive, repeat tool, every category). Yours go straight into the shop under your studio's name.</p><p class="hint">Every design and color. Open one to see the original print file, download it, edit its details, or approve, hide or decline it. Hidden designs leave the shop, but past orders keep their files.</p>
       <div class="bo-bar"><div class="bo-tabs">${[['all', 'All', rows.length + BO_UPLOADS.length], ['pending', 'To review', n('pending')], ['live', 'Live', n('live')], ['hidden', 'Hidden', n('hidden')], ['declined', 'Declined', n('declined')]].map(([k, t, x]) => `<button type="button" data-df="${k}" aria-pressed="${designFilter === k}">${t} <em>${x}</em></button>`).join('')}</div><input type="search" id="boDq" placeholder="Search name, designer or SKU" value="${bx(designQ)}"></div>
       <div class="tbl-wrap"><table class="tbl bo-dt"><thead><tr><th></th><th>Design</th><th>Type &amp; size</th><th>Original file</th><th>Status</th><th></th></tr></thead><tbody>
       ${ups.map(u => `<tr><td><img src="d/${u.img}-full.webp" alt=""></td><td><b>${u.name}</b><br><small>${u.by} · sent ${u.sent.toLowerCase()}</small></td><td>${u.kind === 'mural' ? `Mural · ${u.ft} × ${u.hft} ft` : `Repeat · ${u.rep} in`}</td><td><small>${u.file}<br>${u.dpi} DPI</small></td><td>${pill(upState(u))}</td><td class="bo-files">${upState(u) === 'pending' ? `<button class="btn btn-wine btn-sm" data-quick="${u.id}" data-v="live">Approve</button>` : ''}<button class="btn btn-sm optline" data-open="${u.id}">Open</button></td></tr>`).join('')}
@@ -6375,9 +6474,14 @@ async function tiffCrop(read, box, sink, onProgress) {
     M.settings = `<h2>Settings</h2><form id="setForm" class="bo-form"><fieldset><legend>Designers</legend><div class="bo-g2"><label>Lowest sharpness allowed (DPI)<input type="number" name="minDpi" value="${se.minDpi}"></label><label>Biggest upload (GB)<input type="number" name="maxGb" value="${se.maxGb}"></label><label>Designer share of each sale (%)<input type="number" name="royalty" value="${se.royalty}"></label></div><p class="hint">New designers always need your approval. Auto-approve is set per designer on the Designers page.</p></fieldset>
       <fieldset><legend>Artisan Pro</legend><label>Trade discount (%)<input type="number" name="proPct" value="${se.proPct}"></label></fieldset><div class="bo-save"><button class="btn btn-wine btn-sm">Save settings</button></div></form>`;
     if (window.AM_SITE) Object.assign(M, window.AM_SITE.sections());
+    M.visitors = visitorsHTML();
+    M.maker = makerHTML(location.hash === '#admin-maker' && NEW_ORDER);
     $('boMain').innerHTML = `<div class="bo-toast" id="boToast" role="status" hidden></div>` + (M[tab] || M.overview);
     const main = $('boMain');
     if (window.AM_SITE) window.AM_SITE.after(tab, main);
+    main.querySelectorAll('[data-neworder]').forEach(a => a.onclick = () => { NEW_ORDER = true; });
+    if (tab === 'maker') { wireMaker(NEW_ORDER); NEW_ORDER = false; }
+    if (tab === 'visitors') wireVisitors();
         if (tab === 'prices') {
       const live = () => { const base = +$('prBase').value || 0; document.querySelectorAll('[data-adj]').forEach(i => { $('boMain').querySelector(`[data-out="${i.dataset.adj}"]`).textContent = `${money(Math.round((base + (+i.value || 0)) * 100) / 100)} / sq ft`; });
         const adds = [...document.querySelectorAll('[data-adj]')].map(i => +i.value || 0), lo = Math.min(...adds), hi = Math.max(...adds);
