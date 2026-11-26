@@ -2579,6 +2579,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
 .se .se-check{display:flex !important;gap:8px;align-items:center;margin:4px 0 10px;width:auto}.se .se-check input{width:18px;height:18px;flex:none;margin:0}.se .se-check span{flex:1}
 .own-low{border:1px solid #E7C9B8;background:#FBF1EA;padding:14px;display:grid;gap:10px;margin:12px 16px 14px;border-radius:10px}.own-low[hidden]{display:none}.own-low b{color:#8A3F22}.own-low p{margin:0;font-size:13.5px;color:var(--ink-2)}.own-panel .own-low .btn,.own-panel .own-low .btn.big{margin:0;width:100%}
 .up-sp-b{display:flex !important;flex-wrap:wrap;gap:8px 14px;align-items:center}.up-sp-b #upAlign{flex:1 0 100%;width:100%;order:-1}
+.up-det{grid-template-columns:minmax(0,340px) minmax(0,1fr) !important}.up-det>*{min-width:0}.up-det .up-pv,.up-det .up-pvt,.up-det .up-pvs,.up-det .up-sp{max-width:100%;box-sizing:border-box}.up-det .up-pv canvas{width:100% !important;height:auto !important;display:block}.up-pv span{white-space:normal;text-align:left;max-width:calc(100% - 16px)}@media (max-width:760px){.up-det{grid-template-columns:minmax(0,1fr) !important}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -5662,12 +5663,12 @@ async function tiffCrop(read, box, sink, onProgress) {
     const hFt = UP.wFt ? Math.round(UP.wFt / ar * 10) / 10 : '';
     const chips = (map, sel, key) => Object.entries(map).map(([k, n]) => `<button type="button" class="up-chip" data-k="${key}" data-v="${k}" aria-pressed="${sel.includes(k)}">${n}</button>`).join('');
     return `<div class="up-det">
-      <div class="up-art"><button type="button" class="up-pv" id="upPv" aria-label="Open the print preview large"><canvas id="upPvC" width="440" height="${UP.type === 'side' ? 220 : 330}"></canvas><span>⤢ Open large</span></button><b class="up-pvt">How it will print</b><small class="up-pvs">${layoutTitle()}. Orders are made exactly like this, so check it looks right.</small>
+      <div class="up-art"><button type="button" class="up-pv" id="upPv" aria-label="Open the print preview large"><canvas id="upPvC" width="440" height="${UP.type === 'side' ? 220 : 330}"></canvas><span>${UP.type !== 'mural' ? '⤢ Open large · line it up · zoom on the join' : '⤢ Open large'}</span></button><b class="up-pvt">How it will print</b><small class="up-pvs">${layoutTitle()}. Orders are made exactly like this, so check it looks right.</small>
         ${UP.type !== 'mural' && !m.vector ? `<div class="up-sp"><b>Bring copies closer <button type="button" class="qtip sm" title="Trims empty space from the edges of your file so the copies sit closer. The print is made the same way." aria-label="Trims empty space from the edges of your file so the copies sit closer. The print is made the same way.">?</button></b>
           <label><span>Sideways</span><input type="range" min="0" max="40" step="1" value="${Math.round(UP.tx * 100)}" data-k="tx" aria-label="Bring copies closer sideways"><em>${Math.round(UP.tx * 100)}%</em></label>
           ${UP.type === 'all' ? `<label><span>Up / down</span><input type="range" min="0" max="40" step="1" value="${Math.round(UP.ty * 100)}" data-k="ty" aria-label="Bring copies closer up and down"><em>${Math.round(UP.ty * 100)}%</em></label>` : ''}
           <small id="upSpTxt"></small>
-          <div class="up-sp-b"><button type="button" class="btn optline btn-sm" id="upAlign">Line it up by hand · zoom on the join</button><button type="button" class="up-link" id="upSpAuto">Auto: trim empty edges</button>${UP.tx || UP.ty ? '<button type="button" class="up-link" id="upSpReset">Reset</button>' : ''}</div></div>` : ''}<small>${upUsed().length} picture${upUsed().length > 1 ? 's' : ''} · ${upUsed().map(f => upEsc(f.cw)).join(', ')}</small></div>
+          <div class="up-sp-b"><button type="button" class="up-link" id="upSpAuto">Auto: trim empty edges</button>${UP.tx || UP.ty ? '<button type="button" class="up-link" id="upSpReset">Reset</button>' : ''}</div></div>` : ''}<small>${upUsed().length} picture${upUsed().length > 1 ? 's' : ''} · ${upUsed().map(f => upEsc(f.cw)).join(', ')}</small></div>
       <div class="up-fields">
         <section class="up-grp"><h3>Basics</h3>
         <label class="rqf"><span>Design name</span><input id="upName" value="${upEsc(UP.name)}" maxlength="60"></label>
@@ -5698,12 +5699,11 @@ async function tiffCrop(read, box, sink, onProgress) {
   }
   function upWire1() {
     const pvDraw = () => drawLayout($('upPvC'), upMain().check || upMain().src, UP.type, !!UP.half, UP.tx, UP.ty); pvDraw();
-    $('upPv').onclick = () => openLayoutBig(upMain().check || upMain().src, UP.type, !!UP.half, layoutTitle(), UP.tx, UP.ty);
+    $('upPv').onclick = () => (UP.type !== 'mural' ? upOpenAlign() : openLayoutBig(upMain().check || upMain().src, UP.type, !!UP.half, layoutTitle(), UP.tx, UP.ty));
     const spInfo = () => { const m = upMain(), ar = m.px && m.py ? m.px / m.py : 1.73, w = Math.round((+UP.tileIn || 0) * (1 - UP.tx)), h = Math.round((+UP.tileIn || 0) / ar * (1 - UP.ty));
       if ($('upSpTxt')) $('upSpTxt').textContent = UP.tx || UP.ty ? `One pattern is now ${w} × ${h} in. Printed exactly like this.` : 'Copies sit edge to edge, as in your file.'; };
     document.querySelectorAll('.up-sp input').forEach(r => r.oninput = () => { UP[r.dataset.k] = +r.value / 100; r.nextElementSibling.textContent = r.value + '%'; spInfo(); pvDraw(); });
     if ($('upSpReset')) $('upSpReset').onclick = () => { UP.tx = UP.ty = 0; upRender(); };
-    if ($('upAlign')) $('upAlign').onclick = upOpenAlign;
     if ($('upSpAuto')) $('upSpAuto').onclick = async () => { const a = await autoTrim(upMain().check || upMain().src); UP.tx = a.tx; UP.ty = UP.type === 'side' ? 0 : a.ty; upRender(); };
     spInfo();
     const keep = () => { UP.name = $('upName').value.trim(); UP.desc = $('upDesc').value; UP.story = $('upStory').value; UP.price = $('upPrice').value; if ($('upW')) UP.wFt = $('upW').value; if ($('upT')) UP.tileIn = $('upT').value; };
@@ -5751,7 +5751,7 @@ async function tiffCrop(read, box, sink, onProgress) {
     return `${rep ? `<div class="up-card"><div class="up-ch"><b>Repeat check</b><span class="pill" id="upSeam">Checking the joins…</span></div>
         <div class="up-seambox" id="upSeamBox" role="button" tabindex="0" title="Open large"><img id="upSeamImg" alt="Your pattern repeated, with any joins that don't connect marked in red"></div>
         <p class="up-seammsg" id="upSeamMsg"></p>
-        <div class="up-row" style="margin-top:8px"><button type="button" class="btn optline btn-sm" id="upAlign2">Line it up by hand · zoom on the join</button>${UP.tx || UP.ty ? `<small>Repeat: ${Math.round((1 - UP.tx) * 100)}% of the width${UP.type !== 'side' ? `, ${Math.round((1 - UP.ty) * 100)}% of the height` : ''}${UP.blend ? ' · overlap blended' : ''}</small>` : ''}</div></div>` : ''}
+        <div class="up-row" style="margin-top:8px"><button type="button" class="btn optline btn-sm" id="upAlign2">⤢ Open large · line it up · zoom on the join</button>${UP.tx || UP.ty ? `<small>Repeat: ${Math.round((1 - UP.tx) * 100)}% of the width${UP.type !== 'side' ? `, ${Math.round((1 - UP.ty) * 100)}% of the height` : ''}${UP.blend ? ' · overlap blended' : ''}</small>` : ''}</div></div>` : ''}
       <div class="up-card"><div class="up-ch"><b>Room pictures</b><small>Made by code in rooms that match your categories. Same rooms for every colorway. A 12 × 12 in real-size close-up is cut from your file automatically.</small></div>
         ${used.map(f => `<div class="up-rooms"><span class="up-cwl"><img src="${f.src}" alt="">${upEsc(f.cw)}</span><div class="up-rimgs">${roomPics(f)}</div></div>`).join('')}</div>
       ${upNav('Next: review')}`;
@@ -5771,7 +5771,7 @@ async function tiffCrop(read, box, sink, onProgress) {
         $('upSeamMsg').innerHTML = UP.blend && r.lr.verdict !== 'ok' ? 'The ends overlap and are blended, so the copies melt together with no line.' : r.verdict === 'ok' ? 'The edges line up, so it repeats with no visible joins.'
           : r.verdict === 'borderline' ? `The ${where} almost match. Look at the dashed lines; you can still continue.`
           : `The ${where} don't join (red dashed lines), so customers would see a cut on the wall. Fix the file, or upload it as a mural.${m.det && m.det.type !== 'mural' && m.det.type !== UP.type ? ` <button type="button" class="up-link" id="upSeamDet">Use ${m.det.type === 'side' ? 'Repeat sideways' : 'Repeat all sides' + (m.det.half ? ' · half-drop' : '')}</button>` : ''} <button type="button" class="up-link" id="upToMural">Make it a mural</button>`;
-        const big = () => openLayoutBig(m.check || m.src, UP.type, !!UP.half, layoutTitle(), UP.tx, UP.ty); $('upSeamBox').onclick = big; $('upSeamBox').onkeydown = (e) => { if (e.key === 'Enter') big(); };
+        const big = () => upOpenAlign(); $('upSeamBox').onclick = big; $('upSeamBox').onkeydown = (e) => { if (e.key === 'Enter') big(); };
         if ($('upToMural')) $('upToMural').onclick = () => { UP.type = 'mural'; UP.typeSet = true; UP.step = 1; upRender(); };
         if ($('upSeamDet')) $('upSeamDet').onclick = () => { UP.type = m.det.type; UP.half = m.det.half; UP.typeSet = true; upRender(); };
       }).catch(() => { UP.seam = 'ok'; if ($('upSeam')) { $('upSeam').textContent = 'Checked by the studio'; $('upSeam').className = 'pill wait'; } });
