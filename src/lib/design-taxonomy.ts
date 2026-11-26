@@ -42,8 +42,11 @@ export function mockupRooms(rooms: readonly string[], styles: readonly string[])
 }
 
 // ---- Shop taxonomy (owner-editable in Back office > Settings > Categories) ----
-export const defaultStyles = ["Modern", "Traditional", "Minimal", "Abstract", "Geometric", "Botanical", "Floral", "Damask", "Toile", "Chinoiserie", "Art deco", "Mid-century", "Boho", "Coastal", "Scandinavian", "Japanese", "Vintage", "Watercolor", "Textured neutrals"];
-export const defaultThemes = ["Tropical", "Landscape", "Animals & birds", "Trees & forest", "Sky & clouds", "Ocean & water", "Mountains", "Maps & travel", "Stripes", "Textures", "Marble & stone", "Celestial", "City & architecture", "Fruit & food", "Kids & nursery", "Hospitality"];
+/** Version 2 added these so the whole category structure exists before designers upload (owner lists saved earlier get them once). */
+const NEW_STYLES_V2 = ["Ombre", "Hand-painted", "Line art", "Art", "Faux finishes", "Funky & quirky", "Maximalist", "Retro"];
+const NEW_THEMES_V2 = ["Leaves", "Nature", "Jungle", "Butterflies", "Panoramic", "Feature wall"];
+export const defaultStyles = ["Modern", "Traditional", "Minimal", "Abstract", "Geometric", "Botanical", "Floral", "Damask", "Toile", "Chinoiserie", "Art deco", "Mid-century", "Boho", "Coastal", "Scandinavian", "Japanese", "Vintage", "Watercolor", "Textured neutrals", ...NEW_STYLES_V2];
+export const defaultThemes = ["Tropical", "Landscape", "Animals & birds", "Trees & forest", "Sky & clouds", "Ocean & water", "Mountains", "Maps & travel", "Stripes", "Textures", "Marble & stone", "Celestial", "City & architecture", "Fruit & food", "Kids & nursery", "Hospitality", ...NEW_THEMES_V2];
 /** Shop colors: the shop's Color filter, the designer's color picker and the automatic color finder all use this list. */
 export type ColorFamily = { id: string; label: string; swatch: string; words: string[] };
 const cf = (label: string, swatch: string, words: string[]): ColorFamily => ({ id: colorId(label), label, swatch, words });
@@ -77,14 +80,14 @@ export function parseColors(v: unknown): ColorFamily[] {
   }
   return out.length ? out.slice(0, 40) : defaultColors;
 }
-export type Taxonomy = { styles: string[]; themes: string[]; rooms: string[]; colors: ColorFamily[] };
+export type Taxonomy = { styles: string[]; themes: string[]; rooms: string[]; colors: ColorFamily[]; version?: number };
 export const defaultTaxonomy: Taxonomy = { styles: defaultStyles, themes: defaultThemes, rooms: roomOptions.map((r) => r.label), colors: defaultColors };
 const ALIASES: Record<string, string> = {
   kids: "Kids & nursery", kid: "Kids & nursery", nursery: "Kids & nursery", children: "Kids & nursery", "kids room": "Kids & nursery",
   animals: "Animals & birds", animal: "Animals & birds", birds: "Animals & birds", texture: "Textures", textured: "Textures",
   landscapes: "Landscape", "art-deco": "Art deco", deco: "Art deco", "mid century": "Mid-century", midcentury: "Mid-century", "mid-century modern": "Mid-century",
   florals: "Floral", flowers: "Floral", trees: "Trees & forest", forest: "Trees & forest", maps: "Maps & travel", map: "Maps & travel", ocean: "Ocean & water", sea: "Ocean & water",
-  sky: "Sky & clouds", clouds: "Sky & clouds", marble: "Marble & stone", stone: "Marble & stone", city: "City & architecture", stripe: "Stripes", geometrics: "Geometric",
+  sky: "Sky & clouds", clouds: "Sky & clouds", marble: "Marble & stone", stone: "Marble & stone", city: "City & architecture", stripe: "Stripes", striped: "Stripes", geometrics: "Geometric", leaf: "Leaves", butterfly: "Butterflies", panorama: "Panoramic", "feature-wall": "Feature wall", "hand painted": "Hand-painted", lineart: "Line art", "line drawing": "Line art", quirky: "Funky & quirky", funky: "Funky & quirky", faux: "Faux finishes", maximal: "Maximalist", "70s": "Retro",
   neutral: "Textured neutrals", neutrals: "Textured neutrals", minimalist: "Minimal", scandi: "Scandinavian", bohemian: "Boho", "boho chic": "Boho",
 };
 const ROOM_ALIASES: Record<string, string> = Object.fromEntries(roomOptions.flatMap((r) => [[r.label.toLowerCase(), r.label], ...r.match.map((m) => [m, r.label])]));
@@ -96,7 +99,29 @@ const cleanList = (v: unknown, fallback: string[]): string[] => {
 };
 /** Reads the owner's saved lists (one label per line, or arrays). Empty lists fall back to the defaults. */
 export function parseTaxonomy(v: any): Taxonomy {
-  return { styles: cleanList(v?.styles, defaultStyles), themes: cleanList(v?.themes, defaultThemes), rooms: cleanList(v?.rooms, defaultTaxonomy.rooms), colors: parseColors(v?.colors) };
+  let styles = cleanList(v?.styles, defaultStyles), themes = cleanList(v?.themes, defaultThemes);
+  // lists saved before version 2 get the new categories once; after that, what the owner removes stays removed
+  if (v && !(Number(v.version) >= 2)) { const has = new Set([...styles, ...themes].map((x) => x.toLowerCase())); styles = [...styles, ...NEW_STYLES_V2.filter((x) => !has.has(x.toLowerCase()))]; themes = [...themes, ...NEW_THEMES_V2.filter((x) => !has.has(x.toLowerCase()))]; }
+  return { styles, themes, rooms: cleanList(v?.rooms, defaultTaxonomy.rooms), colors: parseColors(v?.colors), version: 2 };
+}
+/** "Shop by design" menu: the categories in columns. Anything the owner adds lands in Styles (styles) or General (themes). */
+export type MenuLink = { label: string; search: Record<string, string> };
+const COLS: [string, string[]][] = [
+  ["Art & design", ["Abstract", "Geometric", "Stripes", "Watercolor", "Ombre", "Hand-painted", "Line art", "Art", "Marble & stone", "Textures", "Textured neutrals", "Faux finishes", "Damask", "Toile", "Chinoiserie"]],
+  ["Animals & nature", ["Floral", "Botanical", "Tropical", "Jungle", "Leaves", "Trees & forest", "Animals & birds", "Butterflies", "Landscape", "Mountains", "Sky & clouds", "Ocean & water", "Nature", "Celestial"]],
+  ["Styles", ["Art deco", "Boho", "Coastal", "Funky & quirky", "Japanese", "Maximalist", "Mid-century", "Minimal", "Modern", "Retro", "Scandinavian", "Traditional", "Vintage"]],
+  ["General", ["Panoramic", "Feature wall", "Maps & travel", "City & architecture", "Fruit & food", "Kids & nursery", "Hospitality"]],
+];
+export function menuColumns(t: Taxonomy = current): { title: string; links: MenuLink[] }[] {
+  const link = (x: string): MenuLink => ({ label: x === "Stripes" ? "Striped" : x, search: t.themes.includes(x) && !t.styles.includes(x) ? { theme: x } : { category: x } });
+  const all = new Set([...t.styles, ...t.themes]); const placed = new Set<string>();
+  const cols = COLS.map(([title, names]) => ({ title, links: names.filter((n) => all.has(n)).map((n) => { placed.add(n); return link(n); }) }));
+  for (const x of t.styles) if (!placed.has(x)) { cols[2]!.links.push(link(x)); placed.add(x); }
+  for (const x of t.themes) if (!placed.has(x)) { cols[3]!.links.push(link(x)); placed.add(x); }
+  const has = (n: string) => all.has(n);
+  const popular: MenuLink[] = [{ label: "Best sellers", search: { sort: "popular" } }, { label: "New in", search: { sort: "new" } }, { label: "Murals", search: { kind: "mural" } }, { label: "Repeating patterns", search: { kind: "repeating" } },
+    ...["Floral", "Botanical", "Abstract", "Geometric", "Tropical", "Kids & nursery"].filter(has).map(link)];
+  return [{ title: "Popular", links: popular }, ...cols.filter((c) => c.links.length)];
 }
 let current: Taxonomy = defaultTaxonomy;
 export function setTaxonomy(t?: Partial<Taxonomy> | null) { if (t) current = parseTaxonomy(t); }

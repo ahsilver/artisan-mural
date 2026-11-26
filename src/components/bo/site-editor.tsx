@@ -150,7 +150,7 @@ export function CategoriesEditor() {
       <div className="se-addc"><input placeholder="New color, e.g. Lilac" value={newV.colors ?? ""} onChange={(e) => setNewV({ ...newV, colors: e.target.value })} /><button type="button" className="btn optline btn-sm" onClick={() => { const v = (newV.colors ?? "").trim(); if (!v || t.colors.some((x) => x.label.toLowerCase() === v.toLowerCase())) return; setT({ ...t, colors: parseColors(colorsToText([...t.colors, { id: "", label: v, swatch: "#999999", words: [] }])) }); setNewV({ ...newV, colors: "" }); }}>Add</button></div>
       <FindAllColors colors={t.colors} onDone={() => counts.reload()} />
     </div>
-    <div className="up-row"><button type="button" className="btn btn-wine btn-sm" disabled={g.busy} onClick={() => void g.save({ rooms: t.rooms.join("\n"), styles: t.styles.join("\n"), themes: t.themes.join("\n"), colors: colorsToText(t.colors) }, "Saved ✓ Designers, the shop filters, the menu and search use the new lists.")}>{g.busy ? "Saving…" : "Save categories"}</button></div>
+    <div className="up-row"><button type="button" className="btn btn-wine btn-sm" disabled={g.busy} onClick={() => void g.save({ version: 2, rooms: t.rooms.join("\n"), styles: t.styles.join("\n"), themes: t.themes.join("\n"), colors: colorsToText(t.colors) }, "Saved ✓ Designers, the shop filters, the menu and search use the new lists.")}>{g.busy ? "Saving…" : "Save categories"}</button></div>
     {g.msg && <p className="rq-ok">{g.msg}</p>}
   </div>;
 }

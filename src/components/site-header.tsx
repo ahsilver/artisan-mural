@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCart } from "@/lib/cart";
 import { cn } from "@/lib/utils";
-import { getTaxonomy } from "@/lib/design-taxonomy";
+import { menuColumns, getTaxonomy } from "@/lib/design-taxonomy";
 import { useSession } from "@/hooks/use-session";
 import { NotificationBell } from "@/components/projects";
 import { BrandLogo } from "@/components/brand-logo";
@@ -21,7 +21,7 @@ const roomPic = (r: string) => MENU_PICS[r] || `/s/rooms/${ROOM_PIC[r] ?? "livin
 export const MENU_PIC_LABELS = ["All designs", "Murals", "Repeating patterns", "Made for you", ...Object.keys(ROOM_PIC)];
 export const defaultMenuPic = (label: string) => `/s/rooms/${ROOM_PIC[({ "All designs": "Living room", Murals: "Bedroom", "Repeating patterns": "Dining room", "Made for you": "Office & study" } as Record<string, string>)[label] ?? label] ?? "living-1"}-t-v1.jpg`;
 
-type Item = { label: string; search?: Record<string, string>; to?: string; pic?: string };
+type Item = { label: string; search?: Record<string, string>; to?: string; pic?: string; swatch?: string };
 type Group = { key: string; label: string; items: () => Item[] };
 const GROUPS: Group[] = [
   { key: "type", label: "Type", items: () => [
@@ -31,8 +31,9 @@ const GROUPS: Group[] = [
     { label: "Made for you", to: "/custom-request", pic: MENU_PICS["Made for you"] || roomPic("Office & study") },
   ] },
   { key: "rooms", label: "Rooms", items: () => getTaxonomy().rooms.map((r) => ({ label: r, search: { room: r }, pic: roomPic(r) })) },
+  { key: "design", label: "Shop by design", items: () => [] }, // drawn as columns (menuColumns)
   { key: "style", label: "Style", items: () => getTaxonomy().styles.slice(0, 16).map((c) => ({ label: c, search: { category: c } })) },
-  { key: "theme", label: "Themes", items: () => getTaxonomy().themes.slice(0, 16).map((c) => ({ label: c, search: { theme: c } })) },
+  { key: "color", label: "Color", items: () => getTaxonomy().colors.map((c) => ({ label: c.label, search: { color: c.id }, swatch: c.swatch })) }, // themes are in "Shop by design"
   { key: "designers", label: "Designers", items: () => [{ label: "All designers", to: "/designers" }, { label: "How it works for designers", to: "/designers/how-it-works" }, { label: "Sell your art", to: "/sell" }] },
 ];
 const NAV_RIGHT = [
@@ -66,6 +67,7 @@ function MegaMenu({ onPick }: { onPick: () => void }) {
   const group = GROUPS.find((x) => x.key === g)!;
   const items = group.items();
   const withPics = items.some((i) => i.pic);
+  const cols = g === "design" ? menuColumns() : null;
   return (
     <div className="grid grid-cols-[220px_1fr] gap-8">
       <ul className="border-r border-border pr-4">
@@ -78,7 +80,10 @@ function MegaMenu({ onPick }: { onPick: () => void }) {
           </li>
         ))}
       </ul>
-      {withPics ? (
+      {cols ? (
+        <div className="mega-cols">{cols.map((c) => <div key={c.title}><b>{c.title}</b><ul>{c.links.map((l) => <li key={l.label}><Link to="/browse" search={() => l.search} onClick={onPick}>{l.label}</Link></li>)}</ul></div>)}
+          <div className="mega-cols-all"><Link to="/styles" onClick={onPick}>See all styles →</Link><Link to="/browse" onClick={onPick}>Shop all designs →</Link></div></div>
+      ) : withPics ? (
         <ul className="grid grid-cols-3 gap-4 xl:grid-cols-4">
           {items.map((i) => (
             <li key={i.label}>
@@ -94,7 +99,7 @@ function MegaMenu({ onPick }: { onPick: () => void }) {
       ) : (
         <ul className="grid grid-cols-3 content-start gap-x-8 gap-y-1 xl:grid-cols-4">
           {items.map((i) => (
-            <li key={i.label}><ItemLink i={i} onPick={onPick} className="block py-2 text-sm text-muted-foreground transition hover:text-foreground">{i.label}</ItemLink></li>
+            <li key={i.label}><ItemLink i={i} onPick={onPick} className="flex items-center gap-2 py-2 text-sm text-muted-foreground transition hover:text-foreground">{i.swatch && <span className="size-4 rounded-full border border-border" style={{ background: i.swatch }} />}{i.label}</ItemLink></li>
           ))}
         </ul>
       )}
@@ -132,7 +137,9 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
               <details key={g.key} className="group">
                 <summary className={cn(row, "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>{g.label}<span className="text-lg text-muted-foreground group-open:hidden">+</span><span className="hidden text-lg text-muted-foreground group-open:inline">–</span></summary>
                 <ul className="grid pb-2 pl-3">
-                  {g.items().map((i) => <li key={i.label}><ItemLink i={i} onPick={onClose} className="block py-2 text-sm text-muted-foreground">{i.label}</ItemLink></li>)}
+                  {g.key === "design"
+                    ? menuColumns().map((c) => <li key={c.title}><p className="pt-2 text-xs font-bold uppercase tracking-wider">{c.title}</p><ul>{c.links.map((l) => <li key={l.label}><Link to="/browse" search={() => l.search} onClick={onClose} className="block py-1.5 text-sm text-muted-foreground">{l.label}</Link></li>)}</ul></li>)
+                    : g.items().map((i) => <li key={i.label}><ItemLink i={i} onPick={onClose} className="block py-2 text-sm text-muted-foreground">{i.label}</ItemLink></li>)}
                 </ul>
               </details>
             ))}

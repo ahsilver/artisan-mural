@@ -2927,3 +2927,8 @@
 .am .sz-inputs .iv em select{appearance:none;-webkit-appearance:none;border:0;background:transparent;font:inherit;color:inherit;padding:0;cursor:pointer;text-align:right}
 .am .sz-panel .seg2 button:only-child{grid-column:1/-1}
 .am .st-h2{font:400 26px/1.2 var(--f-display);margin:26px 0 12px}.am .st-sw{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:7px;vertical-align:-1px;border:1px solid rgba(255,255,255,.7)}
+.mega-cols{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px 26px;align-items:start}
+.mega-cols b{display:block;font:400 18px/1.2 var(--f-display,Georgia,serif);margin-bottom:8px}
+.mega-cols ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.mega-cols a{display:block;padding:4px 0;font-size:13.5px;color:var(--ink-2,#5b5551);text-decoration:none}.mega-cols a:hover{color:var(--ink,#201D1D);text-decoration:underline}
+.mega-cols-all{grid-column:1/-1;display:flex;gap:24px;border-top:1px solid var(--line,#E6E1D8);padding-top:12px}.mega-cols-all a{font-weight:700;color:var(--ink,#201D1D)}
