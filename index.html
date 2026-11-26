@@ -5103,6 +5103,13 @@ async function readTiff(read) {
         throw new Error("This TIFF stores colors in separate planes; please re-save it as 'interleaved'.");
     if (![1, 5, 8, 32946, 32773].includes(info.compression))
         throw new Error(`This TIFF compression (${info.compression}) isn't supported yet. Please upload a JPG preview.`);
+    // uncompressed files often keep the whole picture in one huge block: every row is at a known place, so read row by row
+    if (info.compression === 1 && info.rps > 1) {
+        const rowBytes = info.width * info.spp * (info.bps / 8);
+        const offs = [], cnts = [];
+        for (let st = 0; st < info.offsets.length; st++) { const rows = Math.min(info.rps, info.height - st * info.rps); for (let r = 0; r < rows; r++) { offs.push(info.offsets[st] + r * rowBytes); cnts.push(rowBytes); } }
+        if (offs.length === info.height) { info.offsets = offs; info.counts = cnts; info.rps = 1; }
+    }
     return info;
 }
 function lzw(src, outLen) {
@@ -5422,6 +5429,8 @@ async function tiffCrop(read, box, sink, onProgress) {
   return { readTiff, tiffPreview };
   })();
   const DRIVE_RANGES = 'https://artisan-drive.ahlsholdingsllc.workers.dev/ranges';
+  const DRIVE_THUMB = 'https://artisan-drive.ahlsholdingsllc.workers.dev/thumb?id='; // the small picture saved inside each TIFF: shows at once
+  const isTif = (n) => /\.tiff?$/i.test(n || '');
   const TIFF_THUMBS = {}, TIFF_SIZE = {}; // drive file id -> object URL | 'busy' | 'none'; id -> [width, height] in pixels
   async function driveTiffThumb(id, maxSide = 600) {
     const call = async (ranges) => { const r = await fetch(DRIVE_RANGES, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, ranges }) }); if (!r.ok) throw new Error('read failed'); const b = new Uint8Array(await r.arrayBuffer()), dv = new DataView(b.buffer), out = []; let o = 0; while (o < b.length) { const n = dv.getUint32(o); o += 4; out.push(b.subarray(o, o + n)); o += n; } return out; };
@@ -5431,13 +5440,12 @@ async function tiffCrop(read, box, sink, onProgress) {
     const step = Math.max(1, Math.ceil(Math.max(info.width, info.height) / maxSide)), strips = new Set();
     for (let j = 0; j < Math.floor(info.height / step); j++) strips.add(Math.floor(Math.min(info.height - 1, j * step + Math.floor(step / 2)) / info.rps));
     let bytes = 0; for (const st of strips) bytes += info.counts[st] || 0;
-    if (bytes > (maxSide >= 2000 ? 220 : 60) * 1024 * 1024) return null; // would need most of the file
+    if (bytes > 900 * 1024 * 1024) return null; // would need most of a huge file
     const { blob } = await TIFF.tiffPreview(reader, maxSide, undefined, readMany);
     return URL.createObjectURL(blob);
   }
   const DL_CACHE = {}; // folder id -> files (sub-folders read ahead, so they open instantly)
-  const tiffWanted = () => { const cur = (UP.dl && UP.dl.files) || [], more = []; cur.filter(f => f.folder).forEach(f => (DL_CACHE[f.id] || []).forEach(x => more.push(x)));
-    return cur.concat(UP.files.map(x => ({ id: x.driveId, name: x.file })), more).filter(f => f && f.id && !f.folder && /\.tiff?$/i.test(f.name || '') && !TIFF_THUMBS[f.id]); };
+  const tiffWanted = () => []; // browsing shows the built-in pictures; the sharp picture is made only when a design is chosen (upAddDrive)
   let tiffRunning = 0, tiffRerender = null;
   const tiffRepaint = () => { clearTimeout(tiffRerender); tiffRerender = setTimeout(() => { if (UP.step === 0 && $('upLink') && document.activeElement !== $('upLink')) upRender(); }, 120); };
   function upTiffThumbs() {
@@ -5456,7 +5464,7 @@ async function tiffCrop(read, box, sink, onProgress) {
     for (let i = 0; i < subs.length; i += 4) await Promise.all(subs.slice(i, i + 4).map(async f => { try { const r = await fetch(DRIVE_API + encodeURIComponent(f.id)); if (r.ok) DL_CACHE[f.id] = (await r.json()).files || []; } catch (e) {} }));
     tiffRepaint(); upTiffThumbs();
   }
-  const folderCover = (id) => { const fs = DL_CACHE[id] || []; for (const x of fs) { if (x.folder) continue; const t = TIFF_THUMBS[x.id]; if (t && t.startsWith('blob:')) return t; if (x.thumb) return x.thumb; if (/\.(jpe?g|png|webp|gif)$/i.test(x.name)) return `https://drive.google.com/thumbnail?id=${x.id}&sz=w400`; } return ''; };
+  const folderCover = (id) => { const fs = DL_CACHE[id] || []; for (const x of fs) { if (x.folder) continue; const t = TIFF_THUMBS[x.id]; if (t && t.startsWith('blob:')) return t; if (x.thumb) return x.thumb; if (isTif(x.name)) return DRIVE_THUMB + x.id; if (/\.(jpe?g|png|webp|gif)$/i.test(x.name)) return `https://drive.google.com/thumbnail?id=${x.id}&sz=w400`; } return ''; };
   /* Google Drive folder: read through the site's server, show pictures as tiles, open sub-folders here */
   const DRIVE_API = 'https://artisan-drive.ahlsholdingsllc.workers.dev/?id=';
   const isPic = (f) => /^image\//.test(f.type) || /\.(jpe?g|png|webp|tiff?|psd|pdf|svg|gif|heic)$/i.test(f.name) || f.type === 'application/pdf';
@@ -5483,17 +5491,17 @@ async function tiffCrop(read, box, sink, onProgress) {
     else if (dl.files && !dl.files.length) body = '<p class="up-gdl-msg">This folder is empty.</p>';
     else if (dl.files) body = `<div class="up-gdl">${dl.files.map(f => f.folder
       ? `<button type="button" class="up-gdt fold" data-fid="${f.id}" data-fname="${upEsc(f.name)}"><span class="th">${folderCover(f.id) ? `<img src="${upEsc(folderCover(f.id))}" alt="">` : ''}<span class="fic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>${DL_CACHE[f.id] ? DL_CACHE[f.id].filter(x => !x.folder).length : ''}</span></span><small>${upEsc(f.name)}</small></button>`
-      : `<button type="button" class="up-gdt${UP.sel.includes(f.id) ? ' on' : ''}${UP.files.some(x => x.driveId === f.id) ? ' used' : ''}" data-add="${f.id}" data-fname="${upEsc(f.name)}" aria-pressed="${UP.sel.includes(f.id)}"><span class="th"><span class="ext">${upEsc((f.name.split('.').pop() || 'file').slice(0, 5).toUpperCase())}</span>${TIFF_THUMBS[f.id] && TIFF_THUMBS[f.id].startsWith('blob:') ? `<img src="${TIFF_THUMBS[f.id]}" alt="">` : TIFF_THUMBS[f.id] === 'busy' ? '<span class="up-mk"><span class="up-spin" aria-hidden="true"></span>Making preview…</span>' : `<img src="${f.thumb ? upEsc(f.thumb) : `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`}" alt="" loading="lazy" onerror="this.remove()">`}<em>${UP.sel.includes(f.id) ? '✓ Selected' : UP.files.some(x => x.driveId === f.id) ? 'In this design' : 'Select'}</em></span><small>${upEsc(f.name)}</small></button>`).join('')}</div>`;
-    const tiffIds = Object.keys(TIFF_THUMBS), tiffDone = tiffIds.filter(k => TIFF_THUMBS[k] !== 'busy').length, tiffBusy = tiffIds.length - tiffDone;
-    const prog = tiffBusy ? `<p class="up-prog" role="status"><span class="up-spin" aria-hidden="true"></span>Making pictures of your designs… <b>${tiffDone} of ${tiffIds.length + tiffWanted().length} ready</b>. Big print files take a few seconds each. You can keep choosing while they load.</p>` : '';
+      : `<button type="button" class="up-gdt${UP.sel.includes(f.id) ? ' on' : ''}${UP.files.some(x => x.driveId === f.id) ? ' used' : ''}" data-add="${f.id}" data-fname="${upEsc(f.name)}" aria-pressed="${UP.sel.includes(f.id)}"><span class="th"><span class="ext">${upEsc((f.name.split('.').pop() || 'file').slice(0, 5).toUpperCase())}</span>${TIFF_THUMBS[f.id] && TIFF_THUMBS[f.id].startsWith('blob:') ? `<img src="${TIFF_THUMBS[f.id]}" alt="">` : TIFF_THUMBS[f.id] === 'busy' ? '<span class="up-mk"><span class="up-spin" aria-hidden="true"></span>Making preview…</span>' : `<img src="${f.thumb ? upEsc(f.thumb) : isTif(f.name) ? DRIVE_THUMB + f.id : `https://drive.google.com/thumbnail?id=${f.id}&sz=w400`}" alt="" onerror="this.remove()">`}<em>${UP.sel.includes(f.id) ? '✓ Selected' : UP.files.some(x => x.driveId === f.id) ? 'In this design' : 'Select'}</em></span><small>${upEsc(f.name)}</small></button>`).join('')}</div>`;
+    const sharpN = UP.files.filter(x => x.sharpening).length;
+    const prog = sharpN ? `<p class="up-prog" role="status"><span class="up-spin" aria-hidden="true"></span>Making a sharp picture of ${sharpN === 1 ? 'the design you chose' : `the ${sharpN} designs you chose`}… You can keep going; it updates by itself.</p>` : '';
     return `<div class="up-gdf"><div class="up-gdf-h"><div class="up-crumbs">${crumbs}</div><span class="up-gdf-acts"><a href="https://drive.google.com/drive/folders/${(dl.stack || []).slice(-1)[0]?.id || UP.driveFolder}" target="_blank" rel="noopener">Open in Drive ↗</a><button type="button" class="up-x" id="upDlClose" aria-label="Close this Google Drive folder" title="Close">✕</button></span></div>${prog}${dl.files && dl.files.some(f => !f.folder) ? `<div class="up-selbar"><button type="button" class="up-link" id="upSelAll">${dl.files.filter(f => !f.folder).every(f => UP.sel.includes(f.id)) ? 'Clear selection' : `Select all in this folder (${dl.files.filter(f => !f.folder).length})`}</button>${UP.sel.length ? `<span class="up-selacts"><b>${UP.sel.length} selected</b><button type="button" class="btn btn-sm optline" id="upSelOne">${UP.sel.length > 1 ? 'One design · these are its colorways' : 'Add to this design'}</button>${UP.sel.length > 1 ? `<button type="button" class="btn btn-sm btn-wine" id="upSelMany">Make ${UP.sel.length} separate designs</button>` : ''}</span>` : '<small>Tap pictures to select them. You can select several.</small>'}</div>` : ''}${body}</div>`;
   }
   UP.sel = []; UP.queue = [];
   function upAddDrive(id, nm, role) { // put one Drive file into the current design (main picture or a colorway)
     if (UP.files.some(x => x.driveId === id)) return;
-    const tt = TIFF_THUMBS[id], src = tt && tt.startsWith('blob:') ? tt : `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;
+    const tt = TIFF_THUMBS[id], src = tt && tt.startsWith('blob:') ? tt : isTif(nm) ? DRIVE_THUMB + id : `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;
     UP.files.push({ file: nm, driveId: id, drive: true, src, check: src, px: (TIFF_SIZE[id] || [0])[0], py: (TIFF_SIZE[id] || [0, 0])[1], vector: /\.(pdf|svg|ai|eps)$/i.test(nm), role: role || (UP.files.some(x => x.role === 'main') ? 'color' : 'main'), cw: prettyName(nm) });
-    if (/\.tiff?$/i.test(nm)) { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = true; }); driveTiffThumb(id, 2600).then(u => { UP.files.forEach(x => { if (x.driveId === id) { x.sharpening = false; if (u) { x.src = u; x.check = u; x.det = null; } } }); upRender(); }).catch(() => { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = false; }); upRender(); }); }
+    if (/\.tiff?$/i.test(nm)) { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = true; }); driveTiffThumb(id, 1400).then(u => { UP.files.forEach(x => { if (x.driveId === id) { x.sharpening = false; if (u) { x.src = u; x.check = u; x.det = null; } } }); upRender(); }).catch(() => { UP.files.forEach(x => { if (x.driveId === id) x.sharpening = false; }); upRender(); }); }
   }
   const upNameOf = (id) => ((UP.dl && UP.dl.files) || []).concat(...Object.values(DL_CACHE)).find(f => f.id === id)?.name || 'Google Drive file';
   function upWireGrid() {
@@ -5543,7 +5551,7 @@ async function tiffCrop(read, box, sink, onProgress) {
       const isG = /(drive|docs)\.google\.com/.test(l), folder = isG && l.match(/folders\/([\w-]{10,})/), file = isG && !folder && (l.match(/\/d\/([\w-]{10,})/) || l.match(/[?&]id=([\w-]{10,})/));
       if (!folder && !file) return upErr('That isn\'t a Google Drive link. It should look like drive.google.com/file/d/… or drive.google.com/drive/folders/…');
       upErr('');
-      if (folder) { UP.driveFolder = folder[1]; UP.link = ''; upOpenFolder(folder[1], 'Your folder', true); return; }
+      if (folder) { UP.driveFolder = folder[1]; UP.link = ''; upOpenFolder(folder[1], 'Your folder', true); setTimeout(() => { const g = document.querySelector('.up-gdl'); if (g) g.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 150); return; }
       const id = file[1]; if (UP.files.some(f => f.driveId === id)) return upErr('That file is already added.');
       $('upStatus').textContent = 'Getting the file from Google Drive…'; $('upShow').disabled = true;
       const im = new Image();
