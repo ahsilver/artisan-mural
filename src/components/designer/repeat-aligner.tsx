@@ -173,6 +173,8 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
     const wbox = wallRef.current?.parentElement?.clientWidth || 900; paintWall(wallRef.current, Math.min(1, wbox / (pw * 4)));
     if (big) paintWall(bigRef.current, 1);
   }, [img, pw, ph, tileH, mode, zoom, focus, tile, showJoin, big]);
+  // Esc closes only the full-size view, not the repeat window under it
+  useEffect(() => { if (!big) return; const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopImmediatePropagation(); e.preventDefault(); setBig(false); } }; document.addEventListener("keydown", esc, true); return () => document.removeEventListener("keydown", esc, true); }, [big]);
   useEffect(() => { draw(); }, [draw]);
   useEffect(() => { const r = () => draw(); window.addEventListener("resize", r); return () => window.removeEventListener("resize", r); }, [draw]);
 
@@ -232,7 +234,7 @@ export function RepeatAligner({ src, mode: mode0, initial, busy, onSave, onCance
       {(pw < W || (mode !== "sideways" && ph < H)) && <p className="hint">When you save, we make a corrected print file with only the repeat ({pct(pw, W)} of the width{mode !== "sideways" ? `, ${pct(ph, H)} of the height` : ""}). Your original file is kept.</p>}
       <div className="ra-wall"><div className="ra-wh"><b>On a wall · 4 repeats</b><button type="button" className="btn optline btn-sm" onClick={() => setBig(true)}>⤢ Open full size to zoom</button></div><canvas ref={wallRef} onClick={() => setBig(true)} title="Open full size to zoom" /></div>
       {/* on top of every window (it opens from the repeat window) */}
-      {big && typeof document !== "undefined" && createPortal(<div className="am"><div className="ra-big" role="dialog" aria-modal="true" aria-label="The wall at full size"><div className="ra-big-h"><b>On a wall · full size</b><span className="hint">Scroll to look around; this is the real detail of your file.</span><button type="button" className="btn optline btn-sm" onClick={() => setBig(false)}>Close</button></div><div className="ra-big-in"><canvas ref={bigRef} /></div></div></div>, document.body)}
+      {big && typeof document !== "undefined" && createPortal(<div className="am"><div className="ra-big" role="dialog" aria-modal="true" aria-label="The wall at full size"><div className="ra-big-h"><b>On a wall · full size</b><span className="hint">Scroll to look around; this is the real detail of your file.</span><button type="button" className="btn btn-sm ra-big-x" onClick={() => setBig(false)}>✕ Close</button></div><div className="ra-big-in"><canvas ref={bigRef} /></div></div></div>, document.body)}
       <div className="up-row"><button type="button" className="btn btn-wine btn-sm" disabled={busy} onClick={() => onSave({ w: pw / W, h: mode === "sideways" ? 1 : ph / H, mode, blend: blend && pw < W })}>{busy ? "Saving…" : "Use this repeat"}</button><button type="button" className="btn optline btn-sm" disabled={busy} onClick={onCancel}>Cancel</button></div>
     </div>
   );
