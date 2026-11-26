@@ -34,12 +34,15 @@ async function saveCrop(orderId: string, src: string, sel: WallSelection, label:
   await putFile(orderId, blob, "jpg", label, c.width, c.height);
 }
 
-export function NewOrder({ onDone }: { onDone: (id: string) => void }) {
+/** "Make a print file": the same tools without an order: upload a file, crop it or line up a repeat, download the print file. Nothing is saved. */
+export function PrintMaker() { return <NewOrder onDone={() => {}} tool />; }
+
+export function NewOrder({ onDone, tool }: { onDone: (id: string) => void; tool?: boolean }) {
   const { data: shop } = useQuery(shopQuery);
   if (shop) registerShop(shop);
   const designs = useMemo(() => liveDesigns(shop), [shop]);
   const finishes = useMemo(() => resolvedMaterials(shop?.materialSettings), [shop]);
-  const [src, setSrc] = useState<"pick" | "upload">("pick");
+  const [src, setSrc] = useState<"pick" | "upload">(tool ? "upload" : "pick");
   const [q, setQ] = useState("");
   const [slug, setSlug] = useState("");
   const [color, setColor] = useState<string | undefined>();
@@ -152,10 +155,11 @@ export function NewOrder({ onDone }: { onDone: (id: string) => void }) {
   }
 
   return <div className="bo-new-order">
-    <h2>New order</h2><div className="bo-sub" style={{ marginBottom: 12 }}>For orders that came by phone, email or the showroom.</div>
+    {tool ? <><h2>Make a print file</h2><div className="bo-sub" style={{ marginBottom: 12 }}>For yourself: upload any design, crop it or line it up as a repeat, choose the wall size, and download a print-ready PDF or TIFF. Nothing goes on the website and no order is made. To charge a customer for it, use Orders → New order instead.</div></>
+      : <><h2>New order</h2><div className="bo-sub" style={{ marginBottom: 12 }}>For orders that came by phone, email or the showroom.</div></>}
     <Msg m={msg} />
     <h3 className="bo-h3">1. Design</h3>
-    <div className="bo-row" style={{ marginBottom: 8 }}><button type="button" className={seg(src === "pick")} onClick={() => setSrc("pick")}>Pick a design</button><button type="button" className={seg(src === "upload")} onClick={() => setSrc("upload")} data-testid="no-upload-tab">Upload a file</button></div>
+    {!tool && <div className="bo-row" style={{ marginBottom: 8 }}><button type="button" className={seg(src === "pick")} onClick={() => setSrc("pick")}>Pick a design</button><button type="button" className={seg(src === "upload")} onClick={() => setSrc("upload")} data-testid="no-upload-tab">Upload a file</button></div>}
     {src === "pick" ? <div>
       <input className="bo-in" placeholder="Search designs" value={q} onChange={(e) => setQ(e.target.value)} data-testid="no-design-q" />
       <div className="bo-pick">{list.map((d) => <button type="button" key={d.slug} className={"bo-pick-item" + (d.slug === slug ? " on" : "")} onClick={() => { setSlug(d.slug); setColor(d.colorways?.[0]?.id); }}><img src={d.image} alt="" loading="lazy" /><span>{d.title}<small>{d.kind === "repeating" ? "Repeat" : "Mural"}</small></span></button>)}</div>
@@ -176,12 +180,13 @@ export function NewOrder({ onDone }: { onDone: (id: string) => void }) {
     <h3 className="bo-h3">2. Wall and finish</h3>
     <div className="bo-grid3 bo-wall"><Field label="Wall width"><input className="bo-in" type="number" value={w} onChange={(e) => setW(e.target.value)} data-testid="no-w" /></Field><Field label="Wall height"><input className="bo-in" type="number" value={h} onChange={(e) => setH(e.target.value)} data-testid="no-h" /></Field><Field label="Unit"><select className="bo-sel" value={unit} onChange={(e) => setUnit(e.target.value as Unit)}><option value="ft">feet</option><option value="in">inches</option><option value="cm">cm</option></select></Field></div>
     {base && sel && <div className="bo-preview" data-testid="no-preview"><MuralFramer design={base} selection={sel} onChange={setSel} maxHeight="300px" />
-      <div className="bo-sub" style={{ marginTop: 6 }}>{base.kind === "mural" ? "Drag the picture to choose the part that goes on the wall. This crop is saved as the print file." : "The pattern repeats across the wall in panels. Use the size slider to change the scale."}</div>
+      <div className="bo-sub" style={{ marginTop: 6 }}>{base.kind === "mural" ? (tool ? "Drag the picture to choose the part that goes on the wall. The print file is exactly what you see." : "Drag the picture to choose the part that goes on the wall. This crop is saved as the print file.") : "The pattern repeats across the wall in panels. Use the size slider to change the scale."}</div>
       {src === "upload" && <div className="bo-printbox" data-testid="no-printbox"><b>Ready to print</b>
         <span className={"bo-sub" + (dpi && dpi < MIN_PRINT_DPI ? " err" : "")}>{dpi ? `${dpi} DPI at this size · ${dpi >= 200 ? "very sharp" : dpi >= MIN_PRINT_DPI ? "good from a normal distance" : `below ${MIN_PRINT_DPI} DPI, will look soft`}` : "…"}. The file is exactly {w} × {h} {unit}, in numbered-panel width, {base.kind === "mural" ? "cropped to what you see" : "repeated across the wall as you see it"}.</span>
         {dpi > 0 && dpi < MIN_PRINT_DPI && <label className="bo-inline"><input type="checkbox" checked={anyDpi} onChange={(e) => setAnyDpi(e.target.checked)} /> Make it anyway (the customer accepts a softer print)</label>}
         <div className="bo-row"><button type="button" className="bo-btn pri" disabled={!!busy} onClick={() => void download("pdf")} data-testid="no-pdf">Download print PDF</button><button type="button" className="bo-btn" disabled={!!busy} onClick={() => void download("tiff")} data-testid="no-tiff">Download print TIFF</button></div>
       </div>}</div>}
+    {!tool && <>
     <Field label="Finish"><select className="bo-sel" value={finish} onChange={(e) => setFinish(e.target.value)}>{finishes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></Field>
     <h3 className="bo-h3">3. Customer</h3>
     <div className="bo-row" style={{ marginBottom: 8 }}><button type="button" className={seg(cust === "existing")} onClick={() => setCust("existing")}>Existing customer</button><button type="button" className={seg(cust === "new")} onClick={() => setCust("new")} data-testid="no-cust-new">New customer</button></div>
@@ -196,5 +201,6 @@ export function NewOrder({ onDone }: { onDone: (id: string) => void }) {
     {pay === "paid" && <Field label="Paid by"><select className="bo-sel" value={paidBy} onChange={(e) => setPaidBy(e.target.value)}><option>Cash / check</option><option>Card (Sola)</option><option>PayPal</option><option>Bank transfer</option><option>Other</option></select></Field>}
     <Field label="Notes"><textarea className="bo-ta" value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
     <div className="bo-row" style={{ marginTop: 6 }}><button className="bo-btn pri" disabled={!!busy} onClick={save} data-testid="no-save">{busy || "Save order"}</button></div>
+    </>}
   </div>;
 }
