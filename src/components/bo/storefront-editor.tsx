@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { api, useApi } from "@/components/bo/common";
 import { MENU_PIC_LABELS, defaultMenuPic } from "@/components/site-header";
+import { HomeLayoutSections } from "@/components/bo/home-layout-editor";
+import { parseTaxonomy } from "@/lib/design-taxonomy";
 
 /** Owner editors for the new storefront: homepage banners and tiles, menu pictures. Saved in the "homepage" settings
  *  group, which the homepage and the menu read; an empty field keeps the standard wording or picture. */
@@ -27,7 +29,7 @@ async function shrink(file: File, max: number): Promise<Blob> {
 }
 
 /** Pick a picture: from the site's pictures and designs, a link, or an upload. */
-export function PicturePicker({ value, fallback, onChange, designs }: { value: string; fallback?: string; onChange: (v: string) => void; designs: { title: string; image: string }[] }) {
+export function PicturePicker({ value, fallback, onChange, designs }: { value: string; fallback?: string | undefined; onChange: (v: string) => void; designs: { title: string; image: string }[] }) {
   const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
   const shown = value || fallback || "";
   return (
@@ -59,8 +61,8 @@ function useHomepage() {
   useEffect(() => { if (data) setV(JSON.parse(JSON.stringify(data.settings.homepage ?? {}))); }, [data]);
   const set = (path: (string | number)[], x: any) => setV((cur: any) => { const n = JSON.parse(JSON.stringify(cur)); let o = n; for (let i = 0; i < path.length - 1; i++) { const p = path[i]!; if (o[p] == null || typeof o[p] !== "object") o[p] = typeof path[i + 1] === "number" ? [] : {}; o = o[p]; } o[path[path.length - 1]!] = x; return n; });
   const save = async (label: string) => { setBusy(true); setMsg(""); try { await api("admin/settings/homepage", { body: { value: v } }); setMsg(`${label} saved ✓ It shows on the site within a minute.`); reload(); } catch (e: any) { setMsg(e.message || "Could not save."); } setBusy(false); };
-  const list = [...(designs.data?.builtIn ?? []), ...(designs.data?.uploads ?? []).filter((u: any) => u.review === "approved")].map((d: any) => ({ title: d.title, image: d.image || d.preview || d.colors?.[0]?.preview || "" })).filter((d) => d.image && !/^blob:/.test(d.image)).slice(0, 80);
-  return { v, set, save, msg, busy, error, designs: list };
+  const list = [...(designs.data?.uploads ?? []).filter((u: any) => u.review === "approved"), ...(designs.data?.builtIn ?? [])].filter((d: any) => !d.hidden).map((d: any) => ({ slug: d.slug ?? `u-${d.id}`, title: d.title, image: d.image || d.thumb || d.mockups?.[0] || d.colors?.[0]?.thumb || d.preview || d.colors?.[0]?.preview || "" })).filter((d) => d.image && !/^blob:/.test(d.image)).slice(0, 80);
+  return { v, set, save, msg, busy, error, designs: list, tax: parseTaxonomy(data?.settings?.taxonomy) };
 }
 
 const SLIDES = [
@@ -92,10 +94,7 @@ export function HomepageEditor() {
     <section className="st-card"><b>Artisan Pro and Sell boxes</b><div className="af-grid">{(["pro", "sell"] as const).map((k) => <div key={k} className="bo-ed-col"><span className="bo-l">{k === "pro" ? "Artisan Pro box" : "Sell your art box"}</span>
       {txt(["duo", k, "kicker"], "Small line", k === "pro" ? "For design professionals" : "For artists")}{txt(["duo", k, "title"], "Title", k === "pro" ? "Artisan Pro" : "Sell your designs")}{txt(["duo", k, "text"], "Text", k === "pro" ? "Trade pricing, free samples and one specialist for every project." : "We print and ship to order. You earn on every sale.", true)}{txt(["duo", k, "cta"], "Button", "Apply")}
       <PicturePicker designs={h.designs} value={v.duo?.[k]?.image ?? ""} fallback={k === "pro" ? "/p/img/cover-hotel.webp" : undefined} onChange={(x) => h.set(["duo", k, "image"], x)} /></div>)}</div></section>
-    <section className="st-card"><b>Tiles · Shop by look</b><p className="hint">Empty picture = a matching live design in a room, changing daily.</p><div className="bo-tiles">{TILES.map((t, i) => <div key={t} className="bo-tile">
-      {txt(["tiles", i, "title"], "Name", t)}<PicturePicker designs={h.designs} value={v.tiles?.[i]?.image ?? ""} onChange={(x) => h.set(["tiles", i, "image"], x)} /></div>)}</div></section>
-    <section className="st-card"><b>Tiles · Shop by room</b><div className="bo-tiles">{ROOM_TILES.map(([t, def], i) => <div key={t} className="bo-tile">
-      {txt(["roomTiles", i, "title"], "Name", t)}<PicturePicker designs={h.designs} value={v.roomTiles?.[i]?.image ?? ""} fallback={def} onChange={(x) => h.set(["roomTiles", i, "image"], x)} /></div>)}</div></section>
+    <HomeLayoutSections v={v} set={h.set} designs={h.designs} tax={h.tax} />
     <div className="bo-save"><button type="button" className="btn btn-wine" disabled={h.busy} onClick={() => void h.save("Homepage")}>{h.busy ? "Saving…" : "Save homepage"}</button>{h.msg && <span className="rq-ok">{h.msg}</span>}</div>
   </div>;
 }

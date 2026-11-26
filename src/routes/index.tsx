@@ -6,6 +6,7 @@ import { loadSite } from "@/lib/site-settings";
 import { pic } from "@/lib/pics";
 import { StorefrontSprite, Ico, Mark } from "@/components/storefront/icons";
 import { StoreCard } from "@/components/storefront/card";
+import { featuredToday, homeLayout, linkSearch, tilePicture, type HomeLayout } from "@/lib/home-layout";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -43,9 +44,9 @@ const room = (d?: Design, k = 0) => (d ? d.mockups?.[k] ?? d.mockups?.[0] ?? d.i
 const flatPic = (d: Design) => d.image;
 const has = (d: Design, words: string[]) => [...d.categories, ...d.room, ...(d.tags ?? [])].some((c) => words.some((w) => String(c).toLowerCase().includes(w)));
 
-function Hero({ live, home }: { live: Design[]; home: any }) {
+function Hero({ live, home, layout }: { live: Design[]; home: any; layout: HomeLayout }) {
   const samples = useMemo(() => daily(live.filter((d) => d.image)).slice(0, 8), [live]);
-  const featured = useMemo(() => daily(live.filter((d) => d.mockups?.length), 7)[0], [live]);
+  const featured = useMemo(() => featuredToday(live, layout), [live, layout]);
   const h = home.hero ?? {};
   const hs: any[] = Array.isArray(h.slides) ? h.slides : [];
   const slides = [
@@ -162,25 +163,13 @@ function Home() {
   const on = (k: string) => home.sections?.[k] !== false;
   const duo: any = home.duo ?? {};
   const tiles: any[] = Array.isArray(home.tiles) ? home.tiles : [];
-  const rooms: any[] = Array.isArray(home.roomTiles) ? home.roomTiles : [];
+  const layout = useMemo(() => homeLayout(home), [home]);
+  const H = layout.headings;
   const live = liveDesigns(shop);
   const roomed = live.filter((d) => d.mockups?.length);
   const withRoom = roomed.length >= 6 ? roomed : live; // until designs have room pictures, use the wallpaper itself
   const find = (fn: (d: Design) => boolean, salt = 0) => daily(withRoom.filter(fn), salt)[0] ?? daily(withRoom, salt)[0];
-  const looks = [
-    { title: "Murals", sub: "Scenic & panoramic", search: { kind: "mural" }, d: find((d) => d.kind === "mural", 1) },
-    { title: "Botanical", sub: "Palms, leaves & ferns", search: { category: "Botanical" }, d: find((d) => has(d, ["botanical", "leaf", "palm", "fern"]), 2) },
-    { title: "Floral", sub: "Blooms & bouquets", search: { category: "Floral" }, d: find((d) => has(d, ["floral", "flower"]), 3) },
-    { title: "Animals", sub: "Dogs, birds & wildlife", search: { theme: "Animals & birds" }, d: find((d) => has(d, ["animal", "bird", "dog"]), 4) },
-    { title: "Geometric", sub: "Shapes & lines", search: { category: "Geometric" }, d: find((d) => has(d, ["geometric", "line"]), 5) },
-    { title: "Minimal", sub: "Quiet & calm", search: { category: "Minimal" }, d: find((d) => has(d, ["minimal", "neutral"]), 6) },
-  ];
-  const moods = [
-    { title: "Black & white", search: { color: "black" }, d: find((d) => has(d, ["black", "white", "line"]), 8) },
-    { title: "Moody", search: { category: "Abstract" }, d: find((d) => has(d, ["moody", "dark", "abstract"]), 9) },
-    { title: "Tropical", search: { theme: "Tropical" }, d: find((d) => has(d, ["tropical", "jungle"]), 10) },
-    { title: "Kids & nursery", search: { room: "Kids & nursery" }, d: find((d) => has(d, ["kid", "nursery"]), 11) },
-  ];
+  const tilePic = (t: HomeLayout["looks"][number], salt: number) => tilePicture(t, layout, withRoom, salt, room).img;
   const trends = [...live].sort((a, b) => (b.orders ?? 0) - (a.orders ?? 0)).slice(0, 10);
   const arrivals = [...(shop.designs?.length ? shop.designs : live)].reverse().filter((d) => live.includes(d) || live.some((x) => x.slug === d.slug)).slice(0, 10);
   const designers = allDesigners().map((x) => ({ x, d: withRoom.find((d) => d.designer === x.slug) ?? live.find((d) => d.designer === x.slug) })).filter((r) => r.d).slice(0, 2);
@@ -190,7 +179,7 @@ function Home() {
     <div className="am">
       <StorefrontSprite />
       <div className="pg">
-        {on("hero") && <Hero live={live} home={home} />}
+        {on("hero") && <Hero live={live} home={home} layout={layout} />}
         <nav className="qrow" aria-label="Quick links">
           <Link to="/own"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z M4 15l5-4 4 3 3-2 4 3 M15 9.5h.01" /></svg></span>Your own image</Link>
           <Link to="/custom-request"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></span>Post a request</Link>
@@ -212,25 +201,20 @@ function Home() {
       {on("look") && withRoom.length > 0 && (
         <div className="pg sec">
           <section className="g-cat" aria-label="Shop by look">
-            {looks.map((l, k) => <Tile key={l.title} to="/browse" search={l.search} img={tiles[k]?.image || room(l.d)} title={tiles[k]?.title || l.title} sub={tiles[k]?.sub || l.sub} />)}
+            {layout.looks.map((l, k) => <Tile key={k + l.title} to="/browse" search={linkSearch(l.link)} img={tilePic(l, k + 1)} title={l.title} sub={l.sub} />)}
           </section>
         </div>
       )}
 
       {on("rooms") && (
         <section className="sec pg">
-          <div className="head"><Mark /><h2>Wallpaper for Every Room</h2></div>
+          <div className="head"><Mark /><h2>{H.rooms}</h2></div>
           <div className="g-app">
-            <Tile className="tile w7" to="/browse" search={{ room: "Living room" }} img={rooms[0]?.image || COVER("living-room")} title={rooms[0]?.title || "Living room"} />
-            <Tile className="tile w5" to="/browse" search={{ room: "Bedroom" }} img={rooms[1]?.image || COVER("bedroom")} title={rooms[1]?.title || "Bedroom"} />
-            <Tile className="tile w4" to="/browse" search={{ room: "Kitchen" }} img={rooms[2]?.image || COVER("bathroom")} title={rooms[2]?.title || "Kitchen & bath"} />
-            <Tile className="tile w8" to="/browse" search={{ room: "Commercial" }} img={rooms[3]?.image || COVER("restaurant")} title={rooms[3]?.title || "Hotels & restaurants"} />
+            {layout.rooms.map((r, k) => <Tile key={k + r.title} className={"tile " + (["w7", "w5", "w4", "w8"][k % 4])} to="/browse" search={linkSearch(r.link)} img={tilePic(r, 20 + k)} title={r.title} />)}
           </div>
-          <nav className="room-strip" aria-label="More rooms">
-            <Link to="/browse" search={{ room: "Dining room" }}>Dining</Link><Link to="/browse" search={{ room: "Kitchen" }}>Kitchen</Link>
-            <Link to="/browse" search={{ room: "Kids & nursery" }}>Kids &amp; nursery</Link><Link to="/browse" search={{ room: "Office & study" }}>Office</Link>
-            <Link to="/browse" search={{ room: "Hallway & stairs" }}>Hallway</Link><Link className="all" to="/browse">See all rooms <span aria-hidden="true">→</span></Link>
-          </nav>
+          {layout.roomStrip.length > 0 && <nav className="room-strip" aria-label="More rooms">
+            {layout.roomStrip.map((r) => <Link key={r.room + r.title} to="/browse" search={{ room: r.room }}>{r.title}</Link>)}<Link className="all" to="/browse">See all rooms <span aria-hidden="true">→</span></Link>
+          </nav>}
         </section>
       )}
 
@@ -238,34 +222,34 @@ function Home() {
         <section className="sec pg">
           <div className="split">
             <div>
-              <h2>Transform<br />your walls.</h2>
-              <p>Get inspired by the newest work from our artists. Pick a mural or a repeating pattern, choose the paper, and we print it to fit your wall to the inch.</p>
-              <Link className="btn btn-wine" to="/browse">Browse all designs</Link>
+              <h2>{H.transformTitle}</h2>
+              <p>{H.transformText}</p>
+              <Link className="btn btn-wine" to="/browse">{H.transformButton}</Link>
             </div>
             <div className="ph"><img src={split ? room(split, 2) : COVER("living-room")} alt={split ? `${split.title} in a room` : ""} loading="lazy" /></div>
           </div>
-          {withRoom.length > 0 && <div className="g-look">{moods.map((m, k) => <Tile key={m.title} to="/browse" search={m.search} img={tiles[6 + k]?.image || room(m.d)} title={tiles[6 + k]?.title || m.title} />)}</div>}
+          {withRoom.length > 0 && <div className="g-look">{layout.moods.map((m, n) => <Tile key={n + m.title} to="/browse" search={linkSearch(m.link)} img={tilePic(m, 8 + n)} title={m.title} sub={m.sub} />)}</div>}
         </section>
       )}
 
 
       {on("trends") && trends.length > 0 && (
         <section className="sec pg">
-          <div className="head"><Mark /><h2>Discover Today's Trends</h2></div>
+          <div className="head"><Mark /><h2>{H.trends}</h2></div>
           <div className="g-prod">{trends.map((d) => <StoreCard key={d.slug} d={d} />)}</div>
         </section>
       )}
 
       {on("new") && arrivals.length > 0 && (
         <section className="sec pg" id="new">
-          <div className="head"><Mark /><h2 className="caps">New Arrivals Weekly</h2></div>
+          <div className="head"><Mark /><h2 className="caps">{H.new}</h2></div>
           <div className="g-prod">{arrivals.map((d) => <StoreCard key={d.slug} d={d} />)}</div>
         </section>
       )}
 
       {on("designers") && (
         <section className="sec pg" id="designers">
-          <div className="head"><Mark /><h2>Meet Our Designers</h2></div>
+          <div className="head"><Mark /><h2>{H.designers}</h2></div>
           <div className="g-des">
             <Tile className="tile big" to="/designers" img={big ? flatPic(big) : COVER("hotel")} title="All designers" />
             {designers.map(({ x, d }) => <Link key={x.slug} className="tile" to="/designers/$slug" params={{ slug: x.slug }}><img src={room(d)} alt="" loading="lazy" /><span className="lab"><strong>{x.name.toUpperCase()}</strong><small>{[x.tagline, x.location].filter(Boolean).join(" · ")}</small></span></Link>)}
@@ -277,7 +261,7 @@ function Home() {
         <section className="pg sec chg-band" aria-label="Changes on any design">
           <div className="cb-in">
             <img src="/p/img/forest-after.webp" alt="" loading="lazy" />
-            <div className="cb-txt"><span className="k">Made-to-order changes</span><b>Love it, but want one thing changed?</b><p>Our designers can change any design for your wall. Free to ask.</p></div>
+            <div className="cb-txt"><span className="k">{H.changesKicker}</span><b>{H.changesTitle}</b><p>{H.changesText}</p></div>
             <ol className="cb-steps"><li>Pick a design</li><li>Tell the designer</li><li>Approve the proof</li></ol>
             <Link className="btn btn-wine" to="/changes">How it works</Link>
           </div>
