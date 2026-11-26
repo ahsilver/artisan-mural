@@ -2934,3 +2934,17 @@
 .mega-cols-all{grid-column:1/-1;display:flex;gap:24px;border-top:1px solid var(--line,#E6E1D8);padding-top:12px}.mega-cols-all a{font-weight:700;color:var(--ink,#201D1D)}
 .de-catg{margin:6px 0 10px}.de-catg-h{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6F6A66;margin:0 0 5px}
 .bo-printbox{display:grid;gap:8px;margin-top:10px;padding:12px;border:1px solid #201D1D;border-radius:8px;background:#fff}.bo-printbox .err{color:#B03A2E}
+.vz-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:12px 0}
+.vz-tiles>div{border:1px solid var(--line,#E6E1D8);border-radius:10px;padding:12px 14px;background:#fff;display:grid;gap:2px}
+.vz-tiles span{font-size:12px;color:#6F6A66}.vz-tiles b{font:400 28px/1.1 var(--f-display,Georgia,serif);color:#201D1D}.vz-tiles small{font-size:11.5px;color:#6F6A66}
+.vz-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.vz-bars,.vz-funnel{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.vz-bars li,.vz-funnel li{display:grid;grid-template-columns:minmax(0,150px) 1fr 54px;gap:8px;align-items:center;font-size:13px}
+.vz-funnel li{grid-template-columns:150px 1fr 54px 38px}.vz-funnel small{color:#6F6A66;font-size:12px}
+.vz-l,.vz-funnel span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#201D1D}
+.vz-t{height:10px;background:#F1EDE6;border-radius:4px;overflow:hidden}.vz-t i{display:block;height:100%;background:#7A5236;border-radius:0 4px 4px 0;min-width:2px}
+.vz-bars b,.vz-funnel b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:#201D1D}
+.vz-daily svg{width:100%;height:auto;display:block;color:#201D1D}.vz-bar{fill:#7A5236}.vz-bar.on{fill:#201D1D}.vz-ax{font-size:11px;fill:#6F6A66}
+.vz-tip{min-height:22px;font-size:13px;margin:4px 0}.vz-none{color:#B03A2E;font-weight:600}
+@media (max-width:900px){.vz-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.vz-grid{grid-template-columns:1fr}}
+.vz-grid{align-items:start}.vz .st-card{align-content:start}

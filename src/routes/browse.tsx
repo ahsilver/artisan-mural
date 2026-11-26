@@ -1,3 +1,4 @@
+import { track } from "@/lib/visits";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
@@ -78,6 +79,8 @@ function Shop() {
   const filtered = pool.filter((d) => passes(d));
   const list = sort === "az" ? [...filtered].sort((a, b) => a.title.localeCompare(b.title)) : sort === "new" ? designs.filter((d) => filtered.includes(d)).reverse() : sort === "popular" ? [...filtered].sort((a, b) => (b.orders ?? 0) - (a.orders ?? 0)) : filtered;
 
+  // what people search for, and how many designs they found (the owner sees searches that found nothing)
+  useEffect(() => { if (!q) return; const t = setTimeout(() => track({ kind: "search", q, n: list.length }), 900); return () => clearTimeout(t); }, [q]);
   const selLabels = groups.flatMap((g) => sel[g.key].map((v) => g.opts.find((o) => o.v === v)?.label ?? v));
   const kindName = kind === "mural" ? "Murals" : kind === "repeating" ? "Repeating patterns" : "";
   const title = q ? `Results for "${q}"` : selLabels.length === 1 ? `${selLabels[0]} ${kindName ? lc(kindName) : "wallpaper"}` : kindName || "All designs";

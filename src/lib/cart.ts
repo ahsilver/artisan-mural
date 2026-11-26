@@ -1,3 +1,4 @@
+import { track } from "@/lib/visits";
 import { useSyncExternalStore } from "react";
 import type { WallSelection } from "@/lib/wall-selection";
 import type { OwnFile } from "@/lib/own-image";
@@ -23,7 +24,7 @@ function write(items: CartItem[]) {
   listeners.forEach((l) => l());
 }
 export const cart = {
-  add(item: Omit<CartItem, "id">) { const id = crypto.randomUUID(); write([...read(), { ...item, id }].slice(-30)); return id; },
+  add(item: Omit<CartItem, "id">) { const id = crypto.randomUUID(); track({ kind: "cart", design: item.design }); write([...read(), { ...item, id }].slice(-30)); return id; },
   get(id: string) { return read().find((i) => i.id === id) ?? null; },
   /** Change one line in place (Edit from the cart, wall name). */
   update(id: string, patch: Partial<Omit<CartItem, "id">>) { write(read().map((i) => (i.id === id ? { ...i, ...patch } : i))); },

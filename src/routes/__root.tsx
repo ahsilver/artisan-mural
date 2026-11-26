@@ -1,3 +1,4 @@
+import { track } from "@/lib/visits";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -146,6 +147,8 @@ function RootComponent() {
   const router = useRouter();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const bare = path === "/admin" || path.startsWith("/dashboard");
+  // visitor statistics: one page view per page (the owner's Visitors page adds them up)
+  useEffect(() => { const m = path.match(/^\/design\/([^/]+)/); track({ kind: "view", path, ...(m ? { design: decodeURIComponent(m[1]!) } : {}) }); }, [path]);
   useEffect(() => {
     import("@/integrations/supabase/client").then(({ supabase }) => {
       supabase.auth.getSession().then(({ data }) => {

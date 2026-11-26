@@ -1,3 +1,4 @@
+import { track } from "@/lib/visits";
 import { ownDesign } from "@/lib/own-image";
 import { ensureShop, useLiveDesigns } from "@/lib/shop";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -57,7 +58,7 @@ function Checkout() {
       void fetch("/backend/orders-placed", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cartId: (r as any)?.cartId }) }).catch(() => {});
       let fin: any = null;
       try { fin = await api("account/finalize", { body: { cartId: r.cartId, coupon: appliedCoupon, state: v("state"), useCredit } }); } catch {} if (fin?.firstOrder) try { localStorage.removeItem("am-welcome-code"); localStorage.setItem("am-popup-hide-until", String(Date.now() + 365 * 864e5)); } catch {}
-      cart.clear(); setPlaced({ total: fin ? fin.due : r.total, email: r.email }); window.scrollTo({ top: 0 });
+      track({ kind: "order" }); cart.clear(); setPlaced({ total: fin ? fin.due : r.total, email: r.email }); window.scrollTo({ top: 0 });
     } catch (err) { setError(plainError(err, "Your order could not be placed.")); }
     finally { setBusy(false); }
   }

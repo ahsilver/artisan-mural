@@ -15,3 +15,6 @@ ALTER TABLE order_requests ADD COLUMN is_sample INTEGER DEFAULT 0;
 -- line if the order is later cancelled or refunded. Totals are sums of these lines, so they never change by themselves.
 CREATE TABLE IF NOT EXISTS designer_earnings (id TEXT PRIMARY KEY, order_id TEXT NOT NULL, kind TEXT NOT NULL, designer_user_id TEXT NOT NULL, design_slug TEXT NOT NULL, square_feet REAL NOT NULL, cents_per_sqft REAL NOT NULL, amount REAL NOT NULL, created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')), UNIQUE(order_id, kind));
 CREATE INDEX IF NOT EXISTS designer_earnings_user ON designer_earnings(designer_user_id);
+-- Visitor statistics (anonymous: a random browser number, no names, no IP addresses). Kept about 13 months.
+CREATE TABLE IF NOT EXISTS site_visits (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, day TEXT NOT NULL, vid TEXT NOT NULL, sid TEXT NOT NULL, kind TEXT NOT NULL, path TEXT, source TEXT DEFAULT '', campaign TEXT DEFAULT '', country TEXT DEFAULT '', device TEXT DEFAULT '', design TEXT, q TEXT, n INTEGER);
+CREATE INDEX IF NOT EXISTS site_visits_day ON site_visits(day);

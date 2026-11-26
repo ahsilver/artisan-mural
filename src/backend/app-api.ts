@@ -263,6 +263,7 @@ export async function handleApp(req: Request, env: Env, who: Who, origin: string
       return j({ ok: true, order: no, free, price });
     }
     // a Drive TIFF's built-in small picture, so the designer studio shows a folder's designs at once
+    if (p === "public/hit" && m === "POST") { const { hit } = await import("./visits-api"); return hit(req, env as any, body); }
     if (p === "public/drive-thumb" && m === "GET") { const { driveThumb } = await import("./drive-thumb"); return driveThumb(new URL(req.url).searchParams.get("id") ?? ""); }
     // "Track my order" page: order number (the 8 letters from the emails) + the email it was ordered with
     if (p === "public/track" && m === "POST") {
@@ -728,6 +729,7 @@ async function adminRoutes(req: Request, env: Env, who: Who, p: string, m: strin
     if (body.trusted !== undefined) await DB.prepare(`UPDATE designer_profiles SET trusted = ? WHERE user_id = ?`).bind(body.trusted ? 1 : 0, mm[1]).run();
     return j({ ok: true });
   }
+  if (p === "visitors" && m === "GET") { const { visitors } = await import("./visits-api"); return j(await visitors(env as any, Number(url.searchParams.get("days")) || 30)); }
   // ----- the owner's own designs: the shop's studio account, so the owner uploads through the same designer flow -----
   if (p === "owner-studio" && m === "POST") {
     const g: any = (await getSettings(env)).general ?? {};
