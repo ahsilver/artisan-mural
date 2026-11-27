@@ -1343,6 +1343,14 @@ a.s:hover,a.s:focus-visible{transform:translateY(-6px) rotate(0deg)!important;bo
 .up-rooms{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center}
 .up-cwl{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;min-width:0}.up-cwl img{width:34px;height:26px;object-fit:cover}
 .up-rimgs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.up-rimgs img{width:100%;aspect-ratio:4/3;object-fit:cover}
+.up-mock{margin:0;min-width:0}
+.up-mock .c{position:relative;aspect-ratio:4/3;background:var(--soft);overflow:hidden;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11.5px;color:var(--ink-2)}
+.up-mock canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:upMockIn .5s ease}
+.up-mock figcaption{font-size:11.5px;color:var(--ink-2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.up-mock.close .c canvas{object-fit:cover}
+@keyframes upMockIn{from{opacity:0}to{opacity:1}}
+.up-rimgs.four{grid-template-columns:repeat(4,1fr)}
+@media (max-width:640px){.up-rimgs.four{grid-template-columns:repeat(2,1fr)}}
 .up-pending{grid-column:1/-1;padding:16px;background:var(--soft);font-size:12.5px;color:var(--ink-2)}
 .up-sum{display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start}.up-sum img{width:100%;aspect-ratio:4/3;object-fit:cover}
 .up-sum-r{display:grid;grid-template-columns:130px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}.up-sum-r span{color:var(--ink-2)}.up-sum-r b{font-weight:600}
@@ -4754,6 +4762,7 @@ article.card .im-flat{position:absolute;inset:0;width:100%;height:100%;object-fi
   /* ---------- see it in your room (runs in the browser, no AI key) ---------- */
   const SAMPLE_ROOMS = [{"id":"living-1","type":"living","name":"Living room","corners":[{"x":0.1192,"y":0.0732},{"x":0.9182,"y":0.0732},{"x":0.921,"y":0.8435},{"x":0.117,"y":0.8424}],"widthIn":156,"heightIn":100,"category":"home"},{"id":"living-2","type":"living","name":"Living room","corners":[{"x":0.0712,"y":0.0681},{"x":0.942,"y":0.0676},{"x":0.9409,"y":0.8636},{"x":0.0711,"y":0.864}],"widthIn":164,"heightIn":100,"category":"home"},{"id":"living-3","type":"living","name":"Living room","corners":[{"x":0.0329,"y":0.0638},{"x":0.9774,"y":0.0638},{"x":0.9751,"y":0.8246},{"x":0.0324,"y":0.8246}],"widthIn":186,"heightIn":100,"category":"home"},{"id":"dining-1","type":"dining","name":"Dining room","corners":[{"x":0.0466,"y":0.0403},{"x":0.976,"y":0.0394},{"x":0.9768,"y":0.8573},{"x":0.0451,"y":0.8585}],"widthIn":171,"heightIn":100,"category":"home"},{"id":"dining-2","type":"dining","name":"Dining room","corners":[{"x":0.0598,"y":0.0852},{"x":0.9755,"y":0.0816},{"x":0.9767,"y":0.8824},{"x":0.06,"y":0.886}],"widthIn":172,"heightIn":100,"category":"home"},{"id":"dining-3","type":"dining","name":"Dining room","corners":[{"x":0.0567,"y":0.0583},{"x":0.9715,"y":0.0574},{"x":0.9716,"y":0.9052},{"x":0.0555,"y":0.906}],"widthIn":162,"heightIn":100,"category":"home"},{"id":"kitchen-1","type":"kitchen","name":"Kitchen","corners":[{"x":0.1228,"y":0.091},{"x":0.9273,"y":0.091},{"x":0.9271,"y":0.8656},{"x":0.1219,"y":0.8672}],"widthIn":156,"heightIn":100,"category":"home"},{"id":"kitchen-2","type":"kitchen","name":"Kitchen","corners":[{"x":0.0462,"y":0.1013},{"x":0.9643,"y":0.1013},{"x":0.9642,"y":0.8729},{"x":0.0475,"y":0.8736}],"widthIn":178,"heightIn":100,"category":"home"},{"id":"bathroom-1","type":"bathroom","name":"Bathroom","corners":[{"x":0.0839,"y":0.0702},{"x":0.9632,"y":0.0697},{"x":0.9626,"y":0.9172},{"x":0.085,"y":0.9178}],"widthIn":156,"heightIn":100,"category":"home"},{"id":"bathroom-2","type":"bathroom","name":"Bathroom","corners":[{"x":0.0653,"y":0.0685},{"x":0.9673,"y":0.0691},{"x":0.9674,"y":0.9297},{"x":0.064,"y":0.9291}],"widthIn":157,"heightIn":100,"category":"home"},{"id":"playroom-1","type":"playroom","name":"Playroom","corners":[{"x":0.0492,"y":0.1013},{"x":0.9677,"y":0.1013},{"x":0.968,"y":0.8422},{"x":0.0486,"y":0.8425}],"widthIn":186,"heightIn":100,"category":"home"},{"id":"playroom-2","type":"playroom","name":"Playroom","corners":[{"x":0.0491,"y":0.0929},{"x":0.9507,"y":0.0929},{"x":0.951,"y":0.8513},{"x":0.0486,"y":0.8513}],"widthIn":179,"heightIn":100,"category":"home"},{"id":"kids-1","type":"kids","name":"Kids' room","corners":[{"x":0.047,"y":0.0994},{"x":0.9545,"y":0.0994},{"x":0.9558,"y":0.8603},{"x":0.0474,"y":0.8597}],"widthIn":179,"heightIn":100,"category":"home"},{"id":"kids-2","type":"kids","name":"Kids' room","corners":[{"x":0.0899,"y":0.136},{"x":0.92,"y":0.1366},{"x":0.9205,"y":0.8394},{"x":0.0888,"y":0.8379}],"widthIn":178,"heightIn":100,"category":"home"},{"id":"kids-3","type":"kids","name":"Kids' room","corners":[{"x":0.0594,"y":0.061},{"x":0.9315,"y":0.061},{"x":0.9305,"y":0.8534},{"x":0.0596,"y":0.8509}],"widthIn":165,"heightIn":100,"category":"home"},{"id":"nursery-1","type":"nursery","name":"Nursery","corners":[{"x":0.1185,"y":0.1079},{"x":0.9766,"y":0.1079},{"x":0.9799,"y":0.8621},{"x":0.1168,"y":0.8623}],"widthIn":171,"heightIn":100,"category":"home"},{"id":"nursery-2","type":"nursery","name":"Nursery","corners":[{"x":0.0503,"y":0.0826},{"x":0.9643,"y":0.0826},{"x":0.9655,"y":0.8574},{"x":0.0512,"y":0.8595}],"widthIn":177,"heightIn":100,"category":"home"},{"id":"nursery-3","type":"nursery","name":"Nursery","corners":[{"x":0.0589,"y":0.0882},{"x":0.9412,"y":0.0882},{"x":0.9415,"y":0.8952},{"x":0.0601,"y":0.8949}],"widthIn":164,"heightIn":100,"category":"home"},{"id":"bedroom-1","type":"bedroom","name":"Bedroom","corners":[{"x":0.0422,"y":0.052},{"x":0.9546,"y":0.0516},{"x":0.9561,"y":0.8793},{"x":0.0419,"y":0.8811}],"widthIn":165,"heightIn":100,"category":"home"},{"id":"bedroom-2","type":"bedroom","name":"Bedroom","corners":[{"x":0.0705,"y":0.069},{"x":0.9539,"y":0.0685},{"x":0.9548,"y":0.8442},{"x":0.0688,"y":0.8449}],"widthIn":171,"heightIn":100,"category":"home"},{"id":"bedroom-3","type":"bedroom","name":"Bedroom","corners":[{"x":0.0022,"y":0.0872},{"x":0.9994,"y":0.0872},{"x":0.9994,"y":0.836},{"x":0.0027,"y":0.8349}],"widthIn":200,"heightIn":100,"category":"home"},{"id":"office-1","type":"office","name":"Home office","corners":[{"x":0.0717,"y":0.079},{"x":0.9405,"y":0.0792},{"x":0.9407,"y":0.8415},{"x":0.0713,"y":0.8413}],"widthIn":171,"heightIn":100,"category":"home"},{"id":"office-2","type":"office","name":"Home office","corners":[{"x":0.0678,"y":0.071},{"x":0.9542,"y":0.071},{"x":0.9546,"y":0.8846},{"x":0.068,"y":0.8846}],"widthIn":164,"heightIn":100,"category":"home"},{"id":"entry-1","type":"entry","name":"Entry hall","corners":[{"x":0.1254,"y":0.0666},{"x":0.9272,"y":0.0666},{"x":0.9321,"y":0.881},{"x":0.124,"y":0.8808}],"widthIn":148,"heightIn":100,"category":"home"},{"id":"entry-2","type":"entry","name":"Entry hall","corners":[{"x":0.1997,"y":0.0882},{"x":0.799,"y":0.0882},{"x":0.7996,"y":0.8406},{"x":0.1989,"y":0.8428}],"widthIn":120,"heightIn":100,"category":"home"},{"id":"open-office-1","type":"open-office","name":"Open office","corners":[{"x":0,"y":0.0689},{"x":0.9994,"y":0.0688},{"x":0.9994,"y":0.8715},{"x":0,"y":0.8715}],"widthIn":224,"heightIn":120,"category":"office"},{"id":"meeting-1","type":"meeting","name":"Meeting room","corners":[{"x":0.024,"y":0.053},{"x":0.9994,"y":0.0531},{"x":0.9994,"y":0.8602},{"x":0.0247,"y":0.8601}],"widthIn":196,"heightIn":108,"category":"office"},{"id":"office-hall-1","type":"office-hall","name":"Office hallway","corners":[{"x":0,"y":0.0985},{"x":0.9994,"y":0.0978},{"x":0.9994,"y":0.9169},{"x":0,"y":0.9176}],"widthIn":198,"heightIn":108,"category":"office"},{"id":"lobby-1","type":"lobby","name":"Lobby","corners":[{"x":0.0318,"y":0.0355},{"x":0.9552,"y":0.0355},{"x":0.9553,"y":0.8729},{"x":0.032,"y":0.8729}],"widthIn":218,"heightIn":132,"category":"office"},{"id":"care-hall-1","type":"care-hall","name":"Care home hallway","corners":[{"x":0,"y":0.0485},{"x":0.9994,"y":0.0469},{"x":0.9994,"y":0.8762},{"x":0,"y":0.8785}],"widthIn":195,"heightIn":108,"category":"healthcare"},{"id":"care-room-1","type":"care-room","name":"Care home lounge","corners":[{"x":0,"y":0.0403},{"x":0.9994,"y":0.0403},{"x":0.9994,"y":0.8216},{"x":0,"y":0.8228}],"widthIn":207,"heightIn":108,"category":"healthcare"},{"id":"hospital-hall-1","type":"hospital-hall","name":"Hospital corridor","corners":[{"x":0,"y":0.0522},{"x":0.9994,"y":0.0504},{"x":0.9994,"y":0.8432},{"x":0,"y":0.845}],"widthIn":204,"heightIn":108,"category":"healthcare"},{"id":"waiting-1","type":"waiting","name":"Waiting room","corners":[{"x":0.0323,"y":0.0611},{"x":0.9387,"y":0.06},{"x":0.9387,"y":0.8776},{"x":0.0321,"y":0.8791}],"widthIn":190,"heightIn":114,"category":"healthcare"}];
   const ROOM_TYPE = { living: 'living', bedroom: 'bedroom', dining: 'dining', kitchen: 'kitchen', bathroom: 'bathroom', kids: 'kids', playroom: 'playroom', office: 'office', entry: 'entry', hotel: 'lobby' };
+  window.AM_ROOMS = SAMPLE_ROOMS;
   const MR = { slug: '', d: null, room: null, photo: null, mask: null, corners: null, art: null, ar: 1, s: 1, px: 0.5, py: 0.5, ox: 0, oy: 0, pos: 50, adjusting: false, mine: [], light: null, maskData: null, raf: 0 };
   const loadImg = (src) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
   const ft = (v) => Math.round(v * 2) / 2;
@@ -5826,17 +5835,97 @@ async function tiffCrop(read, box, sink, onProgress) {
   /* step 3: repeat check + room pictures */
   function upStep2() {
     const used = upUsed(), m = upMain(), rep = UP.type !== 'mural';
-    const roomPics = (f) => f.slug ? [1, 2, 3].map(n => `<img src="d/${f.slug}-room${n}.webp" alt="">`).join('') : `<div class="up-pending">Made automatically after you submit, in ${UP.rooms.map(r => ROOMS[r]).slice(0, 3).join(', ').toLowerCase() || 'matching'} rooms.</div>`;
+    const rooms = upMockRooms();
+    const roomPics = (f, i) => f.slug ? [1, 2, 3].map(n => `<img src="d/${f.slug}-room${n}.webp" alt="">`).join('')
+      : rooms.map((r, k) => `<figure class="up-mock" data-mk="${i}-${k}"><div class="c"><span class="up-spin" aria-hidden="true"></span>Placing it…</div><figcaption>${upEsc(r.name)}</figcaption></figure>`).join('')
+        + `<figure class="up-mock close" data-mk="${i}-c"><div class="c"><span class="up-spin" aria-hidden="true"></span>Cutting…</div><figcaption>12 × 12 in close-up</figcaption></figure>`;
     return `${rep ? `<div class="up-card"><div class="up-ch"><b>Repeat check</b><span class="pill" id="upSeam">Checking the joins…</span></div>
         <div class="up-seambox" id="upSeamBox" role="button" tabindex="0" title="Open large"><img id="upSeamImg" alt="Your pattern repeated, with any joins that don't connect marked in red"></div>
         <p class="up-seammsg" id="upSeamMsg"></p>
         <div class="up-row" style="margin-top:8px"><button type="button" class="btn optline btn-sm" id="upAlign2">⤢ Open large · line it up · zoom on the join</button>${UP.tx || UP.ty ? `<small>Repeat: ${Math.round((1 - UP.tx) * 100)}% of the width${UP.type !== 'side' ? `, ${Math.round((1 - UP.ty) * 100)}% of the height` : ''}${UP.blend ? ' · overlap blended' : ''}</small>` : ''}</div></div>` : ''}
-      <div class="up-card"><div class="up-ch"><b>Room pictures</b><small>Made by code in rooms that match your categories. Same rooms for every colorway. A 12 × 12 in real-size close-up is cut from your file automatically.</small></div>
-        ${used.map(f => `<div class="up-rooms"><span class="up-cwl"><img src="${f.src}" alt="">${upEsc(f.cw)}</span><div class="up-rimgs">${roomPics(f)}</div></div>`).join('')}</div>
+      <div class="up-card"><div class="up-ch"><b>Room pictures</b><small>Made automatically, right now, in rooms that match your categories (${upEsc(rooms.map(r => r.name).join(', '))}), at the real size you set. Same rooms for every colorway, plus a 12 × 12 in close-up cut from your file. Change the rooms in Details.</small></div>
+        ${used.map((f, i) => `<div class="up-rooms"><span class="up-cwl"><img src="${f.src}" alt="">${upEsc(f.cw)}</span><div class="up-rimgs${f.slug ? '' : ' four'}">${roomPics(f, i)}</div></div>`).join('')}</div>
       ${upNav('Next: review')}`;
   }
+  /* automatic room pictures: the design at its real size on the marked wall of a sample room, lit by the room, furniture kept in front */
+  const MOCK_TYPES = { living: ['living'], bedroom: ['bedroom'], dining: ['dining'], kitchen: ['kitchen'], bathroom: ['bathroom'], kids: ['kids', 'nursery'], playroom: ['playroom'], office: ['office', 'meeting'], entry: ['entry'], hotel: ['lobby'] };
+  function upMockRooms() {   // 3 rooms matching the chosen categories; each design gets a different photo of that room type
+    const all = window.AM_ROOMS || [], out = [], m = upMain();
+    let h = 0; for (const ch of (m && (m.driveId || m.file)) || UP.name || 'design') h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const pick = (types, i) => { const vs = all.filter(a => types.includes(a.type) && !out.includes(a)); return vs.length ? vs[(h + i) % vs.length] : null; };
+    UP.rooms.forEach((r, i) => { if (out.length < 3) { const x = pick(MOCK_TYPES[r] || [], i); if (x) out.push(x); } });
+    const home = ['living', 'bedroom', 'dining', 'kitchen', 'entry', 'office'];
+    for (let i = 0; out.length < 3 && i < 12; i++) { const x = pick([home[(h + i) % home.length]], i); if (x) out.push(x); }
+    return out;
+  }
+  const mockImg = (src) => new Promise((ok, no) => { const i = new Image(); i.decoding = 'async'; i.onload = () => ok(i); i.onerror = no; i.src = src; });
+  const MOCK_ROOM = {};
+  async function mockRoomData(r) {   // the photo, its wall light and the furniture mask, once per room
+    if (MOCK_ROOM[r.id]) return MOCK_ROOM[r.id];
+    const [ph, mk] = await Promise.all([mockImg(`r/${r.id}.webp`), mockImg(`r/${r.id}-m.png`)]);
+    const W = 960, H = Math.round(ph.naturalHeight * W / ph.naturalWidth);
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(ph, 0, 0, W, H); const P = x.getImageData(0, 0, W, H);
+    x.clearRect(0, 0, W, H); x.drawImage(mk, 0, 0, W, H); const M = x.getImageData(0, 0, W, H).data;
+    const q = r.corners.map(p => [p.x * W, p.y * H]), x0 = Math.floor(Math.min(...q.map(p => p[0]))), x1 = Math.ceil(Math.max(...q.map(p => p[0]))), y0 = Math.floor(Math.min(...q.map(p => p[1]))), y1 = Math.ceil(Math.max(...q.map(p => p[1])));
+    const lum = (i) => 0.3 * P.data[i] + 0.59 * P.data[i + 1] + 0.11 * P.data[i + 2], smp = [];
+    for (let y = y0; y < y1; y += 6) for (let xx = x0; xx < x1; xx += 6) { const i = (y * W + xx) * 4; if (M[i] < 128) smp.push(lum(i)); }
+    smp.sort((a, b) => a - b); const ref = smp[Math.floor(smp.length * 0.92)] || 230;
+    const light = document.createElement('canvas'); light.width = W; light.height = H; const lx = light.getContext('2d'); const L = lx.createImageData(W, H);
+    const cut = document.createElement('canvas'); cut.width = W; cut.height = H; const cx = cut.getContext('2d'); const C = cx.createImageData(W, H);
+    for (let i = 0; i < W * H * 4; i += 4) { const v = Math.round(255 * Math.min(1, Math.max(0.42, lum(i) / ref))); L.data[i] = L.data[i + 1] = L.data[i + 2] = v; L.data[i + 3] = 255; C.data[i + 3] = M[i]; }
+    lx.putImageData(L, 0, 0); cx.putImageData(C, 0, 0);
+    return (MOCK_ROOM[r.id] = { ph, W, H, q, box: [x0, y0, x1, y1], light, cut });
+  }
+  function mockWall(art, wIn, hIn, ppi) {   // the flat wall with the design at its real size (murals fill the wall, centered)
+    const c = document.createElement('canvas'); c.width = Math.round(wIn * ppi); c.height = Math.round(hIn * ppi); const x = c.getContext('2d');
+    x.imageSmoothingQuality = 'high'; const ar = art.naturalWidth / art.naturalHeight;
+    if (UP.type === 'mural') {
+      const dw = (+UP.wFt || 10) * 12, dh = dw / ar, s = Math.max(1, wIn / dw, hIn / dh);
+      x.drawImage(art, (c.width - dw * s * ppi) / 2, (c.height - dh * s * ppi) / 2, dw * s * ppi, dh * s * ppi);
+    } else {
+      const tw = (+UP.tileIn || 24) * ppi, th = tw / ar, sx = tw * (1 - (UP.tx || 0)), sy = th * (1 - (UP.type === 'all' ? UP.ty || 0 : 0));
+      for (let col = 0, px = 0; px < c.width; col++, px += sx) { const off = UP.type === 'all' && UP.half && col % 2 ? -sy / 2 : 0; for (let py = off - sy; py < c.height; py += sy) x.drawImage(art, px, py, tw, th); }
+    }
+    return c;
+  }
+  async function mockRoom(art, r) {
+    const d = await mockRoomData(r), [x0, y0, x1, y1] = d.box;
+    const wall = mockWall(art, r.widthIn, r.heightIn, Math.min(6, 1400 / r.widthIn));
+    const lay = document.createElement('canvas'); lay.width = d.W; lay.height = d.H; const lx = lay.getContext('2d');
+    lx.save(); lx.beginPath(); d.q.forEach((p, i) => i ? lx.lineTo(p[0], p[1]) : lx.moveTo(p[0], p[1])); lx.closePath(); lx.clip();
+    lx.drawImage(wall, x0, y0, x1 - x0, y1 - y0);
+    lx.globalCompositeOperation = 'multiply'; lx.drawImage(d.light, 0, 0);
+    lx.restore(); lx.globalCompositeOperation = 'destination-out'; lx.drawImage(d.cut, 0, 0);
+    const out = document.createElement('canvas'); out.width = d.W; out.height = d.H; const ox = out.getContext('2d');
+    ox.drawImage(d.ph, 0, 0, d.W, d.H); ox.drawImage(lay, 0, 0); return out;
+  }
+  function mockClose(art) {   // 12 x 12 in of the file at its real size
+    const ar = art.naturalWidth / art.naturalHeight, wIn = UP.type === 'mural' ? (+UP.wFt || 10) * 12 : (+UP.tileIn || 24);
+    const f = Math.min(1, 12 / wIn), sw = art.naturalWidth * f, sh = Math.min(art.naturalHeight, sw);
+    const c = document.createElement('canvas'); c.width = c.height = 480; const x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+    x.drawImage(art, (art.naturalWidth - sw) / 2, (art.naturalHeight - sh) / 2, sw, sh, 0, 0, 480, 480); return c;
+  }
+  async function upMockups() {
+    const rooms = upMockRooms(), used = upUsed();
+    for (const [i, f] of used.entries()) {
+      if (f.slug) continue;
+      const key = [f.src, UP.type, UP.wFt, UP.tileIn, UP.tx, UP.ty, UP.half, rooms.map(r => r.id)].join('|');
+      if (!f.mocks || f.mocks.key !== key) {
+        f.mocks = { key, c: {} };
+        try { f.mocks.art = await mockImg(f.check || f.src); } catch { f.mocks.err = true; }
+      }
+      const put = (id, canvas) => { const el = document.querySelector(`[data-mk="${i}-${id}"] .c`); if (el && canvas) { el.textContent = ''; el.appendChild(canvas); } };
+      if (f.mocks.err) { document.querySelectorAll(`[data-mk^="${i}-"] .c`).forEach(el => { el.textContent = 'Made after you submit'; }); continue; }
+      if (!f.mocks.c.close) f.mocks.c.close = mockClose(f.mocks.art); put('c', f.mocks.c.close);
+      for (const [k, r] of rooms.entries()) {
+        if (!f.mocks.c[r.id]) { try { f.mocks.c[r.id] = await mockRoom(f.mocks.art, r); } catch { const el = document.querySelector(`[data-mk="${i}-${k}"] .c`); if (el) el.textContent = 'Made after you submit'; continue; } }
+        put(k, f.mocks.c[r.id]);
+      }
+    }
+  }
   function upWire2() {
-    const m = upMain(); UP.seam = null;
+    const m = upMain(); UP.seam = null; upMockups();
     if ($('upSeam')) {
       if ($('upAlign2')) $('upAlign2').onclick = upOpenAlign;
       if (m.drive && m.sharpening) { $('upSeam').innerHTML = '<span class="up-spin" aria-hidden="true"></span> Making the sharp picture first…'; $('upSeam').className = 'pill wait'; $('upSeamMsg').textContent = 'The joins are checked on the sharp picture of your file. It updates by itself in a moment.'; }
